@@ -18,10 +18,11 @@ class FTP_TLSb(ftplib.FTP_TLS):
 
 class FTP_connector(FTP_TLSb):
     def __init__(self, **kwargs):
-        FTP_HOST = kwargs.get("FTP_HOST", "ftp.esi.caisse-epargne.fr")
-        FTP_USER = kwargs.get("FTP_USER", "A44-PR-MPG-PARTNERS1@gce")
-        FTP_PASS = kwargs.get("FTP_PASS", "S'q4W<oy")
-        FTP_PORT = kwargs.get("FTP_PORT",990)
+        params = kwargs.get('params_FTP', None)
+        FTP_HOST = params.get("FTP_HOST", None)
+        FTP_USER = params.get("FTP_USER", None)
+        FTP_PASS = params.get("FTP_PASS", None)
+        FTP_PORT = params.get("FTP_PORT",990)
         self.ftps = FTP_TLSb()
         print(self.ftps.connect(FTP_HOST,FTP_PORT))
         print(self.ftps.login(FTP_USER, FTP_PASS))

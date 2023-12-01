@@ -8,4 +8,3 @@ def mkl_path():
     return mkl_path
 hllDll = ctypes.WinDLL(mkl_path())
 import codpypyd
-from .include import *
