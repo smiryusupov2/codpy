@@ -4,13 +4,18 @@ import pandas as pd
 import itertools
 import time
 import xarray
-from codpy.utils.data_conversion import get_float, get_matrix
-from codpy.utils.utils import lexicographical_permutation
+import copy
+from matplotlib import pyplot as plt
+from sklearn.cluster import KMeans
+from sklearn import metrics
+from codpy.utils.data_conversion import get_matrix
+from codpy.utils.data_processing import lexicographical_permutation
 from codpy.utils.data_processing import column_selector
 from codpy.utils.file import save_to_file
 from codpy.src.core import kernel_setters
 from codpy.utils.metrics import get_relative_mean_squared_error
-from codpy.utils.clustering_utils import graphical_cluster_utilities
+from codpy.utils.clustering_utils import graphical_cluster_utilities, add_confusion_matrix
+from codpy.utils.graphical import compare_plot_lists, multi_plot
 
 
 
@@ -300,8 +305,6 @@ class data_predictor(abc.ABC):
         return self.name
 
 
-    
-
 class data_accumulator:
     def __init__(self,**kwargs):
         self.set_data(generators = [],predictors= [],**kwargs)
@@ -338,7 +341,6 @@ class data_accumulator:
             plt.ylabel(labely+self.predictors[d].id())
             d = d+1
         plt.title(title)
-        plt.show()
 
     def plot_predicted_values(self,zs=[],title="predicted (red) vs test (green) variables and values",labelx='z',labely='predicted values'):
         d = 0
@@ -357,7 +359,6 @@ class data_accumulator:
             plt.ylabel(labely+p.id())
             d = d+1
         plt.title(title)
-        plt.show()
 
     def plot_errors(self,fzs=[],title="error on predicted set ",labelx='f(z)',labely='error:'):
         d = 0
@@ -375,7 +376,6 @@ class data_accumulator:
             d = d+1
 
         plt.title(title)
-        plt.show()
 
     def format_helper(self,x):
         return x.reshape(len(x),1)
@@ -534,10 +534,7 @@ class scenario_generator:
             xs.append(group[axis_label].values.astype(float))
             fxs.append(group[field_label].values.astype(float))
         pass
-        compare_plot_lists(listxs = xs, listfxs = fxs, ax=ax, 
-        **{'listlabels':predictor_ids, 'labelx':axis_label,'labely':field_label,**kwargs}
-        )
-
+        compare_plot_lists({'listxs' : xs, 'listfxs' : fxs, 'ax':ax,'listlabels':predictor_ids, 'labelx':axis_label,'labely':field_label,**kwargs})
 
     def compare_plots(self,axis_field_labels, **kwargs):
         multi_plot(axis_field_labels,self.compare_plot_ax, **kwargs)

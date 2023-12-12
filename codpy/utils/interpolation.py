@@ -1,5 +1,5 @@
 from scipy import interpolate as sci_interpolate
-from preamble import *
+from codpy.utils.data_conversion import get_float
 
 def my_range(start, stop, step):
     start_type = type(start)

@@ -1,4 +1,4 @@
-import multiprocessing as mp #multiprocessing module
+import multiprocessing as mp
 import concurrent.futures
 from tqdm import tqdm
 import time
@@ -15,7 +15,7 @@ def parallel_task(param_list,fun,**kwargs):
     out = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=cores) as executor:
         results = executor.map(fun, param_list, chunksize= max(int( len(param_list)/cores),1) )
-        for result,i in zip(results,tqdm (range (len(param_list)), desc="parallel…", ascii=False, ncols=75)) :        
+        for result,i in zip(results,tqdm (range (len(param_list)), desc="parallel…", ascii=False, ncols=75)):
             out.append(result)
 
     # pool = mp.Pool(cores)

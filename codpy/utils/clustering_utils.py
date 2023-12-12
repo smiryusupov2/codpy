@@ -1,4 +1,5 @@
 from matplotlib import pyplot as plt
+import pandas as pd
 import numpy as np
 from sklearn import metrics
 from codpy.utils.graphical import get_representation_function
@@ -41,11 +42,12 @@ class graphical_cluster_utilities:
             ax.title.set_text(cluster_label + str(ny))
 
 
-def plot_confusion_matrix(confusion_matrix ,ax = plt.axes(), **kwargs):
+def plot_confusion_matrix(confusion_matrix ,ax = None, **kwargs):
+    if ax is None: ax = plt.axes()
     fmt = kwargs.get('fmt',"d")
     cmap = kwargs.get('cmap',plt.cm.copper)
     sns.heatmap(confusion_matrix, ax=ax, annot=True, fmt=fmt, cmap=cmap)
-    labels = kwargs.get('labels',None)
+    labels = kwargs.get('labels',"")
     title = kwargs.get('title',"Conf. Mat.:")
     fontsize,rotationx,rotationy = kwargs.get('fontsize',14),kwargs.get('rotationx',90),kwargs.get('rotationy',360)
     if ax is not None:

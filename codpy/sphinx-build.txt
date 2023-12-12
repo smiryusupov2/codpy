@@ -1,0 +1,2 @@
+sphinx-build -b html doc/ build/
+# C:\Users\shohr\Desktop\Github\codpy-lite\codpy>sphinx-apidoc -o doc/ utils/

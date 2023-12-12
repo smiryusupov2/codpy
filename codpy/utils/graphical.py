@@ -9,6 +9,7 @@ from codpy.utils.data_conversion import *
 
 def scatter_plot(param,**kwargs) -> None:
     x,y = get_matrix(param[0]),get_matrix(param[1])
+    if x.shape[0]*x.shape[1]*y.shape[0]*y.shape[1] == 0: return
     color = kwargs.get('color',["blue","red"])
     label = kwargs.get('label',["first","second"])
     type = kwargs.get('type',["o","o"])
@@ -22,6 +23,7 @@ def graph_plot(param, **kwargs):
     scatter_plot(param, **kwargs)
     x,y = param[0],param[1]
     x,y = get_matrix(param[0]),get_matrix(param[1])
+    if x.shape[0]*x.shape[1]*y.shape[0]*y.shape[1] == 0: return
     N = min(len(x),len(y))
     color = kwargs.get('color_edge','black')
     plt.plot([y[0:N,0], x[0:N,0] ], [ y[0:N,1], x[0:N,1] ], linewidth=1,color = color)
@@ -101,8 +103,10 @@ def compare_plot_lists_ax(listxs, listfxs, ax, **kwargs):
     ax.set_ylabel(labely)
 
 
-def compare_plot_lists(listxs, listfxs, ax = None,**kwargs):
-    if ax: return compare_plot_lists_ax(listxs, listfxs, ax, fun_axvspan = None, **kwargs)
+def compare_plot_lists(kwargs):
+    listxs,listfxs,ax = kwargs['listxs'],kwargs['listfxs'],kwargs['ax']
+    from matplotlib.dates import date2num
+    if ax: return compare_plot_lists_ax(fun_axvspan = None, **kwargs)
     index = kwargs.get("index",0)
     labelx=kwargs.get("labelx",'x-units')
     fun_x=kwargs.get("fun_x",get_data)
@@ -113,7 +117,6 @@ def compare_plot_lists(listxs, listfxs, ax = None,**kwargs):
     xscale =kwargs.get("xscale",None)
     yscale =kwargs.get("yscale",None)
     figsize =kwargs.get("figsize",(2,2))
-    Show = kwargs.get("Show",True)
     plt.figure(figsize=figsize)
     for x,fx,label,alpha in zip(listxs, listfxs,listlabels,listalphas):
         plotx = fun_x(x)
@@ -126,7 +129,6 @@ def compare_plot_lists(listxs, listfxs, ax = None,**kwargs):
     plt.title(title)
     plt.xlabel(labelx)
     plt.ylabel(labely)
-    if Show: plt.show()
 
 def matrix_to_cartesian(x,fx):
     fx = fx.reshape((len(fx)))
@@ -169,7 +171,6 @@ def multi_compare1D(x,fx, title = 'Figure',labelx='x-axis',labely='y-axis:',figs
             plt.plot(plotx,plotfx,marker = 'o',ls='-',label= labelx,markersize=2)
             plt.xlabel(labelx)
             plt.ylabel(labely + str(d))
-    plt.show()
 
 class fun_pca:
     pca = None
@@ -303,48 +304,76 @@ def plot_data_distribution(df_x,df_fx):
         sns.scatterplot(df_x.iloc[:, i],df_fx)
         plt.xlabel(df_x.columns[i])
     plt.tight_layout()
-    plt.show()
 
 def plot_data_correlation(df_x, thres = 0.8):
     num_correlation = df_x.select_dtypes(exclude='object').corr()
     plt.figure(figsize=(20,20))
     plt.title('High Correlation')
     sns.heatmap(num_correlation > thres, annot=True, square=True)
-    plt.show()
 
-def multi_plot(params ,fun_plot, **kwargs):
-    max_items = kwargs.get('mp_max_items',min(len(params),4))
-    if max_items == -1: max_items = len(params)
-    title = kwargs.get('mp_title','')
-    ncols = kwargs.get('mp_ncols',len(params))
-    nrows = kwargs.get('mp_nrows',None)
-    f_names = kwargs.get('f_names',["" for n in range(len(params)) ])
-    fontsize = kwargs.get('fontsize',10)
-    numbers = min(len(params),max_items)
-    ncols = min(ncols,numbers)
-    projection = kwargs.get('projection','')
-    legends = kwargs.get('legends', ["" for n in range(len(params)) ])
-    if numbers == 0:return
-    j = 0
-    if nrows is None:
-        nrows = max(round(numbers/ncols)+1,1)
-    figsize= kwargs.get('mp_figsize',None)
-    if figsize is not None:fig = plt.figure(figsize = figsize)
-    else: fig = plt.figure()
-    
-    for param, f_name, legend in zip(params, f_names, legends):
-        if len(projection): ax = fig.add_subplot(nrows,ncols,j+1, projection = projection)
-        else: ax = fig.add_subplot(nrows,ncols,j+1)
-        if isinstance(param,dict):fun_plot(**param,ax=ax,**kwargs )
-        else:fun_plot(param,ax=ax,legend=legend,**kwargs )
-        plt.title(f_name, fontsize=fontsize)
-       
-        j = j+1
-        if j== ncols*nrows:
-            break
-    # fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
-    fig.tight_layout()
-    
-    if title: fig.suptitle(title, fontsize=12, fontweight='bold')
-    
-    plt.show()
+class multi_plot:
+    def get_subplot(self,nrows,ncols,j,**kwargs):
+        if 'projection' in kwargs : return self.fig.add_subplot(nrows,ncols,j, projection=kwargs['projection'])
+        return self.fig.add_subplot(nrows,ncols,j)
+    def __init__(self,params ,fun_plot, **kwargs):
+        max_items = kwargs.get('mp_max_items',min(len(params),4))
+        if max_items == -1: max_items = len(params)
+        title = kwargs.get('mp_title','')
+        ncols = kwargs.get('mp_ncols',len(params))
+        nrows = kwargs.get('mp_nrows',None)
+        f_names = kwargs.get('f_names',[None for n in range(len(params)) ])
+        fontsize = kwargs.get('fontsize',10)
+        numbers = min(len(params),max_items)
+        ncols = min(ncols,numbers)
+        projection = kwargs.get('projection','')
+        legends = kwargs.get('legends', ["" for n in range(len(params)) ])
+        if numbers == 0:return
+        j = 0
+        if nrows is None:
+            nrows = max(int(np.ceil(numbers/ncols)),1)
+        figsize= kwargs.get('mp_figsize',(8,4))
+        if figsize is not None:self.fig = plt.figure(figsize = figsize)
+        else: self.fig = plt.figure()
+        if not isinstance(fun_plot,list):fun_plot = [fun_plot for n in range(0,len(params))]
+
+        for param, f_name, legend,fun in zip(params, f_names, legends,fun_plot):
+            if len(projection): ax = self.get_subplot(nrows,ncols,j+1, projection = projection)
+            else: ax = self.get_subplot(nrows,ncols,j+1 ,**kwargs)
+            if isinstance(param,dict):fun({**param,**kwargs,**{'ax':ax,'fig':self.fig}} )
+            else:fun(param,**{**kwargs,**{'legend':legend,'fig':self.fig,'ax':ax}} )
+            if f_name is not None: plt.title(f_name, fontsize=fontsize)
+
+            j = j+1
+            if j== ncols*nrows:
+                break
+        # fig.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+        self.fig.tight_layout()
+
+        if title: self.fig.suptitle(title, fontsize=12, fontweight='bold')
+
+class multi_plot_figs(multi_plot):
+    subfigs = None
+    def __init__(self,params ,fun_plot, **kwargs):
+        super().__init__(params ,fun_plot, **kwargs)
+    def get_subplot(self,nrows,ncols,j,**kwargs):  # ,**kwargs
+        out= self.fig.add_subplot(nrows,ncols,j)
+        display_ax=kwargs.get('display_ax','off')
+        #plt.axis('off')
+        plt.axis(display_ax)
+        return out
+
+class multi_plot_pics(multi_plot_figs):
+    class fun_pic :
+        def __init__(self,fun_plot):
+            self.fun_plot = fun_plot
+        def __call__(self,param,**kwargs):
+            import io
+            from PIL import Image
+            fig = self.fun_plot(param,**kwargs)
+            img_buf = io.BytesIO()
+            plt.savefig(img_buf, format='png')
+            param['ax'].imshow(Image.open(img_buf))
+            # plt.close(fig)
+            pass
+    def __init__(self,params ,fun_plot, **kwargs):
+        super().__init__(params ,multi_plot_pics.fun_pic(fun_plot), **kwargs)

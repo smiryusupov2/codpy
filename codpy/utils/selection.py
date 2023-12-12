@@ -1,4 +1,3 @@
-
 import pandas as pd
 
 
@@ -44,7 +43,13 @@ def get_matching_cols(a,match):
         return out
     return [col for col in a.columns if match in col]
 
-def get_starting_cols(a,match):
-    # for col in a: 
-    #     if not isinstance(col,str): return[]   
+def get_starting_cols(a,match): 
     return [col for col in a if isinstance(col,str) and any(col.startswith(m) for m in match)]
+
+def select_constant_columns(df):
+    out = list()
+    def fun(out,df,col):
+        unique_values = df[col].unique()
+        if len(unique_values) == 1:out.append(col)
+    [fun(out,df,col) for col in df.columns]
+    return out

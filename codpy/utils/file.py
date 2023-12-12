@@ -27,12 +27,12 @@ def find_dir(pathname):
 def find_file(pathname):
     return find_helper(pathname)
 
-def files_indir(dirname,extension=""):
+def files_indir(dirname,extension=".png"):
     out=[]
     for root, directories, files in os.walk(dirname):
         for file in files:
             if not len(extension):out.append(os.path.join(root,file))
             else: 
-                if(file.endswith(".png")):
+                if(file.endswith(extension)):
                     out.append(os.path.join(root,file))
     return out

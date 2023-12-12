@@ -4,26 +4,32 @@ import pandas as pd
 
 ts_format_switchDict = { pd.DataFrame: lambda A,h,p,**kwargs :  ts_format_dataframe(A,h,p,**kwargs) }
 
-def ts_format_np(A,h,p, **kwargs):
+def ts_format_np(A,h,p=0, **kwargs):
+    A = np.array(A)
     dim = A.ndim
-    if dim < 3:
-        (first,second) = cd.tools.ts_format(get_matrix(A),h,p) 
+    if dim == 1:
+        (first,second) = cd.tools.ts_format(get_matrix(A),h,p)
+        if p ==0: return first
         return (first,second)
-    if dim == 3 :
-        out = [A[n,:,:].T for n in range(A.shape[0])] #expected format is N = number of trajectory,D = Dim,T=number of time bucket, however ts_format suppose T,D
-        out = parallel_task(out, lambda x:  ts_format_np(x,h,p,**kwargs),**kwargs)
-        x,fx = [o[0] for o in out],[o[1] for o in out]
-        N,Dx,Dfx = A.shape[0]*(A.shape[2] - h -p +1), A.shape[1]*h,A.shape[1]*p
-        new_shapex,new_shapefx = (N,Dx),(N,Dfx)
-        x,fx = np.reshape(x,new_shapex),np.reshape(fx,new_shapefx)
-        pass
-    return x,fx
+    if dim == 2:
+        if A.shape[0] > A.shape[1]: (first,second) = cd.tools.ts_format(get_matrix(A),h,p)
+        else:
+            (first,second) = cd.tools.ts_format(get_matrix(A.T),h,p)
+            (first,second) = (first.T,second.T)
+        if p ==0: return first
+        return (first,second)
+    along_axis = kwargs.get('along_axis',None)
+    if along_axis is not None :
+        out = [ts_format_np(get_slice(A,along_axis,ind),h,p) for ind in range(0,A.shape[along_axis])]
+        if p == 0 : return np.array(out)
+        return np.array([s[0] for s in out]),np.array([s[1] for s in out])
+
 
 
 def ts_format_dataframe(A,h,p, **kwargs):
     colsx, colsfx= [], []
-    [ [colsx.append(col + str(n)) for col in A.columns] for n in range(0,h) ] 
-    [ [colsfx.append(col + str(n)) for col in A.columns] for n in range(0,p) ] 
+    [ [colsx.append(col + str(n)) for col in A.columns] for n in range(0,h) ]
+    [ [colsfx.append(col + str(n)) for col in A.columns] for n in range(0,p) ]
 
     ts_format_param = kwargs.get('ts_format',None)
 
@@ -37,7 +43,7 @@ def ts_format_dataframe(A,h,p, **kwargs):
     x,fx = pd.DataFrame(x,columns=colsx, index = A.index[:x.shape[0]]),pd.DataFrame(fx,columns=colsfx,index = A.index[h:fx.shape[0]+h])
     return x, fx
 
-def ts_format_diff(A,h,p, **kwargs):
+def ts_format_diff(A,h,p = 0, **kwargs):
     A.values
     diff = A.diff(axis=0)
     diff.values
