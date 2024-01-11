@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 from matplotlib import cm
 import seaborn as sns
-from codpy.src.utils.data_conversion import *
+from codpy.utils.data_conversion import *
 
 #########################graphical utilities###################
 

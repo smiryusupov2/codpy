@@ -1,5 +1,5 @@
 import numpy as np
-from codpy.src.utils.data_conversion import get_data
+from codpy.utils.data_conversion import get_data
 
 def get_classification_error(test_values,extrapolated_values):
     if test_values.size == 0: return 0.

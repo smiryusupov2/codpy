@@ -3,15 +3,15 @@ import numpy as np
 import codpydll
 import codpypyd as cd
 import warnings
-from src.core import _kernel, op, _kernel_helper2, _requires_rescale
-from src.sampling import sharp_discrepancy
+from codpy.core import _kernel, op, _kernel_helper2, _requires_rescale
+from codpy.sampling import sharp_discrepancy
 import xarray
 from scipy.optimize import linear_sum_assignment
-from src.utils.data_conversion import get_matrix
-from src.utils.selection import column_selector
-from src.utils.utils import format_32, format_23
-from src.utils.dictionary import cast, Dict, Set
-from src.utils.random import random_select_interface
+from codpy.utils.data_conversion import get_matrix
+from codpy.utils.selection import column_selector
+from codpy.utils.utils import format_32, format_23
+from codpy.utils.dictionary import cast, Dict, Set
+from codpy.utils.random import random_select_interface
 from typing import List    
 
 def map_invertion(map,type_in = None):

@@ -1,7 +1,7 @@
 import numpy as np
 import codpydll
 import codpypyd as cd
-from src.utils.data_conversion import get_matrix
+from codpy.utils.data_conversion import get_matrix
 
 def VanDerMonde(x: np.ndarray, orders) -> np.ndarray:
     """

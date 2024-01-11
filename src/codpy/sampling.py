@@ -5,10 +5,10 @@ import codpypyd as cd
 import math
 import warnings
 from sklearn.cluster import KMeans, MiniBatchKMeans
-from src.core import op, _kernel, _kernel_helper2, _requires_rescale
-from src.utils.data_conversion import get_matrix
-from src.utils.selection import column_selector
-from src.utils.random import random_select_interface
+from codpy.core import op, _kernel, _kernel_helper2, _requires_rescale
+from codpy.utils.data_conversion import get_matrix
+from codpy.utils.selection import column_selector
+from codpy.utils.random import random_select_interface
 
 def kernel_density_estimator(x, y, kernel_fun = "gaussian", map = None, 
                                          bandwidth = 1.0, rescale = True, rescale_params: dict = {'max': 2000, 'seed':42}):

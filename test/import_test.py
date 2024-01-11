@@ -1,13 +1,13 @@
 import config
-from src.core import op, diffops, distance_labelling, discrepancy, discrepancy_functional
+from codpy.core import op, diffops, distance_labelling, discrepancy, discrepancy_functional
 import numpy as np
 import scipy.stats as stats
 import numdifftools as nd
 import codpy as cd
 from math import pi, factorial
-from src.sampling import kernel_conditional_density_estimator, kernel_density_estimator, get_normals
-from src.permutation import lsap, scipy_lsap, reordering, encoder, decoder, match
-from src.utils.selection import column_selector
+from codpy.sampling import kernel_conditional_density_estimator, kernel_density_estimator, get_normals
+from codpy.permutation import lsap, scipy_lsap, reordering, encoder, decoder, match
+from codpy.utils.selection import column_selector
 import unittest
 
 def func(x, order = 1):

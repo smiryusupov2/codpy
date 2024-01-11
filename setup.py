@@ -47,8 +47,18 @@ setup(
     description=DESCRIPTION,
     license=LICENSE,
     url=URL,
-    packages=find_packages('src'), #['codpy'],
+    # package_dir={'codpy': 'src'},
+    # packages= find_packages(), #['codpy.src'] + ['codpy.src' + pkg for pkg in find_packages('src')],
     package_dir={'': 'src'},
+    packages=find_packages(where='src'),
+    # package_dir={'codpy': 'src/codpy', 'codpy.utils': 'utils'},
+    # # Define both codpy and utils packages
+    # packages=['codpy', 'codpy.utils'] + ['codpy.' + p for p in find_packages(where='src/codpy')],
+
+    # package_dir={'codpy': 'codpy'},
+    # py_modules=['utils'],
+    # package_dir={'codpy': 'src'},
+    # packages=['codpy'] + ['codpy.' + p for p in find_packages(where='src')],
     include_package_data=True,
     package_data={'': extra_files},
     classifiers=[
