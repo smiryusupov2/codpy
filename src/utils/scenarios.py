@@ -8,14 +8,14 @@ import copy
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn import metrics
-from codpy.utils.data_conversion import get_matrix
-from codpy.utils.data_processing import lexicographical_permutation
-from codpy.utils.data_processing import column_selector
-from codpy.utils.file import save_to_file
+from codpy.src.utils.data_conversion import get_matrix
+from codpy.src.utils.data_processing import lexicographical_permutation
+from codpy.src.utils.data_processing import column_selector
+from codpy.src.utils.file import save_to_file
 from codpy.src.core import _kernel_setters
-from codpy.utils.metrics import get_relative_mean_squared_error
-from codpy.utils.clustering_utils import graphical_cluster_utilities, add_confusion_matrix
-from codpy.utils.graphical import compare_plot_lists, multi_plot
+from codpy.src.utils.metrics import get_relative_mean_squared_error
+from codpy.src.utils.clustering_utils import graphical_cluster_utilities, add_confusion_matrix
+from codpy.src.utils.graphical import compare_plot_lists, multi_plot
 
 
 

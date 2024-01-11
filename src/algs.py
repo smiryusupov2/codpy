@@ -2,7 +2,7 @@ import numpy as np
 import codpydll
 import codpypyd as cd
 from codpy.src.core import op, _kernel, _kernel_helper2, _requires_rescale
-from codpy.utils.data_processing import lexicographical_permutation
+from src.utils.data_processing import lexicographical_permutation
 import warnings
 
 

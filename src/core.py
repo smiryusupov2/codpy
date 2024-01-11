@@ -1,14 +1,15 @@
+import config
 import pandas as pd
 import numpy as np
 from functools import partial, cache
 import codpydll
 import codpypyd as cd
 import itertools
-from codpy.utils.selection import column_selector
-from codpy.utils.random import random_select, random_select_interface
-from codpy.utils.dictionary import *
-from codpy.utils.data_conversion import get_matrix
-from codpy.utils.utils import pad_axis, softmaxindice, softminindice
+from codpy.src.utils.selection import column_selector
+from codpy.src.utils.random import random_select, random_select_interface
+from codpy.src.utils.dictionary import *
+from codpy.src.utils.data_conversion import get_matrix
+from codpy.src.utils.utils import pad_axis, softmaxindice, softminindice
 import warnings
 
 

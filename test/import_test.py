@@ -7,7 +7,7 @@ import codpy as cd
 from math import pi, factorial
 from src.sampling import kernel_conditional_density_estimator, kernel_density_estimator, get_normals
 from src.permutation import lsap, scipy_lsap, reordering, encoder, decoder, match
-from utils.selection import column_selector
+from src.utils.selection import column_selector
 import unittest
 
 def func(x, order = 1):

@@ -3,7 +3,7 @@ import codpypyd as cd
 import pandas as pd
 import numpy as np
 from codpy.src.core import _kernel, distance_labelling, diffops
-from codpy.utils.data_conversion import get_matrix, get_data
+from src.utils.data_conversion import get_matrix, get_data
 
 ########################################### Partial Differential tools #########################################
 

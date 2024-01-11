@@ -2,7 +2,7 @@ import multiprocessing as mp
 import concurrent.futures
 from tqdm import tqdm
 import time
-from codpy.utils.scenarios import execute_function_list
+from codpy.src.utils.scenarios import execute_function_list
 
 
 ## multiprocessing utilities# 

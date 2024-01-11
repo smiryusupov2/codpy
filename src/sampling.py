@@ -6,9 +6,9 @@ import math
 import warnings
 from sklearn.cluster import KMeans, MiniBatchKMeans
 from src.core import op, _kernel, _kernel_helper2, _requires_rescale
-from utils.data_conversion import get_matrix
-from utils.selection import column_selector
-from utils.random import random_select_interface
+from src.utils.data_conversion import get_matrix
+from src.utils.selection import column_selector
+from src.utils.random import random_select_interface
 
 def kernel_density_estimator(x, y, kernel_fun = "gaussian", map = None, 
                                          bandwidth = 1.0, rescale = True, rescale_params: dict = {'max': 2000, 'seed':42}):

@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 from sklearn import metrics
-from codpy.utils.graphical import get_representation_function
+from codpy.src.utils.graphical import get_representation_function
 import seaborn as sns
 
 ############################clustering_utilities
