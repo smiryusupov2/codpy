@@ -47,7 +47,7 @@ setup(
     description=DESCRIPTION,
     license=LICENSE,
     url=URL,
-    packages=find_packages(where=['codpy']), #['codpy'],
+    packages=find_packages(['codpy']), #['codpy'],
     #package_dir={'': 'src'},
     include_package_data=True,
     package_data={'': extra_files},
