@@ -3,7 +3,7 @@ import codpydll
 import codpypyd as cd
 from codpy.utils.data_conversion import get_matrix
 
-def VanDerMonde(x: np.ndarray, orders,**kwargs) -> np.ndarray:
+def VanDerMonde(x: np.ndarray, orders) -> np.ndarray:
     """
     Compute the Vandermonde matrix for a given input array `x` and specified orders.
 

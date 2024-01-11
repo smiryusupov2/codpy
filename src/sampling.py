@@ -3,13 +3,15 @@ import pandas as pd
 import codpydll
 import codpypyd as cd
 import math
+import warnings
 from sklearn.cluster import KMeans, MiniBatchKMeans
-from codpy.src.core import op, kernel, kernel_setters, map_setters
-from codpy.utils.data_conversion import get_matrix
-from codpy.utils.selection import column_selector
-from codpy.utils.random import random_select_interface
+from src.core import op, _kernel, _kernel_helper2, _requires_rescale
+from utils.data_conversion import get_matrix
+from utils.selection import column_selector
+from utils.random import random_select_interface
 
-def kernel_density_estimator(**kwargs):
+def kernel_density_estimator(x, y, kernel_fun = "gaussian", map = None, 
+                                         bandwidth = 1.0, rescale = True, rescale_params: dict = {'max': 2000, 'seed':42}):
     """
     Estimate the kernel density of a distribution.
 
@@ -37,22 +39,18 @@ def kernel_density_estimator(**kwargs):
         
         >>> density = kernel_density_estimator(x=x, y=y)
     """
-    # given two distribution x,y evaluate \sum_i K(x^i,y^j)
-    #
-    x,y = kwargs["x"],kwargs["y"]
-    kernel.init(**{**kwargs,**{'z':None}})
+
+    params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, bandwidth=bandwidth)}
+    if rescale == True or _requires_rescale(map_name=map):
+        params['rescale'] = True
+        params['rescale_kernel'] = rescale_params
+        warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+        _kernel.init(x,y,None, **params)
     return cd.tools.density_estimator(x,y)
 
-def _get_nadaraya_watson_param(bandwidth=1.):
-    kwargs = {
-        'rescale_kernel':{'max': 2000, 'seed':42},
-        # 'set_codpy_kernel' : kernel_setters.kernel_helper(kernel_setters.set_invquadratictensor_kernel, 0,1e-8 ,map_setters.set_scale_factor_helper(bandwidth=bandwidth)),
-        'set_codpy_kernel' : kernel_setters.kernel_helper(kernel_setters.set_gaussian_kernel, 0,1e-8 ,map_setters.set_scale_factor_helper(bandwidth=bandwidth)), 
-        'rescale': False,
-        'grid_projection': False}
-    return kwargs
 
-def kernel_conditional_density_estimator(x_vals, y_vals, x_data, y_data, kwargs = _get_nadaraya_watson_param()):
+def kernel_conditional_density_estimator(x_vals, y_vals, x_data, y_data, kernel = "gaussian", map = "bandwidth", 
+                                         bandwidth = 1.0, rescale_params: dict = {'max': 2000, 'seed':42}):
     """
     Estimate the conditional density of 'y' given 'x' using the Nadaraya-Watson estimator.
 
@@ -87,9 +85,10 @@ def kernel_conditional_density_estimator(x_vals, y_vals, x_data, y_data, kwargs 
         >>> conditional_density = kernel_conditional_density_estimator(x_vals, y_vals, x_data, y_data)
     """
     # given a joint distribution (x_data, y_data), return the density y_val | x_val using the Nadaraya-Watson estimate
-    # The kernel is input in kwargs
-    marginal_x =op.Knm(**{**kwargs, **{'x':x_data,'y':x_vals}})
-    marginal_y = op.Knm(**{**kwargs, **{'x':y_data,'y':y_vals}})
+    marginal_x = op.Knm(x = x_data, y = x_vals, kernel = kernel, map = map, rescale_params= rescale_params, 
+                        bandwidth=bandwidth)
+    marginal_y = op.Knm(x = y_data, y = y_vals, kernel = bandwidth, map = map, rescale_params= rescale_params,
+                        bandwidth=bandwidth)
     joint_weights = marginal_x * marginal_y
     sum_x = np.sum(marginal_x, axis = 0) 
     joint_weights = np.sum(joint_weights,axis=0) / sum_x
@@ -133,14 +132,13 @@ def rejection_sampling(proposed_sample, probas,acceptance_ratio = 0.):
             samples.append(proposed_sample[n])
     return samples
 
-def get_normals(N,D, **kwargs):
-        kernel.init(**kwargs)
-        nmax = kwargs.get('nmax',10)
+def get_normals(N,D, nmax = 10):
+        _kernel.init()
         out = cd.alg.get_normals(N = N,D = D,nmax = nmax)
         # mean,var = np.mean(out,axis=0),np.var(out,axis=0)
         return out
 
-def get_uniform(N,D, **kwargs):
+def get_uniform(N,D, nmax = 10):
     """
     Generate uniformly distributed random samples from normally distributed samples.
 
@@ -151,7 +149,7 @@ def get_uniform(N,D, **kwargs):
     Args:
         N (int): The number of samples to generate.
         D (int): The dimensionality of each sample.
-        **kwargs: Additional keyword arguments to be passed to the normal sample generator function.
+        nmax (int): .
 
     Returns:
         ndarray: An array of shape (N, D) containing uniformly distributed random samples.
@@ -161,7 +159,7 @@ def get_uniform(N,D, **kwargs):
         
         >>> uniform_samples = get_uniform(100, 2)
     """
-    out = get_normals(N,D, **kwargs)
+    out = get_normals(N,D, nmax=nmax)
     out = np.vectorize(math.erf)(out)/2. + 0.5
     return out
 
@@ -171,7 +169,7 @@ def get_random_normals_like(kwargs):return np.random.normal(size = kwargs['x'].s
 def get_random_uniform_like(kwargs):return np.random.uniform(size = kwargs['x'].shape)
 
 def match(x, **kwargs):
-    kernel.init(**kwargs)
+    _kernel.init(**kwargs)
     x = column_selector(x,**kwargs)
     Ny = kwargs.get('Ny',x.shape[0])
     if Ny >= x.shape[0]: return x
@@ -182,7 +180,7 @@ def match(x, **kwargs):
 
     def debug_fun(x,**kwargs):
         if 'sharp_discrepancy:xmax' in kwargs: x = random_select_interface(xmaxlabel = 'sharp_discrepancy:xmax', seedlabel = 'sharp_discrepancy:seed',**{**kwargs,**{'x':x}})
-        kernel.init(x = x, **kwargs)
+        _kernel.init(x = x, **kwargs)
         out = cd.alg.match(get_matrix(x),Ny)
         return out
     type_debug = type(x)
@@ -285,7 +283,7 @@ def MiniBatchkmeans(x, **kwargs):
 
 def sharp_discrepancy(**kwargs):
     x = kwargs['x']
-    kernel.init(**kwargs)
+    _kernel.init(**kwargs)
     itermax = int(kwargs.get('sharp_discrepancy:itermax',10))
     Ny = kwargs.get("Ny",None)
     if Ny is None:

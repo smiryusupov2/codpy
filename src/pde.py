@@ -2,7 +2,7 @@ import codpydll
 import codpypyd as cd
 import pandas as pd
 import numpy as np
-from codpy.src.core import kernel, op, distance_labelling, diffops
+from codpy.src.core import _kernel, distance_labelling, diffops
 from codpy.utils.data_conversion import get_matrix, get_data
 
 ########################################### Partial Differential tools #########################################
@@ -43,7 +43,8 @@ def CrankNicolson(A, dt = 0., u0=[], **kwargs):
         
         >>> u_next = CrankNicolson(A, dt, u0)
     """
-    kernel.init(**kwargs)
+    
+    _kernel.init(**kwargs)
     theta = kwargs.get('theta',0.5)
     return cd.alg.CrankNicolson(get_matrix(A),dt,get_matrix(u0),theta)
 

@@ -12,7 +12,7 @@ from codpy.utils.data_conversion import get_matrix
 from codpy.utils.data_processing import lexicographical_permutation
 from codpy.utils.data_processing import column_selector
 from codpy.utils.file import save_to_file
-from codpy.src.core import kernel_setters
+from codpy.src.core import _kernel_setters
 from codpy.utils.metrics import get_relative_mean_squared_error
 from codpy.utils.clustering_utils import graphical_cluster_utilities, add_confusion_matrix
 from codpy.utils.graphical import compare_plot_lists, multi_plot
@@ -191,7 +191,7 @@ class data_predictor(abc.ABC):
     
     def __init__(self): pass
     def __init__(self,**kwargs):
-        self.set_kernel = kwargs.get('set_kernel',kernel_setters.kernel_helper(kernel_setters.set_tensornorm_kernel, 2,1e-8 ,map_setters.set_unitcube_map))
+        self.set_kernel = kwargs.get('set_kernel',_kernel_setters.kernel_helper(_kernel_setters.set_tensornorm_kernel, 2,1e-8 ,map_setters.set_unitcube_map))
         self.set_kernel()
         self.accuracy_score_function = kwargs.get('accuracy_score_function',get_relative_mean_squared_error)
         self.name = kwargs.get('name','data_predictor')

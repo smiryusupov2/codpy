@@ -52,14 +52,6 @@ utils.file module
    :undoc-members:
    :show-inheritance:
 
-utils.ftp module
-----------------
-
-.. automodule:: utils.ftp
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 utils.graphical module
 ----------------------
 

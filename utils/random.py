@@ -37,12 +37,8 @@ def random_select(x,xmax,seed=0):
     else:
         raise TypeError("unknown type "+ str(test) + " in random_select")
 
-def random_select_interface(**kwargs):
+def random_select_interface(x, xmaxlabel = None, seedlabel = 42):
     # print('######','sharp_discrepancy','######')
-    x = kwargs.get('x',None)
-    xmaxlabel,seedlabel = kwargs.get('xmaxlabel',None),kwargs.get('seedlabel',None)
     if xmaxlabel is None or x is None: return x
-    if seedlabel is None: seed = 42
-    else: seed = kwargs[seedlabel]
-    return random_select(x=x,xmax = kwargs[xmaxlabel],seed=seed)
+    return random_select(x=x,xmax = xmaxlabel,seed=seedlabel)
 

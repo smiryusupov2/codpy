@@ -7,7 +7,7 @@ import codpypyd as cd
 from .metrics import *
 from codpy.utils.selection import column_selector, select_constant_columns
 from codpy.src.core import op
-from codpy.utils.data_conversion import get_matrix, get_data, my_len
+from codpy.utils.data_conversion import get_data, my_len
 
 
 def get_bound_box(mat: np.ndarray,coeff = None) -> np.ndarray:
@@ -17,19 +17,20 @@ def get_bound_box(mat: np.ndarray,coeff = None) -> np.ndarray:
     This function calculates the minimum and maximum values along each dimension (column) of the input matrix.
     Optionally, it can scale the bounding box by a specified coefficient around the mean value.
 
-    Parameters:
-    mat (np.ndarray): A 2D NumPy array for which the bounding box is to be computed.
-    coeff (float, optional): A scaling coefficient for the bounding box. If provided, the bounding box is
-                             scaled around its mean value. Default is None.
+    Args:
+        mat (np.ndarray): A 2D NumPy array for which the bounding box is to be computed.
+        coeff (float, optional): A scaling coefficient for the bounding box. If provided, the bounding box is
+                                scaled around its mean value. Default is None.
 
     Returns:
-    np.ndarray: A 2D NumPy array where the first row contains the minimum values and the second row contains
-                the maximum values for each dimension (column) of the input matrix.
+        np.ndarray: A 2D NumPy array where the first row contains the minimum values and the second row contains
+                    the maximum values for each dimension (column) of the input matrix.
 
     Example:
-    mat = np.array([[1, 2], [3, 4], [5, 6]])
-    bounding_box = get_bound_box(mat)
-    # bounding_box will be array([[1, 2], [5, 6]])
+        
+        >>> mat = np.array([[1, 2], [3, 4], [5, 6]])
+        >>> bounding_box = get_bound_box(mat)
+        # bounding_box will be array([[1, 2], [5, 6]])
     """
     out = np.array([(min(mat[:,d]), max(mat[:,d])) for d in range(mat.shape[1]) ]).T
     if coeff is not None:
@@ -44,19 +45,22 @@ def bound_box(mat: np.ndarray,bounding_box: np.ndarray) -> np.ndarray:
     This function modifies the input matrix such that each element is constrained within the limits defined by
     the provided bounding box. Each dimension (column) of the matrix is bounded individually.
 
-    Parameters:
-    mat (np.ndarray): A 2D NumPy array to which the bounding box constraints are to be applied.
-    bounding_box (np.ndarray): A 2D NumPy array representing the bounding box, where the first row contains 
-                               the minimum values and the second row contains the maximum values for each dimension.
+    Args:
+        mat (np.ndarray): A 2D NumPy array to which the bounding box constraints are to be applied.
+        bounding_box (np.ndarray): A 2D NumPy array representing the bounding box, where the first row contains 
+                                the minimum values and the second row contains the maximum values for each dimension.
 
     Returns:
-    np.ndarray: The modified matrix with each element constrained within the bounding box.
+        np.ndarray: The modified matrix with each element constrained within the bounding box.
 
     Example:
-    mat = np.array([[0, 7], [2, 5], [6, 1]])
-    bounding_box = np.array([[1, 2], [5, 6]])
-    constrained_mat = bound_box(mat, bounding_box)
-    # constrained_mat will be array([[1, 6], [2, 5], [5, 2]])
+        
+        >>> mat = np.array([[0, 7], [2, 5], [6, 1]])
+        >>> bounding_box = np.array([[1, 2], [5, 6]])
+        >>> constrained_mat = bound_box(mat, bounding_box)
+        
+        constrained_mat will be 
+        array([[1, 6], [2, 5], [5, 2]])
     """
     out = mat.copy()
     def helper(n,d):
@@ -80,23 +84,25 @@ def variable_selector(**params) -> dict:
     It iteratively evaluates the impact of adding each variable on the prediction error, retaining those 
     that contribute to its minimization. This method looks for local minima.
 
-    Parameters:
-    **params: Keyword arguments including:
-        x, y, z (pd.DataFrame): DataFrames representing the input data.
-        fx, fz (np.ndarray): Arrays representing function values associated with x and z.
-        error_fun (callable, optional): The function used to compute the error. Default is `get_mean_squared_error`.
-        predictor (callable, optional): The prediction function whose error is to be minimized. Default is `op.projection`.
-        variables_selector_csv (str, optional): Path to save a CSV file with selected variables and errors. Default is an empty string.
-        selector_cols (list, optional): List of column names to be used for selection. Default is an empty list.
-        cols_drop (list, optional): List of column names to be excluded from the selection. Default is an empty list.
-        keep_columns (list, optional): List of column names that must always be kept. Default is an empty list.
+    Args:
+        **params: Keyword arguments including:
+            x, y, z (pd.DataFrame): DataFrames representing the input data.
+            fx, fz (np.ndarray): Arrays representing function values associated with x and z.
+            error_fun (callable, optional): The function used to compute the error. Default is `get_mean_squared_error`.
+            predictor (callable, optional): The prediction function whose error is to be minimized. Default is `op.projection`.
+            variables_selector_csv (str, optional): Path to save a CSV file with selected variables and errors. Default is an empty string.
+            selector_cols (list, optional): List of column names to be used for selection. Default is an empty list.
+            cols_drop (list, optional): List of column names to be excluded from the selection. Default is an empty list.
+            keep_columns (list, optional): List of column names that must always be kept. Default is an empty list.
 
     Returns:
-    dict: A list of column names that are selected as the most relevant for minimizing the prediction error.
+        dict: A list of column names that are selected as the most relevant for minimizing the prediction error.
 
     Example:
-    # Example usage
-    selected_cols = variable_selector(x=df_x, y=df_y, z=df_z, fx=array_fx, fz=array_fz, predictor=my_predictor_function)
+    
+        Example usage
+
+        >>> selected_cols = variable_selector(x=df_x, y=df_y, z=df_z, fx=array_fx, fz=array_fz, predictor=my_predictor_function)
     """
     kwargs = params.copy()
     x,y,z,fx,fz = kwargs['x'],kwargs['y'],kwargs['z'],kwargs['fx'],kwargs['fz']
@@ -168,28 +174,31 @@ def lexicographical_permutation(x,fx=[],**kwargs) -> tuple:
     `fx` array is provided, it is sorted in the same order as `x`. The function returns the sorted arrays along
     with an index array that describes the new ordering.
 
-    Parameters:
-    x (np.ndarray): A one-dimensional or two-dimensional NumPy array to be sorted.
-    fx (np.ndarray or list, optional): An array or list with the same length as `x` that will be reordered 
-        in the same way as `x`. Default is an empty list.
-    **kwargs: Additional keyword arguments. Can include:
-        - indexfx (int): The column index of `x` to be used for sorting if `x` is a 2D array. 
-                         Default is 0 (the first column).
+    Args:
+        x (np.ndarray): A one-dimensional or two-dimensional NumPy array to be sorted.
+        fx (np.ndarray or list, optional): An array or list with the same length as `x` that will be reordered 
+            in the same way as `x`. Default is an empty list.
+        **kwargs: Additional keyword arguments. Can include:
+            - indexfx (int): The column index of `x` to be used for sorting if `x` is a 2D array. 
+                            Default is 0 (the first column).
 
     Returns:
-    tuple: A tuple containing the sorted `x` array, optionally the reordered `fx`, and the index array 
-           that represents the new order. If `fx` is not provided or its length does not match `x`, 
-           the function returns only the sorted `x` and the index array.
+        tuple: A tuple containing the sorted `x` array, optionally the reordered `fx`, and the index array 
+            that represents the new order. If `fx` is not provided or its length does not match `x`, 
+            the function returns only the sorted `x` and the index array.
 
     Example:
-    # Sorting a 1D array
-    x = np.array([3, 1, 2])
-    x_sorted, index_array = lexicographical_permutation(x)
+    
+        Sorting a 1D array
+        
+        >>> x = np.array([3, 1, 2])
+        >>> x_sorted, index_array = lexicographical_permutation(x)
 
-    # Sorting a 2D array along with a 1D array `fx`
-    x_2d = np.array([[3, 'a'], [1, 'b'], [2, 'c']])
-    fx = np.array([30, 10, 20])
-    x_sorted, fx_sorted, index_array = lexicographical_permutation(x_2d, fx, indexfx=0)
+        Sorting a 2D array along with a 1D array `fx`
+        
+        >>> x_2d = np.array([[3, 'a'], [1, 'b'], [2, 'c']])
+        >>> fx = np.array([30, 10, 20])
+        >>> x_sorted, fx_sorted, index_array = lexicographical_permutation(x_2d, fx, indexfx=0)
     """
     # x = get_data(x)
     if x.ndim==1: index_array = np.argsort(x)
@@ -233,24 +242,27 @@ def unity_partition(fx: np.ndarray, unique_values = []) -> np.ndarray:
     one unique value from `fx`. Each row in the output matrix represents an element in `fx`, 
     with a '1' in the column corresponding to its value and '0's elsewhere.
 
-    Parameters:
-    fx (np.ndarray): A NumPy array containing the values to be partitioned.
-    unique_values (list, optional): A list of unique values to be used for partitioning. 
-                                    If not provided, the unique values will be determined from `fx`.
-                                    Default is an empty list.
+    Args:
+        fx (np.ndarray): A NumPy array containing the values to be partitioned.
+        unique_values (list, optional): A list of unique values to be used for partitioning. 
+                                        If not provided, the unique values will be determined from `fx`.
+                                        Default is an empty list.
 
     Returns:
-    np.ndarray: A 2D NumPy array where each row corresponds to an element in `fx` and each column 
-                corresponds to a unique value in `fx`. The entries in the matrix are '1' where the 
-                row's original value matches the column's unique value, and '0' otherwise.
+        np.ndarray: A 2D NumPy array where each row corresponds to an element in `fx` and each column 
+                    corresponds to a unique value in `fx`. The entries in the matrix are '1' where the 
+                    row's original value matches the column's unique value, and '0' otherwise.
 
     Example:
-    fx = np.array([1, 2, 1, 3])
-    partitioned_fx = unity_partition(fx)
-    # This will return array([[1., 0., 0.],
-                             [0., 1., 0.],
-                             [1., 0., 0.],
-                             [0., 0., 1.]])
+        
+        >>> fx = np.array([1, 2, 1, 3])
+        >>> partitioned_fx = unity_partition(fx)
+        
+        This will return 
+        array([[1., 0., 0.],
+                [0., 1., 0.],
+                [1., 0., 0.],
+                [0., 0., 1.]])
 
     Note:
     This function is typically used for categorical data encoding in machine learning and data analysis tasks.

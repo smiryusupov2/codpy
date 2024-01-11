@@ -1,22 +1,213 @@
 import config
-from codpy.src.sampling import kernel_density_estimator
-from codpy.src.algs import Denoiser, VanDerMonde
-from codpy.src.pde import CrankNicolson, taylor_expansion
-from codpy.src.permutation import lsap
-from codpy.utils.interpolation import interpolate1D
-from codpy.utils.selection import column_selector
-from codpy.utils.data_conversion import get_data
-from codpy.utils.data_processing import variable_selector, lexicographical_permutation, unity_partition
-from codpy.utils.parallel import parallel_task
-from codpy.utils.metrics import get_mean_squared_error
-from codpy.utils.random import random_select
-from codpy.utils.scenarios import scenario_generator
-from codpy.utils.graphical import multi_plot
-from codpy.utils.ftp import FTP_connector
-from codpy.utils.dictionary import declare_cast
-from codpy.utils.file import save_to_file
-from codpy.utils.dataframe import dataframe_discrepancy
-from codpy.utils.clustering_utils import plot_confusion_matrix
-from codpy.utils.utils import softmaxindice
+from src.core import op, diffops, distance_labelling, discrepancy, discrepancy_functional
+import numpy as np
+import scipy.stats as stats
+import numdifftools as nd
+import codpy as cd
+from math import pi, factorial
+from src.sampling import kernel_conditional_density_estimator, kernel_density_estimator, get_normals
+from src.permutation import lsap, scipy_lsap, reordering, encoder, decoder, match
+from utils.selection import column_selector
+import unittest
 
+def func(x, order = 1):
+    return 1/factorial(order) * x ** order
+
+
+
+def compute_hessian(x, fun):
+    x = np.atleast_2d(x)
+    Hess = np.zeros((x.shape[0], x.shape[1], x.shape[1])) 
+
+    for i, xi in enumerate(x):
+        hessian_func = nd.Hessian(fun)
+        Hess[i] = hessian_func(xi)
+
+    return Hess
+
+def test_extrapolation_linear(func, decimal = 3):
+    x = np.random.randn(100, 1)
+    z = np.random.randn(100, 1)
+    fx =func(x)
+    fz = func(z)
+    
+    f_z = op.extrapolation(x, z, fx, kernel_fun="linear", map=None)
+
+    np.testing.assert_almost_equal(f_z, fz, decimal=decimal)
+
+def test_denoiser(func, decimal = 3):
+    x = np.random.randn(100, 1)
+    z = np.random.randn(100, 1)
+    fx =func(x)
+    fz = func(z)
+    f_z_den = op.denoiser(x,z,fx, kernel_fun = "maternnorm", map = "standardmean")
+
+    np.testing.assert_almost_equal(fz, f_z_den, decimal=decimal)
+
+def test_norm(func, decimal = 3):
+    x = np.random.randn(100, 1)
+    z = np.random.randn(100, 1)
+    fx =func(x)
+    norm_ =  op.norm(x,x,x,fx, kernel_fun="linear", map=None, rescale=True)
+    alpha, residuals, rank, s = np.linalg.lstsq(x, fx, rcond=None)
+    alpha = np.squeeze(alpha) 
+    norm = alpha** 2
+    np.testing.assert_almost_equal(norm, norm_, decimal=decimal)
+
+def test_Kinv(func, decimal = 3):
+    x = np.random.randn(100, 1)
+    fx =func(x)
+    Kinv = op.Knm_inv(x,x,fx, kernel_fun="linear", map=None)
+    Kinv1 = np.linalg.solve(x.T @ x, fx.T).T
+
+    np.testing.assert_almost_equal(Kinv, Kinv1, decimal=decimal)
+
+def test_diff_matrix(decimal = 3):
+    x = np.random.randn(100, 1)
+    z = np.random.randn(100, 1)
+    DiffM = np.sum((x[:, np.newaxis, :] - z[np.newaxis, :, :]) ** 2, axis=2)
+    D = op.Dnm(x = x, y = z, distance = "norm22", kernel_fun="linear", map=None)
+    np.testing.assert_almost_equal(DiffM, D, decimal=decimal)
+
+
+def test_distance_labelling(decimal = 3):
+    x = np.random.randn(100, 1)
+    z = np.random.randn(100, 1)
+    ind = distance_labelling(x,z)
+    DiffM = np.sum((x[:, np.newaxis, :] - z[np.newaxis, :, :]) ** 2, axis=2)
+    ind2 = np.argmax(DiffM, axis = 1)
+    np.testing.assert_almost_equal(ind, ind2, decimal=decimal)
+
+def test_discrepancy(decimal = 0):
+    x = np.random.randn(100, 1)
+    z = np.random.randn(100, 1)
+    xx = x.dot(x.T)
+    zz = z.dot(z.T)
+    xz = x.dot(z.T)
+
+    MMD =  xx.mean() - 2 * xz.mean() + zz.mean()
+    disc = discrepancy(x,x,z, kernel_fun="linear", map=None)
+
+    np.testing.assert_almost_equal(disc, MMD, decimal=decimal)
+
+def test_lsap(decimal = 3):
+    cost_matrix = np.array([[4, 1, 3], [2, 0, 5], [3, 2, 2]])
+    lsap1 = lsap(cost_matrix)
+    lsap2 = scipy_lsap(cost_matrix)
+
+    np.testing.assert_almost_equal(lsap2, lsap1, decimal=decimal)
+
+def test_encoder_decoder(alpha=0.05):
+    x = np.random.randn(100, 1)
+    z = np.random.rand(100, 1)
+    enc = encoder(x,z)
+    dec = decoder(enc)
+    decoded_x = dec(z)
+
+    # Flatten arrays for KS test (KS test requires 1D arrays)
+    x_flattened = x.flatten()
+    decoded_x_flattened = decoded_x.flatten()
+
+    # Perform KS test
+    ks_statistic, p_value = stats.ks_2samp(x_flattened, decoded_x_flattened)
+
+    # Check if p-value is significant
+    assert p_value > alpha, f"KS test failed with p-value {p_value}. The distributions of x and decoded_x may be different."
+
+def test_match(alpha=0.05):
+    x = np.random.randn(1000, 1)
+    matched_x = match(x, Ny = 300)
+
+    # Flatten arrays for KS test (KS test requires 1D arrays)
+    x_flattened = x.flatten()
+    decoded_x_flattened = matched_x.flatten()
+
+    # Perform KS test
+    _, p_value = stats.ks_2samp(x_flattened, decoded_x_flattened)
+
+    # Check if p-value is significant
+    assert p_value > alpha, f"KS test failed with p-value {p_value}. The distributions of x and decoded_x may be different."
+
+
+def test_nabla(func, decimal = 3):
+    x = np.random.randn(100, 1)
+    z = np.random.randn(100, 1)
+    fx = func(x, order = 1)
+    _nabla = diffops.nabla(x,x,z,fx,kernel_fun="linear", map=None)
+    np.testing.assert_almost_equal(_nabla, 1, decimal=decimal)
+
+def test_nablaTnabla(func, decimal = 3):
+    x = np.random.randn(100, 1)
+    z = np.random.randn(100, 1)
+    fx = func(x, order = 2)
+    _nabla = diffops.nabla(x,x,z,fx,kernel_fun="linear", map=None)
+    _nabla1 = diffops.nablaT(x,x,z,fz = _nabla,kernel_fun="linear", map=None)
+    _nablaTnabla = diffops.nablaT_nabla(x,x,fx,kernel_fun="linear", map=None)
+    np.testing.assert_almost_equal(_nablaTnabla, _nabla1, decimal=decimal)
+
+def test_LerayT(func, decimal = 3):
+    x = np.random.randn(100, 1)
+    z = np.random.randn(100, 1)
+    fx = func(x, order = 2)
+    _nabla = diffops.nabla(x,x,z,fx,kernel_fun="linear", map=None)
+    _nabla_inv = diffops.nabla_inv(x,x,z,fz = _nabla, fx = fx,kernel_fun="linear", map=None)
+    _LerayT_ = diffops.nabla(x,x,z,fx = _nabla_inv,kernel_fun="linear", map=None)
+    _LerayT = diffops.Leray_T(x,x,fx = _nabla,kernel_fun="linear", map=None)
+    np.testing.assert_almost_equal(_LerayT_, _LerayT, decimal=decimal)
+
+
+def test_Leray(func, decimal = 3):
+    x = np.random.randn(100, 1)
+    z = np.random.randn(100, 1)
+    fx = func(x, order = 2)
+    # fz = func(z, order = 2)
+    _nabla = diffops.nabla(x,x,z,fx,kernel_fun="linear", map=None)
+    _Leray_fz = _nabla - diffops.nabla(x=x,y=x,z=z,fx=diffops.nabla_inv(x=x,y=x,z=z,
+                    fz= _nabla,kernel_fun="gaussian", map="standardmin"), kernel_fun="linear", map=None)
+    _Leray = diffops.Leray(x,x,fx = _nabla,kernel_fun="linear", map=None)
+    np.testing.assert_almost_equal(_Leray_fz, _Leray, decimal=decimal)
+
+def test_get_normals(decimal = 2):
+    normals = np.var(get_normals(100,100))
+    np.testing.assert_almost_equal(normals, 1, decimal=decimal)
+
+test_extrapolation_linear(func = func)
+test_norm(func, decimal = 3)
+test_diff_matrix(decimal = 3)
+test_denoiser(func=func)
+test_Kinv(func=func)
+test_discrepancy(decimal = 0)
+test_distance_labelling()
+
+test_nabla(func = func, decimal = 3)
+test_nablaTnabla(func = func)
+test_LerayT(func=func)
+test_Leray(func=func)
+
+test_lsap(decimal = 3)
+test_encoder_decoder()
+test_match()
+test_get_normals(decimal=2)
+
+
+x = np.random.randn(100, 1)
+z = np.random.randn(100, 1)
+fx = func(x)
+fz = func(z)
+
+# alpha = op.coefficients(x,x,fx, kernel_fun="linear", map = None)
+# #ker_den = kernel_density_estimator(x = x, y = z)
+# data = np.random.multivariate_normal([0, 0], [[1, 0.5], [0.5, 1]], 500)
+# xx, yy = data.T
+# #ker_cor_den = kernel_conditional_density_estimator(x_vals=x_vals, y_vals=y_vals, x_data=xx, y_data=yy)
+
+
+disc_func = discrepancy_functional(x, fx, kernel_fun="linear", map=None).eval(x,z, fz, kernel_fun="linear", map=None)
+
+xx, zz, perm = reordering(x,z)
+
+_nablaTnabla_inv = diffops.nablaT_nabla_inv(x,x,fx,kernel_fun="linear", map=None)
+_hessian = diffops.hessian(x,x,fx,kernel_fun="linear", map=None).squeeze().squeeze().squeeze()
+_hessian1 = compute_hessian(x, func).squeeze().squeeze()
+print(np.linalg.norm(_hessian - _hessian1))
 pass

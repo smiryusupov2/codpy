@@ -58,5 +58,5 @@ autodoc_default_options = {
     'undoc-members': True,  # This line tells Sphinx to skip undocumented members
     'private-members': False,  # This line tells Sphinx to skip private members
     'special-members': '__init__',
-    'exclude-members': '__weakref__'
-}
+    'exclude-members': '__weakref__, __init__'
+    }

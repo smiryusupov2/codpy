@@ -1,8 +1,11 @@
 import pandas as pd
+import numpy as np
 import codpydll
 import codpypyd as cd
-from codpy.src.core import op, kernel, kernel_setters
+from codpy.src.core import op
 from codpy.utils.metrics import get_L2_error, get_classification_error
+from codpy.utils.utils import softmaxindice
+from codpy.utils.data_processing import hot_encoder
 import errno
 import os
 
@@ -34,29 +37,24 @@ def get_dataframe_error(test_values:pd.DataFrame,extrapolated_values:pd.DataFram
     num_error += get_classification_error(test_values[cat_cols].to_numpy(),extrapolated_values[cat_cols].to_numpy())
     return num_error
 
-def dataframe_discrepancy(df_x,df_z, set_codpy_kernel = None,rescale=True, max = 2000):
-    if (set_codpy_kernel): set_codpy_kernel()
+def dataframe_discrepancy(df_x,df_z, kernel_fun = None, rescale=True, max = 2000):
     x,z = format_df_xz_to_np(df_x,df_z)
-    if (rescale): kernel.rescale(x,z)
-    return cd.tools.discrepancy_error(x,z)
+    return op.discrepancy_error(x = x,z = z, kernel_fun=kernel_fun, rescale=rescale, rescale_params = {'max':max})
 
-def dataframe_norm_projection(df_x:pd.DataFrame,df_z:pd.DataFrame,df_fx:pd.DataFrame, set_codpy_kernel = None, rescale=True, max = 2000):
-    if (set_codpy_kernel): set_codpy_kernel()
+def dataframe_norm_projection(df_x:pd.DataFrame,df_z:pd.DataFrame,df_fx:pd.DataFrame, kernel_fun = None, rescale=True, max = 2000):
     (x,z,fx,fx_columns) = format_df_to_np(df_x,df_z,df_fx)
-    if (rescale): kernel.rescale(x,z)
-    return cd.tools.norm_projection(x,x,z,fx)
+    return op.norm_projection(x,z,fx, kernel_fun=kernel_fun, rescale=rescale, rescale_params = {'max':max})
 
 
 
-def dataframe_extrapolation(df_x:pd.DataFrame,df_z:pd.DataFrame,df_fx:pd.DataFrame, set_codpy_kernel = kernel_setters.set_gaussian_kernel, rescale=True, max = 2000):
-    set_codpy_kernel()
+def dataframe_extrapolation(df_x:pd.DataFrame,df_z:pd.DataFrame,df_fx:pd.DataFrame, kernel_fun = "gaussian", rescale=True, max = 2000):
     (x,z,fx,fx_columns) = format_df_to_np(df_x,df_z,df_fx)
     if len(x) < max:
-        fz = op.extrapolation(x=x,fx=fx,z=z,set_codpy_kernel=set_codpy_kernel,rescale=rescale)
+        fz = op.extrapolation(x=x,fx=fx,z=z,kernel_fun=kernel_fun,rescale=rescale)
     else:
         index  = np.random.choice(x.shape[0], size=max,replace = False)
         y = x[index]
-        fz = op.projection(x=x,fx=fx,z=z,set_codpy_kernel=set_codpy_kernel,rescale=rescale)
+        fz = op.projection(x=x,fx=fx,z=z,kernel_fun=kernel_fun,rescale=rescale)
 
 
     df_fz_format = pd.DataFrame(data = fz, columns=fx_columns)
@@ -76,11 +74,11 @@ def dataframe_extrapolation(df_x:pd.DataFrame,df_z:pd.DataFrame,df_fx:pd.DataFra
         out[cat] = values
     return out
 
-def fun_helper_dataframe_extrapolation(**kwargs):
-    set_codpy_kernel= fun_helper_base(**kwargs)
-    df_x,df_fx, df_z, df_fz = kwargs['df_x'],kwargs['df_fx'],kwargs['df_z'],kwargs['df_fz']
-    out = dataframe_extrapolation(df_x,df_z,df_fx, set_codpy_kernel=set_codpy_kernel)
-    return get_dataframe_error(out,df_fz)
+# def fun_helper_dataframe_extrapolation(**kwargs):
+#     set_codpy_kernel= fun_helper_base(**kwargs)
+#     df_x,df_fx, df_z, df_fz = kwargs['df_x'],kwargs['df_fx'],kwargs['df_z'],kwargs['df_fz']
+#     out = dataframe_extrapolation(df_x,df_z,df_fx, set_codpy_kernel=set_codpy_kernel)
+#     return get_dataframe_error(out,df_fz)
 
 def df_intersect_concat(df_x:pd.DataFrame,df_z:pd.DataFrame):
     cols = list( set(df_x.columns) & set(df_z.columns))
@@ -108,32 +106,32 @@ def format_df_to_np(df_x:pd.DataFrame,df_z:pd.DataFrame,df_fx:pd.DataFrame):
 ###################### wrappers for dataframes
 
 
-def fun_extrapolation(x,fx,y,fy,z,fz, set_codpy_kernel = None, rescale = False):
-    debug = op.projection(x = x,y = x,z = z, fx = fx,set_codpy_kernel=set_codpy_kernel,rescale = rescale)
+def fun_extrapolation(x,fx,y,fy,z,fz, kernel_fun = None, rescale = False):
+    debug = op.projection(x = x,y = x,z = z, fx = fx,kernel_fun=kernel_fun,rescale = rescale)
     return get_classification_error(softmaxindice(fz),softmaxindice(debug))
-def fun_discrepancy(x,fx,y,fy,z,fz, set_codpy_kernel = None, rescale = False):
-    return 1.-op.discrepancy(x=x,z=z,set_codpy_kernel = set_codpy_kernel,rescale = rescale)
-def fun_norm(x,fx,y,fy,z,fz, set_codpy_kernel = None, rescale = True):
-    return op.norm(x=x,y=x,z=x,fx=fx,set_codpy_kernel = set_codpy_kernel,rescale = rescale)
-def fun_projection(x,fx, y,fy,z,fz, set_codpy_kernel = None, rescale = True):
-    debug = op.projection(x = x,y = y,z = z, fx = fx,set_codpy_kernel=set_codpy_kernel,rescale = rescale)
+def fun_discrepancy(x,fx,y,fy,z,fz, kernel_fun=None, rescale = False):
+    return 1.-op.discrepancy(x=x,z=z,kernel_fun=kernel_fun,rescale = rescale)
+def fun_norm(x,fx,y,fy,z,fz, kernel_fun = None, rescale = True):
+    return op.norm(x=x,y=x,z=x,fx=fx,kernel_fun = kernel_fun,rescale = rescale)
+def fun_projection(x,fx, y,fy,z,fz, kernel_fun = None, rescale = True):
+    debug = op.projection(x = x,y = y,z = z, fx = fx,kernel_fun=kernel_fun,rescale = rescale)
     return get_classification_error(softmaxindice(fz),softmaxindice(debug))
 
-def fun_helper_base(**kwargs):
-    set_codpy_kernel = kernel_setters.set_gaussian_kernel
-    if 'set_codpy_kernel' in kwargs:
-            set_codpy_kernel = kwargs['set_codpy_kernel']
-    return set_codpy_kernel
+# def fun_helper_base(**kwargs):
+#     set_codpy_kernel = kernel_setters.set_gaussian_kernel
+#     if 'set_codpy_kernel' in kwargs:
+#             set_codpy_kernel = kwargs['set_codpy_kernel']
+#     return set_codpy_kernel
 
 
-def fun_helper_projection(**kwargs):
-    set_codpy_kernel_ = fun_helper_base(**kwargs)
-    x_,fx_, y_, fy_, z_, fz_ = kwargs['x'],kwargs['fx'],kwargs['y'],kwargs['fy'],kwargs['z'],kwargs['fz']
-    out = fun_projection(x_,fx_,y_,fy_,z_,fz_, set_codpy_kernel = set_codpy_kernel)
-    return out
+# def fun_helper_projection(**kwargs):
+#     set_codpy_kernel_ = fun_helper_base(**kwargs)
+#     x_,fx_, y_, fy_, z_, fz_ = kwargs['x'],kwargs['fx'],kwargs['y'],kwargs['fy'],kwargs['z'],kwargs['fz']
+#     out = fun_projection(x_,fx_,y_,fy_,z_,fz_, set_codpy_kernel = set_codpy_kernel)
+#     return out
 
-def fun_helper_extrapolation(**kwargs):
-    set_codpy_kernel = fun_helper_base(**kwargs)
-    x_,fx_, z_,fz_ = kwargs['x'],kwargs['fx'],kwargs['z'],kwargs['fz']
-    out = fun_extrapolation(x_,fx_,x_,fx_,z_,fz_,set_codpy_kernel = set_codpy_kernel)
-    return out
+# def fun_helper_extrapolation(**kwargs):
+#     set_codpy_kernel = fun_helper_base(**kwargs)
+#     x_,fx_, z_,fz_ = kwargs['x'],kwargs['fx'],kwargs['z'],kwargs['fz']
+#     out = fun_extrapolation(x_,fx_,x_,fx_,z_,fz_,set_codpy_kernel = set_codpy_kernel)
+#     return out
