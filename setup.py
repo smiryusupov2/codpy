@@ -47,18 +47,8 @@ setup(
     description=DESCRIPTION,
     license=LICENSE,
     url=URL,
-    # package_dir={'codpy': 'src'},
-    # packages= find_packages(), #['codpy.src'] + ['codpy.src' + pkg for pkg in find_packages('src')],
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
-    # package_dir={'codpy': 'src/codpy', 'codpy.utils': 'utils'},
-    # # Define both codpy and utils packages
-    # packages=['codpy', 'codpy.utils'] + ['codpy.' + p for p in find_packages(where='src/codpy')],
-
-    # package_dir={'codpy': 'codpy'},
-    # py_modules=['utils'],
-    # package_dir={'codpy': 'src'},
-    # packages=['codpy'] + ['codpy.' + p for p in find_packages(where='src')],
     include_package_data=True,
     package_data={'': extra_files},
     classifiers=[
@@ -70,9 +60,12 @@ setup(
         'Topic :: Scientific/Engineering',
         'Operating System :: Microsoft :: Windows :: Windows 10'
     ],
-    install_requires=['codpydll==0.1.1','google-api-python-client==2.63.0','oauth2client==4.1.3','pybind11==2.10.0',
-                      'pandas==1.5.0','numpy','matplotlib==3.6.0','mkl==2022.2.0','scikit-learn==1.1.2','scipy==1.9.1',
-                      'seaborn==0.12.0', 'jupyter==1.0.0','xarray==2022.9.0'],
+    install_requires=['codpydll==0.1.1','pandas==1.5.0','numpy','mkl==2022.2.0',
+                      'scikit-learn==1.1.2','scipy==1.9.1',
+                      'xarray==2022.9.0'],
+    # install_requires=['codpydll==0.1.1','google-api-python-client==2.63.0','oauth2client==4.1.3','pybind11==2.10.0',
+    #                   'pandas==1.5.0','numpy','matplotlib==3.6.0','mkl==2022.2.0','scikit-learn==1.1.2','scipy==1.9.1',
+    #                   'seaborn==0.12.0', 'jupyter==1.0.0','xarray==2022.9.0'],
     long_description=long_description,
     long_description_content_type='text/markdown'
   #  extras_require={
