@@ -2,7 +2,7 @@ import multiprocessing as mp
 import concurrent.futures
 from tqdm import tqdm
 import time
-from codpy.utils.scenarios import execute_function_list
+# from codpy.utils.scenarios import execute_function_list
 
 
 ## multiprocessing utilities# 
@@ -31,11 +31,11 @@ def elapsed_time(fun,msg="elapsed_time in seconds:",**kwargs):
     print(msg,time.time()-start)
     return out
 
-def execution_time(**kwargs):
-    start_time = time.time()
-    out = execute_function_list(**kwargs)
-    msg = 'time in seconds:'
-    if 'msg' in kwargs:
-        msg = kwargs['msg']
-    print("*********execution time***********",msg,time.time() - start_time)
-    return out
+# def execution_time(**kwargs):
+#     start_time = time.time()
+#     out = execute_function_list(**kwargs)
+#     msg = 'time in seconds:'
+#     if 'msg' in kwargs:
+#         msg = kwargs['msg']
+#     print("*********execution time***********",msg,time.time() - start_time)
+#     return out
