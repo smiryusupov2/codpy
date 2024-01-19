@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import codpydll
 import codpypyd as cd
-from codpy.src.core import op
+from codpy.core import op
 from codpy.utils.metrics import get_L2_error, get_classification_error
 from codpy.utils.utils import softmaxindice
 from codpy.utils.data_processing import hot_encoder

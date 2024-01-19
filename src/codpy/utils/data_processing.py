@@ -1,5 +1,3 @@
-import functools
-import operator
 import pandas as pd
 import numpy as np
 import codpydll
@@ -276,10 +274,4 @@ def unity_partition(fx: np.ndarray, unique_values = []) -> np.ndarray:
         indices = np.where(fx == v)
         out[indices[0],d]=1.
         d=d+1
-    #print(out)
     return out
-
-
-# def hot_label(mat, label=None):
-#     #print(mat[0:5])
-#     return np.argmax(get_matrix(mat), axis)
