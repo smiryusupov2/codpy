@@ -60,12 +60,9 @@ setup(
         'Topic :: Scientific/Engineering',
         'Operating System :: Microsoft :: Windows :: Windows 10'
     ],
-    install_requires=['codpydll==0.1.1','pandas==1.5.0','numpy','mkl==2022.2.0',
-                      'scikit-learn==1.1.2','scipy==1.9.1',
+    install_requires=['codpydll==0.1.1','pandas','numpy','mkl==2022.2.0',
+                      'scikit-learn','scipy',
                       'xarray==2022.9.0'],
-    # install_requires=['codpydll==0.1.1','google-api-python-client==2.63.0','oauth2client==4.1.3','pybind11==2.10.0',
-    #                   'pandas==1.5.0','numpy','matplotlib==3.6.0','mkl==2022.2.0','scikit-learn==1.1.2','scipy==1.9.1',
-    #                   'seaborn==0.12.0', 'jupyter==1.0.0','xarray==2022.9.0'],
     long_description=long_description,
     long_description_content_type='text/markdown'
   #  extras_require={
