@@ -1,6 +1,4 @@
-﻿#! /usr/bin/env python
-#
-# Copyright (C) 
+﻿# Copyright (C) 
 
 from setuptools import setup, Extension, Command
 from setuptools import setup, find_packages
