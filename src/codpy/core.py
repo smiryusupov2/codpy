@@ -12,15 +12,6 @@ from codpy.utils.utils import pad_axis, softmaxindice, softminindice
 import warnings
 
 
-# def _get_codpy_param():
-#     return  {'rescale_kernel':{'max': 1000, 'seed':42},
-#     'sharp_discrepancy':{'max': 1000, 'seed':42},
-#     'discrepancy':{'max': 1000, 'seed':42},
-#     'validator_compute': ['accuracy_score','discrepancy_error','norm'],
-#     'set_codpy_kernel' : _kernel_setters.kernel_helper(_kernel_setters.set_tensornorm_kernel, 2,1e-8 ,_map_setters.set_unitcube_map),
-#     'rescale': False,
-#     }
-
 class _codpy_param_getter:
     def get_params(**kwargs) : return kwargs.get('codpy',{})
     def get_kernel_fun(**kwargs): return _codpy_param_getter.get_params(**kwargs)['set_kernel']
@@ -29,7 +20,8 @@ class _codpy_param_getter:
 class op:
     def projection(x, y, z, fx, kernel_fun: str = "tensornorm", map: str = "unitcube", 
                polynomial_order: int = 2, regularization: float = 1e-8, reg: np.array = [], 
-               rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, **kwargs):
+               rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
+               verbose = False,**kwargs):
         """
         Performs projection in kernel regression for efficient computation, targeting a lower sampling space.
 
@@ -140,7 +132,8 @@ class op:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
@@ -393,7 +386,7 @@ class op:
     
     def norm(x, y, z, fx, kernel_fun: str = "tensornorm", map: str = "unitcube", 
                    polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], 
-                   rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, **kwargs):
+                   rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False, **kwargs):
         """
         Calculate the kernel-induced norm based on the provided matrices.
 
@@ -469,7 +462,8 @@ class op:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
@@ -556,7 +550,7 @@ class op:
     def Knm(x, y, fx = None, Kinv : np.array = None, kernel_fun = "tensornorm", map = "unitcube", 
                    polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], 
                    rescale = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
-                   bandwidth = 1.0, **kwargs) -> np.ndarray:
+                   bandwidth = 1.0, verbose = False, **kwargs) -> np.ndarray:
         """
         Computes the kernel matrix induced by a positive definite (pd) kernel.
 
@@ -623,7 +617,8 @@ class op:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
@@ -653,7 +648,8 @@ class op:
     # @cache    
     def Knm_inv(x, y, fx, kernel_fun = "tensornorm", map = "unitcube", 
                    polynomial_order: int = 2, regularization: float = 1e-8, reg: np.ndarray = [], 
-                   rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42},  **kwargs):
+                   rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42},  
+                   verbose = False, **kwargs):
         """
         Args:
 
@@ -676,7 +672,8 @@ class op:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
@@ -685,7 +682,7 @@ class op:
     
     def Dnm(x, y, distance = None, kernel_fun = "tensornorm", map = "unitcube", 
                    polynomial_order=2, regularization: float = 1e-8, rescale = False, 
-                   rescale_params: dict = {'max': 1000, 'seed':42}, 
+                   rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False,
                    **kwargs) -> np.ndarray:
         """
         Computes a distance matrix induced by a positive definite (pd) kernel.
@@ -721,7 +718,8 @@ class op:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
@@ -732,12 +730,13 @@ class op:
     
     def discrepancy_error(x: np.array = None, z : np.array = None, disc_type="raw", 
                     kernel_fun = "tensornorm", map = "unitcube", polynomial_order=2, reg: float = 1e-8, rescale_params: dict = {'max': 2000, 'seed':42}, 
-                    rescale = False, **kwargs):
+                    rescale = False, verbose = False, **kwargs):
         params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x, x, x, **params)
         else:
             params['rescale'] = rescale
@@ -746,12 +745,13 @@ class op:
 
     def norm_projection(x: np.array = None, z: np.array = None, fx: np.array = None, kernel_fun: str = "tensornorm", map: str = "unitcube", 
                     polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], 
-                    rescale: bool = False, rescale_params: dict = {'max': 2000, 'seed':42}, **kwargs):
+                    rescale: bool = False, rescale_params: dict = {'max': 2000, 'seed':42}, verbose = False, **kwargs):
         params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,x,x, **params)
         else:
             params['rescale'] = rescale
@@ -922,7 +922,7 @@ class discrepancy_functional:
 class diffops:
     def nabla_Knm(x, y, kernel_fun = "tensornorm", map = "unitcube", 
                    polynomial_order=2, reg: float = 1e-8, rescale = False, 
-                   rescale_params: dict = {'max': 1000, 'seed':42}, **kwargs):
+                   rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False, **kwargs):
         """
         Args:
 
@@ -946,8 +946,9 @@ class diffops:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,z, **params)
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            _kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
             _kernel.init(**params)
@@ -955,7 +956,7 @@ class diffops:
 
     def nabla(x, y, z, fx, kernel_fun = "tensornorm", map = "unitcube", 
                    polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], rescale = False, 
-                   rescale_params: dict = {'max': 1000, 'seed':42}, **kwargs):
+                   rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False, **kwargs):
         """
         Compute the kernel-induced gradient of a function.
 
@@ -995,7 +996,8 @@ class diffops:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
@@ -1005,7 +1007,8 @@ class diffops:
     
     def nabla_inv(x, y, z, fz, kernel_fun:str = "tensornorm", map: str = "unitcube", 
                    polynomial_order:int = 2, regularization: float = 1e-8, reg: np.ndarray = [],
-                    rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, **kwargs):
+                    rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
+                    verbose = False, **kwargs):
         """
         Compute the inverse of the kernel-induced gradient operation.
 
@@ -1045,7 +1048,8 @@ class diffops:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
@@ -1054,7 +1058,8 @@ class diffops:
     
     def nablaT(x, y, z, fz, kernel_fun = "tensornorm", map = "unitcube", 
                    polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], 
-                   rescale = False, rescale_params: dict = {'max': 1000, 'seed':42},  **kwargs):
+                   rescale = False, rescale_params: dict = {'max': 1000, 'seed':42},  
+                   verbose = False, **kwargs):
         """
         Compute the divergence of a vector field using a kernel-induced method.
 
@@ -1097,7 +1102,8 @@ class diffops:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
@@ -1107,7 +1113,7 @@ class diffops:
     
     def nablaT_inv(x, y, z, fx, kernel_fun = "tensornorm", map = "unitcube", 
                    polynomial_order=2, reg: float = 1e-8, rescale = False, 
-                   rescale_params: dict = {'max': 1000, 'seed':42}, **kwargs):
+                   rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False, **kwargs):
         """
         Compute the inverse of the transposed gradient operation.
 
@@ -1147,7 +1153,8 @@ class diffops:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
@@ -1157,7 +1164,7 @@ class diffops:
     
     def nablaT_nabla(x, y, fx, kernel_fun = "tensornorm", map = "unitcube", 
                    polynomial_order=2, regularization: float = 1e-8, rescale = False, 
-                   rescale_params: dict = {'max': 1000, 'seed':42}, **kwargs):
+                   rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False, **kwargs):
         """
         Compute the kernel-induced discrete Laplace operator.
 
@@ -1203,7 +1210,8 @@ class diffops:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
@@ -1213,7 +1221,7 @@ class diffops:
     
     def nablaT_nabla_inv(x, y, fx, kernel_fun = "tensornorm", map = "unitcube", 
                    polynomial_order=2, regularization: float = 1e-8, rescale = False, rescale_params: dict = {'max': 1000, 'seed':42},
-                   **kwargs):
+                   verbose = False, **kwargs):
         """
         Args:
 
@@ -1240,7 +1248,8 @@ class diffops:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
@@ -1250,12 +1259,14 @@ class diffops:
     
     def Leray_T(x, y, fx, kernel_fun:str = "tensornorm", map:str = "unitcube", 
                    polynomial_order:int=2, regularization: float = 1e-8, 
-                   rescale:bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, **kwargs):
+                   rescale:bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
+                   verbose = False, **kwargs):
         params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
@@ -1264,7 +1275,8 @@ class diffops:
     
     def Leray(x, y, fx, kernel_fun:str = "tensornorm", map:str = "unitcube", 
                    polynomial_order:int=2, regularization: float = 1e-8, 
-                   rescale:bool = False, rescale_params: dict = {'max': 1000, 'seed':42},  **kwargs):
+                   rescale:bool = False, rescale_params: dict = {'max': 1000, 'seed':42},  
+                   verbose = False, **kwargs):
         """
         Compute the Leray operator for a given set of input matrices.
 
@@ -1288,7 +1300,8 @@ class diffops:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale

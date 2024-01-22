@@ -259,7 +259,8 @@ class encoder:
     """
     def __init__(self,y: np.ndarray,x: np.ndarray = None, Dx: int = None, permut: str='source', 
                  kernel_fun: str = "tensornorm", map: str = "unitcube", polynomial_order:int = 2, 
-                 regularization:float = 1e-8, rescale:bool = False, rescale_params: dict = {'max': 1000, 'seed':42}):
+                 regularization:float = 1e-8, rescale:bool = False, rescale_params: dict = {'max': 1000, 'seed':42},
+                 verbose = False):
         self.kernel_fun, self.map = kernel_fun, map
         y,x = column_selector(y),column_selector(x)
         if x is None:
@@ -275,7 +276,8 @@ class encoder:
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale

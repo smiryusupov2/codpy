@@ -8,13 +8,15 @@ import warnings
 
 class alg:
     def iso_probas_projection(x, fx, probas, fun_permutation = lexicographical_permutation, kernel_fun = None, map = None,
-                              polynomial_order = 2, regularization = 1e-8, rescale = False, rescale_params: dict = {'max': 1000, 'seed':42}, **kwargs):
+                              polynomial_order = 2, regularization = 1e-8, rescale = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
+                              verbose = False, **kwargs):
         # print('######','iso_probas_projection','######')
         params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescale_kernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+            if verbose:
+                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             _kernel.init(x,x,x, **params)
         else:
             params['rescale'] = rescale

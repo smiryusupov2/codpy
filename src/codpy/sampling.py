@@ -11,7 +11,8 @@ from codpy.utils.selection import column_selector
 from codpy.utils.random import random_select_interface
 
 def kernel_density_estimator(x, y, kernel_fun = "gaussian", map = None, 
-                                         bandwidth = 1.0, rescale = True, rescale_params: dict = {'max': 2000, 'seed':42}):
+                                         bandwidth = 1.0, rescale = True, rescale_params: dict = {'max': 2000, 'seed':42},
+                                         verbose = False):
     """
     Estimate the kernel density of a distribution.
 
@@ -44,7 +45,8 @@ def kernel_density_estimator(x, y, kernel_fun = "gaussian", map = None,
     if rescale == True or _requires_rescale(map_name=map):
         params['rescale'] = True
         params['rescale_kernel'] = rescale_params
-        warnings.warn("Rescaling is set to True as it is required for the chosen map.")
+        if verbose:
+            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
         _kernel.init(x,y,None, **params)
     return cd.tools.density_estimator(x,y)
 
