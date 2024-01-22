@@ -217,8 +217,8 @@ def hot_encoder(data_frame : pd.DataFrame,cat_cols_include = []) -> pd.DataFrame
     if len(cat_cols_include):num_cols.difference_update(cat_cols_include)
     cat_cols = set(data_frame.columns)
     cat_cols = cat_cols.difference(num_cols)
-    cat_dataframe = data_frame[cat_cols]
-    num_dataframe = data_frame[num_cols]
+    cat_dataframe = data_frame[list(cat_cols)]
+    num_dataframe = data_frame[list(num_cols)]
     index = cat_dataframe.index
     values =cat_dataframe.to_numpy(dtype = str)
     cols = np.array(cat_dataframe.columns,dtype=str)

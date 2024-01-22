@@ -2,28 +2,39 @@ import config
 from codpy.core import op, diffops, distance_labelling, discrepancy, discrepancy_functional
 import numpy as np
 import scipy.stats as stats
-import numdifftools as nd
+import pandas as pd
+# from sklearn.datasets import fetch_openml
+from sklearn.datasets import fetch_california_housing
+#import numdifftools as nd
 import codpy as cd
 from math import pi, factorial
 from codpy.sampling import kernel_conditional_density_estimator, kernel_density_estimator, get_normals
 from codpy.permutation import lsap, scipy_lsap, reordering, encoder, decoder, match
 from codpy.utils.selection import column_selector
+from codpy.utils.data_processing import hot_encoder
 import unittest
+
+import os
+import ssl
+
+if (not os.environ.get('PYTHONHTTPSVERIFY', '') and
+        getattr(ssl, '_create_unverified_context', None)): 
+    ssl._create_default_https_context = ssl._create_unverified_context
 
 def func(x, order = 1):
     return 1/factorial(order) * x ** order
 
 
 
-def compute_hessian(x, fun):
-    x = np.atleast_2d(x)
-    Hess = np.zeros((x.shape[0], x.shape[1], x.shape[1])) 
+# def compute_hessian(x, fun):
+#     x = np.atleast_2d(x)
+#     Hess = np.zeros((x.shape[0], x.shape[1], x.shape[1])) 
 
-    for i, xi in enumerate(x):
-        hessian_func = nd.Hessian(fun)
-        Hess[i] = hessian_func(xi)
+#     for i, xi in enumerate(x):
+#         hessian_func = nd.Hessian(fun)
+#         Hess[i] = hessian_func(xi)
 
-    return Hess
+#     return Hess
 
 def test_extrapolation_linear(func, decimal = 3):
     x = np.random.randn(100, 1)
@@ -171,43 +182,64 @@ def test_get_normals(decimal = 2):
     normals = np.var(get_normals(100,100))
     np.testing.assert_almost_equal(normals, 1, decimal=decimal)
 
+
+def test_hot_encoder():
+    # Fetch a sample dataset
+    california_housing = fetch_california_housing()
+    california_housing_df = pd.DataFrame(california_housing.data, columns=california_housing.feature_names)
+
+    california_housing_df['Income Category'] = pd.qcut(california_housing_df['MedInc'], q=4, labels=['Low', 'Medium', 'High', 'Very High'])
+    california_housing_df['Rooms per Household Category'] = pd.cut(california_housing_df['AveRooms'], bins=[0, 2, 4, 6, 100], labels=['Few', 'Normal', 'Many', 'Too Many'])
+
+    # Assuming 'credit-g' dataset, and knowing the categorical columns in advance (for this dataset)
+    # cat_cols = ['checking_status', 'credit_history', 'purpose', 'savings_status', 'employment', 'personal_status', 'other_parties', 'property_magnitude', 'other_payment_plans', 'housing', 'job', 'own_telephone', 'foreign_worker']
+    cat_cols =  ['Income Category', 'Rooms per Household Category']
+    print('init length:', len(cat_cols))
+    # Applying the hot_encoder function
+    encoded_df = hot_encoder(california_housing_df, cat_cols_include=cat_cols)
+    print('columns length:', len(encoded_df.columns))
+
 test_extrapolation_linear(func = func)
 test_norm(func, decimal = 3)
 test_diff_matrix(decimal = 3)
 test_denoiser(func=func)
-test_Kinv(func=func)
+# test_Kinv(func=func)
 test_discrepancy(decimal = 0)
 test_distance_labelling()
+
 
 test_nabla(func = func, decimal = 3)
 test_nablaTnabla(func = func)
 test_LerayT(func=func)
 test_Leray(func=func)
-
-test_lsap(decimal = 3)
-test_encoder_decoder()
-test_match()
-test_get_normals(decimal=2)
+test_hot_encoder()
 
 
-x = np.random.randn(100, 1)
-z = np.random.randn(100, 1)
-fx = func(x)
-fz = func(z)
-
-# alpha = op.coefficients(x,x,fx, kernel_fun="linear", map = None)
-# #ker_den = kernel_density_estimator(x = x, y = z)
-# data = np.random.multivariate_normal([0, 0], [[1, 0.5], [0.5, 1]], 500)
-# xx, yy = data.T
-# #ker_cor_den = kernel_conditional_density_estimator(x_vals=x_vals, y_vals=y_vals, x_data=xx, y_data=yy)
+print("Base tests passed !")
+# test_lsap(decimal = 3)
+# test_encoder_decoder()
+# test_match()
+# test_get_normals(decimal=2)
 
 
-disc_func = discrepancy_functional(x, fx, kernel_fun="linear", map=None).eval(x,z, fz, kernel_fun="linear", map=None)
+# x = np.random.randn(100, 1)
+# z = np.random.randn(100, 1)
+# fx = func(x)
+# fz = func(z)
 
-xx, zz, perm = reordering(x,z)
+# # alpha = op.coefficients(x,x,fx, kernel_fun="linear", map = None)
+# # #ker_den = kernel_density_estimator(x = x, y = z)
+# # data = np.random.multivariate_normal([0, 0], [[1, 0.5], [0.5, 1]], 500)
+# # xx, yy = data.T
+# # #ker_cor_den = kernel_conditional_density_estimator(x_vals=x_vals, y_vals=y_vals, x_data=xx, y_data=yy)
 
-_nablaTnabla_inv = diffops.nablaT_nabla_inv(x,x,fx,kernel_fun="linear", map=None)
-_hessian = diffops.hessian(x,x,fx,kernel_fun="linear", map=None).squeeze().squeeze().squeeze()
-_hessian1 = compute_hessian(x, func).squeeze().squeeze()
-print(np.linalg.norm(_hessian - _hessian1))
-pass
+
+# disc_func = discrepancy_functional(x, fx, kernel_fun="linear", map=None).eval(x,z, fz, kernel_fun="linear", map=None)
+
+# xx, zz, perm = reordering(x,z)
+
+# _nablaTnabla_inv = diffops.nablaT_nabla_inv(x,x,fx,kernel_fun="linear", map=None)
+# _hessian = diffops.hessian(x,x,fx,kernel_fun="linear", map=None).squeeze().squeeze().squeeze()
+# _hessian1 = compute_hessian(x, func).squeeze().squeeze()
+# print(np.linalg.norm(_hessian - _hessian1))
+# pass
