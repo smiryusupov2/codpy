@@ -216,6 +216,8 @@ test_hot_encoder()
 
 
 print("Base tests passed !")
+
+
 # test_lsap(decimal = 3)
 # test_encoder_decoder()
 # test_match()
