@@ -1,18 +1,16 @@
 import pandas as pd
 import numpy as np
-import codpydll
-import codpypyd as cd
 import warnings
 import xarray
 from scipy.optimize import linear_sum_assignment
 from typing import List  
-from codpy.core import _kernel, op, _kernel_helper2, _requires_rescale
-from codpy.sampling import sharp_discrepancy
-from codpy.utils.data_conversion import get_matrix
-from codpy.utils.selection import column_selector
-from codpy.utils.utils import format_32, format_23
-from codpy.utils.dictionary import cast, Dict, Set
-from codpy.utils.random import random_select_interface
+from core import kernel, op, kernel_helper2, _requires_rescale
+from sampling import sharp_discrepancy
+from data_conversion import get_matrix
+from selection import column_selector
+from utils import format_32, format_23
+from dictionary import cast, Dict, Set
+from random_utils import random_select_interface
   
 
 def map_invertion(map,type_in = None):
@@ -123,14 +121,14 @@ def reordering(x: np.ndarray, y: np.ndarray, permut: str ='source', iter=10, lsa
 
     def reordering_np(x: np.ndarray, y: np.ndarray, permut, iter = 10, lsap_fun = lsap):
         if x.shape[1] != y.shape[1]:
-            _kernel.init(x = x,y =None, z = None)
+            kernel.init(x = x,y =None, z = None)
             permutation = cd.alg.encoder(get_matrix(x),get_matrix(y), iter = iter)
             if permut != 'source':x_,y_ = x,y[permutation]
             else: 
                 permutation = map_invertion(permutation, type_in = np.ndarray)
                 x_,y_ = x[permutation],y
         else:
-            _kernel.init(x = x,y =y, z = None)
+            kernel.init(x = x,y =y, z = None)
             D = op.Dnm(x = x, y = y)
             permutation = lsap_fun(D)
             if permut != 'source':
@@ -207,7 +205,7 @@ def match(x, Ny=None, sharp_discrepancy_xmax=None, sharp_discrepancy_seed=None):
     def match_array(x):
         if sharp_discrepancy_xmax is not None:
             x = random_select_interface(x, xmax=sharp_discrepancy_xmax, seed=sharp_discrepancy_seed)
-        _kernel.init(x=x) 
+        kernel.init(x=x) 
         out = cd.alg.match(get_matrix(x), Ny)
         return out
 
@@ -269,19 +267,19 @@ class encoder:
                 x = match(y.T,Ny=Dx).T
             else:return
 
-        params = {'rescale_kernel':{'max': 1000, 'seed':42},
-        'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization),
+        params = {'rescalekernel':{'max': 1000, 'seed':42},
+        'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization),
         'rescale': rescale,
         }
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,x, **params)
+            kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
 
         permutation = cd.alg.encoder(get_matrix(x),get_matrix(y))
         self.permutation = permutation

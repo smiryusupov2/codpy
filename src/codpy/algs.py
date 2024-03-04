@@ -1,9 +1,4 @@
-import numpy as np
-import codpydll
-import codpypyd as cd
-from codpy.core import op, _kernel, _kernel_helper2, _requires_rescale
-from utils.data_processing import lexicographical_permutation
-import warnings
+from include_all import *
 
 
 class alg:
@@ -11,16 +6,16 @@ class alg:
                               polynomial_order = 2, regularization = 1e-8, rescale = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
                               verbose = False, **kwargs):
         # print('######','iso_probas_projection','######')
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,x,x, **params)
+            kernel.init(x,x,x, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
         Nx,Dx = np.shape(x)
         Nx,Df = np.shape(fx)
         Ny = len(probas)
@@ -32,7 +27,33 @@ class alg:
 
     def Pi(x, z, fz=[], nmax=10, rescale = False, **kwargs):
         # print('######','Pi','######')
-        _kernel.init(**kwargs)
-        if (rescale): _kernel.rescale(x,z)
+        kernel.init(**kwargs)
+        if (rescale): kernel.rescale(x,z)
         out = cd.alg.Pi(x = x,y = x,z = z, fz = fz,nmax = nmax)
         return out
+    
+    def HybridGreedyNystroem(x,fx,tol=1e-5,iter=1,n_batch=10,error_type='classifier',**kwargs):
+        reordering_format_switchDict = { pd.DataFrame: lambda **kwargs :  HybridGreedyNystroem_df(**kwargs) }
+        def HybridGreedyNystroem_df(**kwargs):
+            return HybridGreedyNystroem_np(**kwargs)
+        def HybridGreedyNystroem_np(x,fx,tol=1e-5,iter=10,n_batch=10,error_type='classifier',**kwargs):
+            start_indices = kwargs.get("start_indices",[])
+            cn,indices = cd.alg.HybridGreedyNystroem(get_matrix(x),get_matrix(fx),start_indices,tol,iter,n_batch,error_type)
+            return cn,indices
+        type_debug = type(x)
+        method = reordering_format_switchDict.get(type_debug,HybridGreedyNystroem_np)
+        return method(x,fx,**kwargs)
+
+if __name__ == "__main__":
+    from include_all import *
+    from core import kernel
+    x,fx=np.random.rand(10,2),np.random.rand(10,3)
+    lalg.prod(x,x)
+    kernel.rescale(x)
+    Knm = op.Knm(x=x,y=x)
+    Knm_inv = lalg.cholesky(x=Knm,eps=1e-2)
+    Knm_inv = lalg.lstsq(A=Knm)
+
+    print(op.Knm_inv(x=x,y=x,fx= op.Knm(x=x,y=x)))
+    alg.HybridGreedyNystroem(x=x,fx=fx)
+    pass

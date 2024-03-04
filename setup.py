@@ -58,7 +58,7 @@ setup(
         'Topic :: Scientific/Engineering',
         'Operating System :: Microsoft :: Windows :: Windows 10'
     ],
-    install_requires=['codpydll','pandas==1.5.0','numpy','mkl==2022.2.0',
+    install_requires=['codpydll==0.1.3','pandas==1.5.0','numpy','mkl==2024.0.0',
                       'scikit-learn','scipy',
                       'xarray==2022.9.0'],
     long_description=long_description,

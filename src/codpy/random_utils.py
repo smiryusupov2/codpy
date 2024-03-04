@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from codpy.utils.data_conversion import my_len
+from data_conversion import my_len
 
 def set_seed(seedlabel = 'seed',**kwargs):
     # print('######','sharp_discrepancy','######')

@@ -1,17 +1,13 @@
-import config
-from codpy.core import op, diffops, distance_labelling, discrepancy, discrepancy_functional
+import os,sys
+parent_path = os.path.dirname(__file__)
+parent_path = os.path.dirname(parent_path)
+if parent_path not in sys.path: sys.path.append(parent_path)
+from include import *
 import numpy as np
 import scipy.stats as stats
 import pandas as pd
-# from sklearn.datasets import fetch_openml
 from sklearn.datasets import fetch_california_housing
-#import numdifftools as nd
-import codpy as cd
 from math import pi, factorial
-from codpy.sampling import kernel_conditional_density_estimator, kernel_density_estimator, get_normals
-from codpy.permutation import lsap, scipy_lsap, reordering, encoder, decoder, match
-from codpy.utils.selection import column_selector
-from codpy.utils.data_processing import hot_encoder
 import unittest
 
 import os
@@ -24,17 +20,6 @@ if (not os.environ.get('PYTHONHTTPSVERIFY', '') and
 def func(x, order = 1):
     return 1/factorial(order) * x ** order
 
-
-
-# def compute_hessian(x, fun):
-#     x = np.atleast_2d(x)
-#     Hess = np.zeros((x.shape[0], x.shape[1], x.shape[1])) 
-
-#     for i, xi in enumerate(x):
-#         hessian_func = nd.Hessian(fun)
-#         Hess[i] = hessian_func(xi)
-
-#     return Hess
 
 def test_extrapolation_linear(func, decimal = 3):
     x = np.random.randn(100, 1)
@@ -65,10 +50,18 @@ def test_norm(func, decimal = 3):
     norm = alpha** 2
     np.testing.assert_almost_equal(norm, norm_, decimal=decimal)
 
-def test_Kinv(func, decimal = 3):
+def test_Knm():
     x = np.random.randn(100, 1)
-    fx =func(x)
-    Kinv = op.Knm_inv(x,x,fx, kernel_fun="linear", map=None)
+    kernel.rescale(x)
+    Knm = op.Knm(x=x,y=x)
+
+def test_Knm_inv(decimal = 3):
+    x = np.random.randn(10, 2)
+    fx = np.random.randn(10, 3)
+    kernel.rescale(x)
+    Knm = op.Knm(x=x,y=x)
+    Knm_inv = lalg.cholesky(x=Knm,eps=1e-2)
+    Kinv = op.Knm_inv(x=x,y=x,fx=fx)
     Kinv1 = np.linalg.solve(x.T @ x, fx.T).T
 
     np.testing.assert_almost_equal(Kinv, Kinv1, decimal=decimal)
@@ -199,23 +192,32 @@ def test_hot_encoder():
     encoded_df = hot_encoder(california_housing_df, cat_cols_include=cat_cols)
     print('columns length:', len(encoded_df.columns))
 
-test_extrapolation_linear(func = func)
-test_norm(func, decimal = 3)
-test_diff_matrix(decimal = 3)
-test_denoiser(func=func)
-# test_Kinv(func=func)
-test_discrepancy(decimal = 0)
-test_distance_labelling()
+def testkernel():
+    # set_kernel("maternnorm",1e-2)
+    set_kernel("tensornorm",1e-2)
+    test = cd.kernel.get_regularization()
+    set_map("scale_to_unitcube")
+
+if __name__ == "__main__":
+    testkernel()
+    test_Knm()
+    test_Knm_inv()
+    test_extrapolation_linear(func = func)
+    test_norm(func, decimal = 3)
+    test_diff_matrix(decimal = 3)
+    test_denoiser(func=func)
+    test_discrepancy(decimal = 0)
+    test_distance_labelling()
 
 
-test_nabla(func = func, decimal = 3)
-test_nablaTnabla(func = func)
-test_LerayT(func=func)
-test_Leray(func=func)
-test_hot_encoder()
+    test_nabla(func = func, decimal = 3)
+    test_nablaTnabla(func = func)
+    test_LerayT(func=func)
+    test_Leray(func=func)
+    test_hot_encoder()
 
 
-print("Base tests passed !")
+    print("Base tests passed !")
 
 
 # test_lsap(decimal = 3)

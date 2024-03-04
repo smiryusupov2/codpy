@@ -2,13 +2,14 @@ import multiprocessing as mp
 import concurrent.futures
 from tqdm import tqdm
 import time
-# from codpy.utils.scenarios import execute_function_list
+# from utils.scenarios import execute_function_list
 
 
 ## multiprocessing utilities# 
 def parallel_task(param_list,fun,**kwargs):
+    param_list = [{**p,**kwargs} for p in param_list]
     debug = kwargs.get('debug',True)
-    if debug: return [fun(p,**kwargs) for p,i in zip(param_list,tqdm (range (len(param_list)), desc="parallel…", ascii=False, ncols=75))]
+    if debug: return [fun(p) for p,i in zip(param_list,tqdm (range (len(param_list)), desc="parallel…", ascii=False, ncols=75))]
     if len(param_list) < 2: return [fun(p) for p in param_list]
     cores = min(mp.cpu_count(),len(param_list))
 

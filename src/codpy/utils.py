@@ -2,7 +2,7 @@ from typing import List, Set,Dict, get_type_hints
 import numpy as np
 import functools
 import operator
-from codpy.utils.data_conversion import get_matrix
+from data_conversion import get_matrix
 
 
 def pad_axis(x,y, axis = 1):

@@ -1,15 +1,5 @@
-import pandas as pd
-import numpy as np
-from functools import partial, cache
-import codpydll
-import codpypyd as cd
-import itertools
-from codpy.utils.selection import column_selector
-from codpy.utils.random import random_select, random_select_interface
-from codpy.utils.dictionary import *
-from codpy.utils.data_conversion import get_matrix
-from codpy.utils.utils import pad_axis, softmaxindice, softminindice
-import warnings
+from include_all import *
+
 
 
 class _codpy_param_getter:
@@ -18,77 +8,9 @@ class _codpy_param_getter:
 
 
 class op:
-    def projection(x, y, z, fx, kernel_fun: str = "tensornorm", map: str = "unitcube", 
-               polynomial_order: int = 2, regularization: float = 1e-8, reg: np.array = [], 
-               rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
-               verbose = False,**kwargs):
+    def projection(x, y, z, fx):
         """
         Performs projection in kernel regression for efficient computation, targeting a lower sampling space.
-
-        This function optimizes kernel regression computations by projecting the training data (``x``, ``fx``) onto 
-        a representative subset ``y``, thus reducing the computational burden associated with large datasets.
-        It facilitates both interpolation within the training data domain and extrapolation outside this domain.
-
-        :param x: Training feature data.
-        :type x: :class:`numpy.ndarray` or :class:`pandas.DataFrame`
-        :param y: Representative subset of ``x``, used for projection.
-        :type y: :class:`numpy.ndarray` or :class:`pandas.DataFrame`
-        :param z: Test feature data for prediction.
-        :type z: :class:`numpy.ndarray`, :class:`pandas.DataFrame`, or list
-        :param fx: Training response data corresponding to ``x``.
-        :type fx: :class:`numpy.ndarray` or :class:`pandas.DataFrame`
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
-
-
-        :returns: The projected responses for the test data ``z``.
-        :rtype: :class:`numpy.ndarray` or :class:`pandas.DataFrame`
-
-        Available Kernels:
-
-            - ``'gaussian'``: Gaussian kernel for smooth, continuous functions.
-            - ``'tensornorm'``: Tensor norm kernel suitable for multidimensional data.
-            - ``'absnorm'``: Absolute norm kernel for robust performance in varied datasets.
-            - ``'matern'``: Matérn kernel useful in spatial statistics.
-            - ``'multiquadricnorm'``: Multi-quadric norm kernel for flexible shape adaptation.
-            - ``'multiquadrictensor'``: Multi-quadric tensor kernel, a tensor-based variant offering flexible shape adaptation.
-            - ``'sincardtensor'``: Sinc cardinal tensor kernel, suitable for periodic and oscillatory data.
-            - ``'sincardsquaretensor'``: Sinc cardinal square tensor kernel, enhancing the sinc cardinal tensor kernel for certain data types.
-            - ``'dotproduct'``: Dot product kernel, useful for linear classifications and regressions.
-            - ``'gaussianper'``: Gaussian periodic kernel, ideal for modeling periodic functions.
-            - ``'maternnorm'``: Matérn norm kernel, a variation of the Matérn kernel for normalized spaces.
-            - ``'scalarproduct'``: Scalar product kernel, a simple yet effective kernel for dot products.
-
-        Available Maps:
-
-            - ``'linear'``: Linear map for straightforward transformations.
-            - ``'affine'``: Affine map for linear transformations with translation.
-            - ``'log'``: Logarithmic map for non-linear scaling.
-            - ``'exp'``: Exponential map for rapidly increasing scales.
-            - ``'scalestd'``: Standard scaling map that normalizes data by removing the mean and scaling to unit variance.
-            - ``'erf'``: Error function map, useful for data normalization with a non-linear scale.
-            - ``'erfinv'``: Inverse error function map, providing the inverse transformation of the error function.
-            - ``'scalefactor'``: Scaling factor map that applies a uniform scaling defined by a bandwidth or scale factor.
-            - ``'bandwidth'``: Helper for setting the scale factor map with a specified bandwidth, typically used in kernel methods.
-            - ``'grid'``: Grid map that projects data onto a grid, useful for discretizing continuous variables or spatial data.
-            - ``'unitcube'``: Unit cube map that scales data to fit within a unit cube, ensuring all features are within the range [0,1].
-            - ``'meandistance'``: Mean distance map that scales data based on the mean distance between data points.
-            - ``'mindistance'``: Minimum distance map that scales data based on the minimum distance between data points.
-            - ``'standardmin'``: Standard minimum map pipeline combining minimum distance scaling with other transformations.
-            - ``'standardmean'``: Standard mean map pipeline combining mean distance scaling with other transformations.
-
         Note:
             The performance of the function depends on two ingredients:
             
@@ -128,16 +50,16 @@ class op:
         def project_array(x, y, z, fx, reg):
             return cd.op.projection(x, y, z, fx, reg)
 
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,z, **params)
+            kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
 
         if isinstance(z, list):
             return [project_dataframe(x, y, zi, fx, reg) if isinstance(x, pd.DataFrame) else project_array(x, y, zi, fx, reg) for zi in z]
@@ -164,7 +86,7 @@ class op:
             if isinstance(fx,pd.DataFrame): f_z = pd.DataFrame(f_z,columns = list(fx.columns), index = z.index)
             return f_z
 
-        _kernel.init(**kwargs)
+        kernel.init(**kwargs)
         type_debug = type(kwargs.get('x',[]))
 
         def debug_fun(**kwargs):
@@ -177,74 +99,11 @@ class op:
 
         return f_z
 
-    def extrapolation(x, z, fx, kernel_fun: str = "tensornorm", map: str = "unitcube", 
-                   polynomial_order: int = 2, regularization: float = 1e-8, 
-                   reg: np.array = [], rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
-                   **kwargs):
+    def extrapolation(x, z, fx=[]):
         """
         Performs extrapolation in the context of kernel regression.
 
         This method leverages the kernel regression framework to extrapolate values between data points. 
-
-        :param x: Training feature data.
-        :type x: :class:`numpy.ndarray` or :class:`pandas.DataFrame`
-        :param z: Test feature data for extrapolation.
-        :type z: :class:`numpy.ndarray`, :class:`pandas.DataFrame`, or list
-        :param fx: Training response data corresponding to ``x``.
-        :type fx: :class:`numpy.ndarray` or :class:`pandas.DataFrame`
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
-
-        :returns: The projected responses for the test data ``z``.
-        :rtype: :class:`numpy.ndarray` or :class:`pandas.DataFrame`
-        Returns:
-            Extrapolated responses.
-        
-        Available Kernels:
-
-            - ``'gaussian'``: Gaussian kernel for smooth, continuous functions.
-            - ``'tensornorm'``: Tensor norm kernel suitable for multidimensional data.
-            - ``'absnorm'``: Absolute norm kernel for robust performance in varied datasets.
-            - ``'matern'``: Matérn kernel useful in spatial statistics.
-            - ``'multiquadricnorm'``: Multi-quadric norm kernel for flexible shape adaptation.
-            - ``'multiquadrictensor'``: Multi-quadric tensor kernel, a tensor-based variant offering flexible shape adaptation.
-            - ``'sincardtensor'``: Sinc cardinal tensor kernel, suitable for periodic and oscillatory data.
-            - ``'sincardsquaretensor'``: Sinc cardinal square tensor kernel, enhancing the sinc cardinal tensor kernel for certain data types.
-            - ``'dotproduct'``: Dot product kernel, useful for linear classifications and regressions.
-            - ``'gaussianper'``: Gaussian periodic kernel, ideal for modeling periodic functions.
-            - ``'maternnorm'``: Matérn norm kernel, a variation of the Matérn kernel for normalized spaces.
-            - ``'scalarproduct'``: Scalar product kernel, a simple yet effective kernel for dot products.
-
-        Available Maps:
-
-            - ``'linear'``: Linear map for straightforward transformations.
-            - ``'affine'``: Affine map for linear transformations with translation.
-            - ``'log'``: Logarithmic map for non-linear scaling.
-            - ``'exp'``: Exponential map for rapidly increasing scales.
-            - ``'scalestd'``: Standard scaling map that normalizes data by removing the mean and scaling to unit variance.
-            - ``'erf'``: Error function map, useful for data normalization with a non-linear scale.
-            - ``'erfinv'``: Inverse error function map, providing the inverse transformation of the error function.
-            - ``'scalefactor'``: Scaling factor map that applies a uniform scaling defined by a bandwidth or scale factor.
-            - ``'bandwidth'``: Helper for setting the scale factor map with a specified bandwidth, typically used in kernel methods.
-            - ``'grid'``: Grid map that projects data onto a grid, useful for discretizing continuous variables or spatial data.
-            - ``'unitcube'``: Unit cube map that scales data to fit within a unit cube, ensuring all features are within the range [0,1].
-            - ``'meandistance'``: Mean distance map that scales data based on the mean distance between data points.
-            - ``'mindistance'``: Minimum distance map that scales data based on the minimum distance between data points.
-            - ``'standardmin'``: Standard minimum map pipeline combining minimum distance scaling with other transformations.
-            - ``'standardmean'``: Standard mean map pipeline combining mean distance scaling with other transformations.
-
         Note:
             The performance of the function depends on two ingredients:
             
@@ -252,88 +111,22 @@ class op:
             * ``map``
         """
 
-        return op.projection(x = x, y = x, z = z, fx = fx, kernel_fun = kernel_fun, map = map, 
-                   polynomial_order = polynomial_order, regularization = regularization, 
-                   reg = reg, rescale = rescale, rescale_params=rescale_params, **kwargs)
+        return op.projection(x = x, y = x, z = z, fx = fx)
 
-    def interpolation(x, z, fx, kernel_fun: str = "tensornorm", map: str = "unitcube", 
-                   polynomial_order: int = 2, regularization: float = 1e-8, reg: np.array = [], 
-                   rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, **kwargs):
+    def interpolation(x, z, fx=[]):
         """
         Performs interpolation in the context of kernel regression.
 
         This method leverages the kernel regression framework to interpolate values between data points. 
-
-        :param x: Training feature data.
-        :type x: :class:`numpy.ndarray` or :class:`pandas.DataFrame`
-        :param z: Data point for interpolation.
-        :type z: :class:`numpy.ndarray`, :class:`pandas.DataFrame`, or list
-        :param fx: Training response data corresponding to ``x``.
-        :type fx: :class:`numpy.ndarray` or :class:`pandas.DataFrame`
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
-
-        Returns:
-            Interpolated responses.
-
-        Available Kernels:
-
-            - ``'gaussian'``: Gaussian kernel for smooth, continuous functions.
-            - ``'tensornorm'``: Tensor norm kernel suitable for multidimensional data.
-            - ``'absnorm'``: Absolute norm kernel for robust performance in varied datasets.
-            - ``'matern'``: Matérn kernel useful in spatial statistics.
-            - ``'multiquadricnorm'``: Multi-quadric norm kernel for flexible shape adaptation.
-            - ``'multiquadrictensor'``: Multi-quadric tensor kernel, a tensor-based variant offering flexible shape adaptation.
-            - ``'sincardtensor'``: Sinc cardinal tensor kernel, suitable for periodic and oscillatory data.
-            - ``'sincardsquaretensor'``: Sinc cardinal square tensor kernel, enhancing the sinc cardinal tensor kernel for certain data types.
-            - ``'dotproduct'``: Dot product kernel, useful for linear classifications and regressions.
-            - ``'gaussianper'``: Gaussian periodic kernel, ideal for modeling periodic functions.
-            - ``'maternnorm'``: Matérn norm kernel, a variation of the Matérn kernel for normalized spaces.
-            - ``'scalarproduct'``: Scalar product kernel, a simple yet effective kernel for dot products.
-
-        Available Maps:
-
-            - ``'linear'``: Linear map for straightforward transformations.
-            - ``'affine'``: Affine map for linear transformations with translation.
-            - ``'log'``: Logarithmic map for non-linear scaling.
-            - ``'exp'``: Exponential map for rapidly increasing scales.
-            - ``'scalestd'``: Standard scaling map that normalizes data by removing the mean and scaling to unit variance.
-            - ``'erf'``: Error function map, useful for data normalization with a non-linear scale.
-            - ``'erfinv'``: Inverse error function map, providing the inverse transformation of the error function.
-            - ``'scalefactor'``: Scaling factor map that applies a uniform scaling defined by a bandwidth or scale factor.
-            - ``'bandwidth'``: Helper for setting the scale factor map with a specified bandwidth, typically used in kernel methods.
-            - ``'grid'``: Grid map that projects data onto a grid, useful for discretizing continuous variables or spatial data.
-            - ``'unitcube'``: Unit cube map that scales data to fit within a unit cube, ensuring all features are within the range [0,1].
-            - ``'meandistance'``: Mean distance map that scales data based on the mean distance between data points.
-            - ``'mindistance'``: Minimum distance map that scales data based on the minimum distance between data points.
-            - ``'standardmin'``: Standard minimum map pipeline combining minimum distance scaling with other transformations.
-            - ``'standardmean'``: Standard mean map pipeline combining mean distance scaling with other transformations.
-
         Note:
             The performance of the function depends on two ingredients:
             
             * ``kernel`` function
             * ``map``
         """
-        return op.projection(x = x, y = z, z = z, fx = fx, kernel_fun = kernel_fun, map = map, 
-                   polynomial_order = polynomial_order, regularization = regularization, reg = reg, 
-                   rescale = rescale, rescale_params = rescale_params, **kwargs)
+        return op.projection(x = x, y = z, z = z, fx = fx)
     
-    def denoiser(x, z, fx, kernel_fun = "maternnorm", map = "standardmean", 
-                   polynomial_order=2, epsilon: float = 1e-3, regularization: float = 1e-8,
-                    rescale = True, **kw):
+    def gradient_denoiser(x, z, fx,epsilon):
         """
         A function for performing least squares regression penalized by the norm of the gradient, 
         induced by a positive definite (PD) kernel.
@@ -341,24 +134,6 @@ class op:
         This functioon initializes with various parameters and sets up a regression framework 
         that includes regularization based on the gradient's magnitude. It is designed to 
         work with gradient norms induced by a PD kernel.
-
-        Args:
-
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
-
         Returns:
             The denoised output for the input data.
 
@@ -374,19 +149,14 @@ class op:
         # Perform denoising on the input data or new data points 'z'
         op.denoiser(xtrain, xtest, fx_train, kernel_fun = "maternnorm", map = "standardmean")
         """
-        reg = epsilon*diffops.nablaT_nabla(x = x , y = x, fx = [], kernel_fun = kernel_fun, 
-                                                map = map, polynomial_order=polynomial_order, regularization=regularization,
-                                                rescale=rescale, **kw)
-        out = op.extrapolation(x, z = z, fx = fx, kernel_fun = kernel_fun, map = map, 
-                               polynomial_order= polynomial_order, reg = reg, rescale = rescale, **kw)    
+        reg = epsilon*diffops.nablaT_nabla(x = x , y = x, fx = [])
+        out = op.extrapolation(x, z = z, fx = fx)    
         # self.reg = self.epsilon*op.nablaT_nabla(**{**kw,**{'fx':[],'y':self.y,'x':self.x}})
-        # self.kernel = kernel_setters.kernel_helper(kernel_setters.set_matern_norm_kernel, 0,1e-8 ,map_setters.set_standard_mean_map)
+        # self.kernel = kernel_setters.kernel_helper(kernel_setters.set_matern_normkernel, 0,1e-8 ,map_setters.set_standard_mean_map)
         # out = op.extrapolation(**{**self.params,**{'z':z}})
         return out
     
-    def norm(x, y, z, fx, kernel_fun: str = "tensornorm", map: str = "unitcube", 
-                   polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], 
-                   rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False, **kwargs):
+    def norm(x, y, z, fx):
         """
         Calculate the kernel-induced norm based on the provided matrices.
 
@@ -398,81 +168,25 @@ class op:
             y (list, optional): The second matrix. Defaults to a list containing `x`.
             z (list, optional): The third matrix. Defaults to an empty list.
             fx (list, optional): The fourth matrix. Defaults to an empty list.
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
-
-        The function uses `get_matrix` to convert the input lists into appropriate matrix forms 
-        before performing the norm projection.
-
-        Returns:
-            The result of the norm projection, calculated using the input matrices.
-
-        Available Kernels:
-
-            - ``'gaussian'``: Gaussian kernel for smooth, continuous functions.
-            - ``'tensornorm'``: Tensor norm kernel suitable for multidimensional data.
-            - ``'absnorm'``: Absolute norm kernel for robust performance in varied datasets.
-            - ``'matern'``: Matérn kernel useful in spatial statistics.
-            - ``'multiquadricnorm'``: Multi-quadric norm kernel for flexible shape adaptation.
-            - ``'multiquadrictensor'``: Multi-quadric tensor kernel, a tensor-based variant offering flexible shape adaptation.
-            - ``'sincardtensor'``: Sinc cardinal tensor kernel, suitable for periodic and oscillatory data.
-            - ``'sincardsquaretensor'``: Sinc cardinal square tensor kernel, enhancing the sinc cardinal tensor kernel for certain data types.
-            - ``'dotproduct'``: Dot product kernel, useful for linear classifications and regressions.
-            - ``'gaussianper'``: Gaussian periodic kernel, ideal for modeling periodic functions.
-            - ``'maternnorm'``: Matérn norm kernel, a variation of the Matérn kernel for normalized spaces.
-            - ``'scalarproduct'``: Scalar product kernel, a simple yet effective kernel for dot products.
-
-        Available Maps:
-
-            - ``'linear'``: Linear map for straightforward transformations.
-            - ``'affine'``: Affine map for linear transformations with translation.
-            - ``'log'``: Logarithmic map for non-linear scaling.
-            - ``'exp'``: Exponential map for rapidly increasing scales.
-            - ``'scalestd'``: Standard scaling map that normalizes data by removing the mean and scaling to unit variance.
-            - ``'erf'``: Error function map, useful for data normalization with a non-linear scale.
-            - ``'erfinv'``: Inverse error function map, providing the inverse transformation of the error function.
-            - ``'scalefactor'``: Scaling factor map that applies a uniform scaling defined by a bandwidth or scale factor.
-            - ``'bandwidth'``: Helper for setting the scale factor map with a specified bandwidth, typically used in kernel methods.
-            - ``'grid'``: Grid map that projects data onto a grid, useful for discretizing continuous variables or spatial data.
-            - ``'unitcube'``: Unit cube map that scales data to fit within a unit cube, ensuring all features are within the range [0,1].
-            - ``'meandistance'``: Mean distance map that scales data based on the mean distance between data points.
-            - ``'mindistance'``: Minimum distance map that scales data based on the minimum distance between data points.
-            - ``'standardmin'``: Standard minimum map pipeline combining minimum distance scaling with other transformations.
-            - ``'standardmean'``: Standard mean map pipeline combining mean distance scaling with other transformations.
-
         Note:
             The performance of the function depends on two ingredients:
             
             * ``kernel`` function
             * ``map``
         """
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,z, **params)
+            kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
         return cd.tools.norm_projection(get_matrix(x),get_matrix(y),get_matrix(z),get_matrix(fx))
 
-    def coefficients(x, y, fx, kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], 
-                   rescale = False, rescale_params: dict = {'max': 1000, 'seed':42}, **kwargs) -> np.ndarray:
+    def coefficients(x, y, fx) -> np.ndarray:
         """
         Computes the regressors or coefficients for kernelized regression, using a specified PD kernel.
 
@@ -536,148 +250,49 @@ class op:
             - ``'standardmin'``: Standard minimum map pipeline combining minimum distance scaling with other transformations.
             - ``'standardmean'``: Standard mean map pipeline combining mean distance scaling with other transformations.
         """
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,x, **params)
+            kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
         return cd.op.coefficients(get_matrix(x),get_matrix(y),get_matrix(fx), [])
     # @cache
-    def Knm(x, y, fx = None, Kinv : np.array = None, kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], 
-                   rescale = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
-                   bandwidth = 1.0, verbose = False, **kwargs) -> np.ndarray:
+    def Knm(x, y, fx = []) -> np.ndarray:
         """
         Computes the kernel matrix induced by a positive definite (pd) kernel.
 
-        This method calculates the kernel matrix using the specified pd kernel function. 
+        This method calculates the kernel matrix k(x_i,y_j) using the input kernel function. 
 
         Args:
-            x (:class:`numpy.ndarray`): Input data points for the gradient computation.
-            y (:class:`numpy.ndarray`): Secondary data points used in the kernel computation.
-            Kinv (:class:`numpy.ndarray`): Precomputed inverse kernel matrix K(y,y).
-            fx (:class:`numpy.ndarray`): Function values or responses at the data points in `x`.
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
-            
+            x (:class:`numpy.ndarray`): Input data points for the gradient computation. np.array of size N , D.
+            y (:class:`numpy.ndarray`): Secondary data points used in the kernel computation. np.array of size M , D.
+            fx (:class:`numpy.ndarray`): optional-Function values or responses at the data points in `x`. np.array of size M , Df.
+
         Returns:
-            np.array: The computed kernel matrix, representing the kernel-induced distances or similarities between the data points in 'x' and 'y'.
+            - if fx is empty: matrix np.array of size (NxM) The computed kernel matrix, representing the kernel-induced distances or similarities between the data points in 'x' and 'y'.
+            - prod(Knm(x,y),fx) else. This allow performance and memory optimizations.
 
-        Available Kernels:
-
-            - ``'gaussian'``: Gaussian kernel for smooth, continuous functions.
-            - ``'tensornorm'``: Tensor norm kernel suitable for multidimensional data.
-            - ``'absnorm'``: Absolute norm kernel for robust performance in varied datasets.
-            - ``'matern'``: Matérn kernel useful in spatial statistics.
-            - ``'multiquadricnorm'``: Multi-quadric norm kernel for flexible shape adaptation.
-            - ``'multiquadrictensor'``: Multi-quadric tensor kernel, a tensor-based variant offering flexible shape adaptation.
-            - ``'sincardtensor'``: Sinc cardinal tensor kernel, suitable for periodic and oscillatory data.
-            - ``'sincardsquaretensor'``: Sinc cardinal square tensor kernel, enhancing the sinc cardinal tensor kernel for certain data types.
-            - ``'dotproduct'``: Dot product kernel, useful for linear classifications and regressions.
-            - ``'gaussianper'``: Gaussian periodic kernel, ideal for modeling periodic functions.
-            - ``'maternnorm'``: Matérn norm kernel, a variation of the Matérn kernel for normalized spaces.
-            - ``'scalarproduct'``: Scalar product kernel, a simple yet effective kernel for dot products.
-
-        Available Maps:
-
-            - ``'linear'``: Linear map for straightforward transformations.
-            - ``'affine'``: Affine map for linear transformations with translation.
-            - ``'log'``: Logarithmic map for non-linear scaling.
-            - ``'exp'``: Exponential map for rapidly increasing scales.
-            - ``'scalestd'``: Standard scaling map that normalizes data by removing the mean and scaling to unit variance.
-            - ``'erf'``: Error function map, useful for data normalization with a non-linear scale.
-            - ``'erfinv'``: Inverse error function map, providing the inverse transformation of the error function.
-            - ``'scalefactor'``: Scaling factor map that applies a uniform scaling defined by a bandwidth or scale factor.
-            - ``'bandwidth'``: Helper for setting the scale factor map with a specified bandwidth, typically used in kernel methods.
-            - ``'grid'``: Grid map that projects data onto a grid, useful for discretizing continuous variables or spatial data.
-            - ``'unitcube'``: Unit cube map that scales data to fit within a unit cube, ensuring all features are within the range [0,1].
-            - ``'meandistance'``: Mean distance map that scales data based on the mean distance between data points.
-            - ``'mindistance'``: Minimum distance map that scales data based on the minimum distance between data points.
-            - ``'standardmin'``: Standard minimum map pipeline combining minimum distance scaling with other transformations.
-            - ``'standardmean'``: Standard mean map pipeline combining mean distance scaling with other transformations.
         """
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization, 
-                                                       bandwidth=bandwidth)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,x, **params)
-        else:
-            params['rescale'] = rescale
-            _kernel.init(**params)
+        return cd.op.Knm(x, y, fx)
 
-        # Computation Knm_inv if not provided
-        if Kinv is None and fx is not None:
-            Kinv = op.Knm_inv(get_matrix(x),get_matrix(y),get_matrix(fx), kernel_fun=kernel_fun,
-                              map=map, regularization=regularization, reg  = get_matrix(reg), 
-                              rescale=rescale, **kwargs)
-
-        # Set kernel parameters
-        order = cd.kernel.get_polynomial_order()
-        reg = cd.kernel.get_regularization()
-        kernel_ptr = _kernel.get_kernel_ptr()
-
-        _kernel.set_kernel_ptr(kernel_ptr)
-        cd.kernel.set_polynomial_order(order)
-        cd.kernel.set_regularization(reg)
-
-        # Computing Knm
-        x, y = get_matrix(x), get_matrix(y)
-        if fx is None:
-            return cd.op.Knm(x, y, [])
-        else:
-            return cd.op.Knm(x, y, Kinv)
-    # @cache    
-    def Knm_inv(x, y, fx, kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order: int = 2, regularization: float = 1e-8, reg: np.ndarray = [], 
-                   rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42},  
-                   verbose = False, **kwargs):
+    def Knm_inv(x, y, fx=[],reg=[]):
         """
         Args:
-
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
+            x (:class:`numpy.ndarray`): Input data points for the gradient computation. np.array of size N , D.
+            y (:class:`numpy.ndarray`): Secondary data points used in the kernel computation. np.array of size M , D.
+            fx (:class:`numpy.ndarray`): optional-Function values or responses at the data points in `x`. np.array of size M , Df.
+        Returns:
+            - if reg is empty:
+                - if fx is empty: matrix np.array of size (NxM), that is the least square inverse of Knm(x,y).
+                - prod(Knm_inv(x,y),fx) else. This allow performance and memory optimizations. The output corresponds then to the coefficient of fx in the kernel induced basis.
+            - else: 
+                - if fx is empty: matrix np.array of size (NxM), that corresponds to the least square computation (Knm(y,x)Knm(x,y)+reg)^{-1}Knm(y,x).
+                - prod(Knm_inv(x,y),fx) else. This allow performance and memory optimizations. The output corresponds then to the coefficient of fx in the kernel induced basis.
         """
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,x, **params)
-        else:
-            params['rescale'] = rescale
-            _kernel.init(**params)
         return cd.op.Knm_inv(get_matrix(x),get_matrix(y),get_matrix(fx),get_matrix(reg))
     
     def Dnm(x, y, distance = None, kernel_fun = "tensornorm", map = "unitcube", 
@@ -714,16 +329,16 @@ class op:
         """
         x,y = column_selector(x,**kwargs),column_selector(y,**kwargs)
         x,y = pad_axis(x,y)
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,x, **params)
+            kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
         if distance is not None:
             return cd.op.Dnm(get_matrix(x),get_matrix(y), {'distance' : "norm22"})
         return cd.op.Dnm(get_matrix(x),get_matrix(y))
@@ -731,31 +346,31 @@ class op:
     def discrepancy_error(x: np.array = None, z : np.array = None, disc_type="raw", 
                     kernel_fun = "tensornorm", map = "unitcube", polynomial_order=2, reg: float = 1e-8, rescale_params: dict = {'max': 2000, 'seed':42}, 
                     rescale = False, verbose = False, **kwargs):
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x, x, x, **params)
+            kernel.init(x, x, x, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
         return cd.tools.discrepancy_error(x,z, disc_type)
 
     def norm_projection(x: np.array = None, z: np.array = None, fx: np.array = None, kernel_fun: str = "tensornorm", map: str = "unitcube", 
                     polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], 
                     rescale: bool = False, rescale_params: dict = {'max': 2000, 'seed':42}, verbose = False, **kwargs):
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,x,x, **params)
+            kernel.init(x,x,x, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
         return cd.tools.norm_projection(x,x,z,fx)
 
 
@@ -814,11 +429,11 @@ def discrepancy(x: np.array = None, y: np.array = None, z : np.array = None, dis
     if 'discrepancy:nmax' in kwargs:
         nmax = int(kwargs.get('discrepancy:nmax'))
         if len(x) + 2 * len(y) + len(z) > nmax: return np.NaN
-    params = {'rescale_kernel':{'max': 1000, 'seed':42},
-        'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=reg),
+    params = {'rescalekernel':{'max': 1000, 'seed':42},
+        'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=reg),
         'rescale': rescale,
         }
-    _kernel.init(**params)
+    kernel.init(**params)
     debug = 0.
     if (len(y)):
         debug += cd.tools.discrepancy_error(x,y,disc_type)
@@ -942,16 +557,16 @@ class diffops:
         :type kwargs: dict
         """
         
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,x, **params)
+            kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
         return cd.op.nabla_Knm(get_matrix(x),get_matrix(y))
 
     def nabla(x, y, z, fx, kernel_fun = "tensornorm", map = "unitcube", 
@@ -992,16 +607,16 @@ class diffops:
             >>> gradient = diffops.nabla(x,x,z,fx,kernel_fun="linear", map=None)
         """
 
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,z, **params)
+            kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
 
         return cd.op.nabla(get_matrix(x),get_matrix(y),get_matrix(z), fx,get_matrix(reg))
     
@@ -1044,16 +659,16 @@ class diffops:
             >>> inv_gradient = nabla_inv(x_data, y_data, z_data, fz=vector_field)
         """
         
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,z, **params)
+            kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
         return cd.op.nabla_inv(get_matrix(x),get_matrix(y),get_matrix(z), fz)
     
     def nablaT(x, y, z, fz, kernel_fun = "tensornorm", map = "unitcube", 
@@ -1098,16 +713,16 @@ class diffops:
             >>> divergence = nablaT(x_data, y_data, z_data, fz=vector_field)
         """
 
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,z, **params)
+            kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
 
         return cd.op.nablaT(get_matrix(x),get_matrix(y),get_matrix(z),fz)
     
@@ -1149,16 +764,16 @@ class diffops:
             >>> inv_transpose_gradient = nablaT_inv(x_data, y_data, z_data, fx_data)
         """
         
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,z, **params)
+            kernel.init(x,y,z, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
 
         return cd.op.nablaT_inv(get_matrix(x),get_matrix(y),get_matrix(z),get_matrix(fx))
     
@@ -1206,16 +821,16 @@ class diffops:
             >>> laplace_operator = nablaT_nabla(x_data, y_data, fx_data)
         """
 
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,x, **params)
+            kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
         
         return cd.op.nablaT_nabla(x=get_matrix(x),y=get_matrix(y),fx=get_matrix(fx))
     
@@ -1241,19 +856,19 @@ class diffops:
         :type kwargs: dict
         """
         
-        params = {'rescale_kernel':{'max': 1000, 'seed':42},
-        'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization),
+        params = {'rescalekernel':{'max': 1000, 'seed':42},
+        'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization),
         'rescale': rescale,
         }
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,x, **params)
+            kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
 
         return cd.op.nablaT_nabla_inv(get_matrix(x),get_matrix(y),get_matrix(fx))
     
@@ -1261,16 +876,16 @@ class diffops:
                    polynomial_order:int=2, regularization: float = 1e-8, 
                    rescale:bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
                    verbose = False, **kwargs):
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,x, **params)
+            kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
         return cd.op.Leray_T(get_matrix(x),get_matrix(y),fx)
     
     def Leray(x, y, fx, kernel_fun:str = "tensornorm", map:str = "unitcube", 
@@ -1296,16 +911,16 @@ class diffops:
             >>> leray_result = Leray(x_data, y_data, fx_data)
         """
 
-        params = {'set_codpy_kernel' : _kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescale_kernel'] = rescale_params
+            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            _kernel.init(x,y,x, **params)
+            kernel.init(x,y,x, **params)
         else:
             params['rescale'] = rescale
-            _kernel.init(**params)
+            kernel.init(**params)
 
         return cd.op.Leray(get_matrix(x),get_matrix(y),fx)
     
@@ -1392,48 +1007,43 @@ class _factories:
     def get_map_factory_keys():
         return cd.factories.maps_factory_keys()
 
-class _kernel:
-    def rescale(x=[],y=[],z=[],**kwargs):
-        x,y,z = column_selector([x,y,z],**kwargs)
-        def get_param(**kwargs): return kwargs.get("rescale_kernel",None)
-        param = get_param(**kwargs)
-        if param is not None:
-            max_ = param.get("max",None)
-            if max_ is not None:
-                seed_ = param.get("seed",None)
-                x,y,z = random_select(x=x,xmax = max_,seed=seed_),random_select(x=y,xmax = max_,seed=seed_),random_select(x=z,xmax = max_,seed=seed_)
+class kernel:
+    def rescale(x=[],y=[],z=[],max_=None,seed=42):
+        if max_ is not None:
+            x,y,z = random_select(x=x,xmax = max_,seed=seed),random_select(x=y,xmax = max_,seed=seed),random_select(x=z,xmax = max_,seed=seed)
         x,y,z = get_matrix(x),get_matrix(y),get_matrix(z)
         cd.kernel.rescale(x,y,z)
     def get_kernel_ptr():
         return cd.get_kernel_ptr()
     def set_kernel_ptr(kernel_ptr):
         cd.set_kernel_ptr(kernel_ptr)
-    def pipe_kernel_ptr(kernel_ptr):
-        cd.kernel.pipe_kernel_ptr(kernel_ptr)
-    def pipe_kernel_fun(kernel_fun, regularization = 1e-8):
-        kern1 = _kernel.get_kernel_ptr()
+    def pipekernel_ptr(kernel_ptr):
+        cd.kernel.pipekernel_ptr(kernel_ptr)
+    def pipekernel_fun(kernel_fun, regularization = 1e-8):
+        kern1 = kernel.get_kernel_ptr()
         kernel_fun()
-        kern2 = _kernel.get_kernel_ptr()
-        _kernel.set_kernel_ptr(kern1)
-        _kernel.pipe_kernel_ptr(kern2)
+        kern2 = kernel.get_kernel_ptr()
+        kernel.set_kernel_ptr(kern1)
+        kernel.pipekernel_ptr(kern2)
         cd.kernel.set_regularization(regularization)
     def init(x = [], y = [], z = [], **kwargs):
-        set_codpy_kernel = kwargs.get('set_codpy_kernel',None)
-        if set_codpy_kernel is not None: set_codpy_kernel()
+        set_codpykernel = kwargs.get('set_codpykernel',None)
+        if set_codpykernel is not None: set_codpykernel()
         rescale = kwargs.get('rescale',False)
-        if (rescale): _kernel.rescale(x, y, z, **kwargs)
+        if (rescale): kernel.rescale(x, y, z, **kwargs)
+    def map(x):
+        return cd.kernel.map(get_matrix(x))
+    def get_map_ptr():
+        return cd.kernel.get_map_ptr()
+    def set_map_ptr(map_ptr):
+        cd.kernel.set_map_ptr(map_ptr)
 
 
-class _map_setters:
+class map_setters:
     class set:    
         def __init__(self,strings):
             self.strings = strings
-        def __call__(self,**kwargs):    
-            if isinstance(self.strings,list):
-                ss = self.strings.copy()
-                cd.kernel.set_map(ss.pop(0),kwargs)
-                [_pipe__map_setters.pipe(s) for s in ss]
-            else: cd.kernel.set_map(self.strings,kwargs)
+        def __call__(self,**kwargs): set_map(self.strings,kwargs)
     def set_linear_map(**kwargs): 
         """
         Set a linear map for the kernel.
@@ -1505,7 +1115,7 @@ class _map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments, including 'bandwidth' for the scale factor map configuration.
         """
-        return lambda : partial(_map_setters.set_scale_factor_map, **{'h':str(kwargs["bandwidth"])})()
+        return lambda : partial(map_setters.set_scale_factor_map, **{'h':str(kwargs["bandwidth"])})()
     def set_unitcube_map(**kwargs): 
         """
         Set a unit cube map for the kernel.
@@ -1547,7 +1157,7 @@ class _map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the standard mean map configuration.
         """
-        _map_setters.set_mean_distance_map(**kwargs)
+        map_setters.set_mean_distance_map(**kwargs)
         _pipe__map_setters.pipe_erfinv_map()
         _pipe__map_setters.pipe_unitcube_map()
     def set_standard_min_map(**kwargs):
@@ -1559,7 +1169,7 @@ class _map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the standard minimum map configuration.
         """
-        _map_setters.set_min_distance_map(**kwargs)
+        map_setters.set_min_distance_map(**kwargs)
         _pipe__map_setters.pipe_erfinv_map()
         _pipe__map_setters.pipe_unitcube_map()
     def set_unitcube_min_map(**kwargs):
@@ -1571,7 +1181,7 @@ class _map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the unit cube minimum map configuration.
         """
-        _map_setters.set_min_distance_map(**kwargs)
+        map_setters.set_min_distance_map(**kwargs)
         _pipe__map_setters.pipe_unitcube_map()
     def set_unitcube_erfinv_map(**kwargs):
         """
@@ -1582,7 +1192,7 @@ class _map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the unit cube erf-inverse map configuration.
         """
-        _map_setters.set_erfinv_map()
+        map_setters.set_erfinv_map()
         _pipe__map_setters.pipe_unitcube_map()
     def set_unitcube_mean_map(**kwargs):
         """
@@ -1593,7 +1203,7 @@ class _map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the unit cube mean map configuration.
         """
-        _map_setters.set_mean_distance_map(**kwargs)
+        map_setters.set_mean_distance_map(**kwargs)
         _pipe__map_setters.pipe_unitcube_map()
     def map_helper(map_setter, **kwargs): 
         """
@@ -1607,8 +1217,34 @@ class _map_setters:
         """
         return partial(map_setter, kwargs)
 
+def check_map_strings(strings): 
+    if isinstance(strings,list): [check_map_strings(s) for s in strings]
+    else: 
+        ok = strings in _factories.get_map_factory_keys()
+        if not ok: 
+            raise NameError("unknown map:"+strings)
+        
+def set_map(strings,check_=True,kwargs={}):
+    if check_:
+        if kernel.get_kernel_ptr() == None: 
+            raise AssertionError("set a kernel first, see set_kernel")
+        check_map_strings(strings)
+    if isinstance(strings,list):
+        ss = strings.copy()
+        cd.kernel.set_map(ss.pop(0),kwargs)
+        [_pipe__map_setters.pipe(s) for s in ss]
+    else: cd.kernel.set_map(strings,kwargs)
 
-class _kernel_setters:
+def checkkernel_strings(strings): 
+    ok = strings in _factories.get_kernel_factory_keys()
+    if not ok: 
+        raise NameError("unknown kernel:"+strings)
+def set_kernel(strings,reg=1e-8,check_=True):
+    if check_: checkkernel_strings(strings)
+    cd.set_kernel(strings)
+    cd.kernel.set_regularization(reg)
+
+class kernel_setters:
     def kernel_helper(setter, polynomial_order:int = 0,regularization:float = 1e-8,set_map = None):
         return partial(setter, polynomial_order,regularization,set_map)
     def set_kernel(kernel_string,polynomial_order:int = 2,regularization:float = 1e-8,set_map = None):
@@ -1631,11 +1267,11 @@ class _kernel_setters:
         cd.set_kernel(kernel_string)
         if (set_map) : set_map()
         if (polynomial_order > 0):
-            linear_kernel = _kernel_setters.kernel_helper(setter = _kernel_setters.set_linear_regressor_kernel,polynomial_order = polynomial_order,regularization = regularization,set_map = None)
-            _kernel.pipe_kernel_fun(linear_kernel,regularization)
+            linearkernel = kernel_setters.kernel_helper(setter = kernel_setters.set_linear_regressorkernel,polynomial_order = polynomial_order,regularization = regularization,set_map = None)
+            kernel.pipekernel_fun(linearkernel,regularization)
         cd.kernel.set_regularization(regularization)
 
-    def set_linear_regressor_kernel(polynomial_order:int = 2,regularization:float = 1e-8,set_map = None):
+    def set_linear_regressorkernel(polynomial_order:int = 2,regularization:float = 1e-8,set_map = None):
         """
         Set the linear regression kernel with specified parameters.
 
@@ -1649,7 +1285,7 @@ class _kernel_setters:
         cd.kernel.set_regularization(regularization)
         if (set_map) : set_map()
 
-    def set_absnorm_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = None): 
+    def set_absnormkernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = None): 
         """
         Set the absolute norm kernel with specified parameters.
 
@@ -1658,7 +1294,7 @@ class _kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        _kernel_setters.set_kernel("absnorm",polynomial_order,regularization,set_map)
+        kernel_setters.set_kernel("absnorm",polynomial_order,regularization,set_map)
     def set_tensornorm_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = None): 
         """
         Set the tensor norm kernel with specified parameters.
@@ -1668,7 +1304,7 @@ class _kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        _kernel_setters.set_kernel("tensornorm",polynomial_order,regularization,set_map)
+        kernel_setters.set_kernel("tensornorm",polynomial_order,regularization,set_map)
     def set_gaussian_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = None): 
         """
         Set the Gaussian kernel with specified parameters.
@@ -1678,7 +1314,7 @@ class _kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        _kernel_setters.set_kernel("gaussian",polynomial_order,regularization,set_map)
+        kernel_setters.set_kernel("gaussian",polynomial_order,regularization,set_map)
     def set_matern_tensor_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = None): 
         """
         Set the Matérn tensor kernel with specified parameters.
@@ -1688,51 +1324,51 @@ class _kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        _kernel_setters.set_kernel("materntensor",polynomial_order,regularization,set_map)
-    default_multiquadricnorm_kernel_map = partial(_map_setters.set_standard_mean_map, distance ='norm2')
-    def set_multiquadricnorm_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = default_multiquadricnorm_kernel_map): 
+        kernel_setters.set_kernel("materntensor",polynomial_order,regularization,set_map)
+    default_multiquadricnormkernel_map = partial(map_setters.set_standard_mean_map, distance ='norm2')
+    def set_multiquadricnorm_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = default_multiquadricnormkernel_map): 
         """
         Set the multi-quadric norm kernel with specified parameters.
 
         Args:
         - polynomial_order (int): The polynomial order for the kernel function.
         - regularization (float): The regularization parameter for the kernel.
-        - set_map (callable, optional): An optional mapping function defined as `default_multiquadricnorm_kernel_map`.
+        - set_map (callable, optional): An optional mapping function defined as `default_multiquadricnormkernel_map`.
         """
-        _kernel_setters.set_kernel("multiquadricnorm",polynomial_order,regularization,set_map)
-    default_multiquadrictensor_kernel_map = partial(_map_setters.set_standard_min_map, distance ='normifty')
-    def set_multiquadrictensor_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = default_multiquadrictensor_kernel_map): 
+        kernel_setters.set_kernel("multiquadricnorm",polynomial_order,regularization,set_map)
+    default_multiquadrictensorkernel_map = partial(map_setters.set_standard_min_map, distance ='normifty')
+    def set_multiquadrictensor_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = default_multiquadrictensorkernel_map): 
         """
         Set the multi-quadric tensor kernel with specified parameters.
 
         Args:
         - polynomial_order (int): The polynomial order for the kernel function.
         - regularization (float): The regularization parameter for the kernel.
-        - set_map (callable, optional): An optional mapping function defined as `default_multiquadrictensor_kernel_map`.
+        - set_map (callable, optional): An optional mapping function defined as `default_multiquadrictensorkernel_map`.
         """
-        _kernel_setters.set_kernel("multiquadrictensor",polynomial_order,regularization,set_map)
-    default_sincardtensor_kernel_map = partial(_map_setters.set_min_distance_map, distance ='normifty')
-    def set_sincardtensor_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = default_sincardtensor_kernel_map):
+        kernel_setters.set_kernel("multiquadrictensor",polynomial_order,regularization,set_map)
+    default_sincardtensorkernel_map = partial(map_setters.set_min_distance_map, distance ='normifty')
+    def set_sincardtensor_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = default_sincardtensorkernel_map):
         """
         Set the sinc cardinal tensor kernel with specified parameters.
 
         Args:
         - polynomial_order (int): The polynomial order for the kernel function.
         - regularization (float): The regularization parameter for the kernel.
-        - set_map (callable, optional): An optional mapping function defined as `default_sincardtensor_kernel_map`.
+        - set_map (callable, optional): An optional mapping function defined as `default_sincardtensorkernel_map`.
         """
-        _kernel_setters.set_kernel("sincardtensor",polynomial_order,regularization,set_map)        
-    default_sincardsquaretensor_kernel_map = partial(_map_setters.set_min_distance_map, distance ='normifty')
-    def set_sincardsquaretensor_kernel(polynomial_order:int = 0,regularization:float = 0,set_map = default_sincardsquaretensor_kernel_map): 
+        kernel_setters.set_kernel("sincardtensor",polynomial_order,regularization,set_map)        
+    default_sincardsquaretensorkernel_map = partial(map_setters.set_min_distance_map, distance ='normifty')
+    def set_sincardsquaretensor_kernel(polynomial_order:int = 0,regularization:float = 0,set_map = default_sincardsquaretensorkernel_map): 
         """
         Set the sinc cardinal square tensor kernel with specified parameters.
 
         Args:
         - polynomial_order (int): The polynomial order for the kernel function.
         - regularization (float): The regularization parameter for the kernel.
-        - set_map (callable, optional): An optional mapping function defined as `default_sincardsquaretensor_kernel_map`.
+        - set_map (callable, optional): An optional mapping function defined as `default_sincardsquaretensorkernel_map`.
         """
-        _kernel_setters.set_kernel("sincardsquaretensor",polynomial_order,regularization,set_map)        
+        kernel_setters.set_kernel("sincardsquaretensor",polynomial_order,regularization,set_map)        
     def set_dotproduct_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = None):
         """
         Set the dot product kernel with specified parameters.
@@ -1742,7 +1378,7 @@ class _kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        _kernel_setters.set_kernel("DotProduct",polynomial_order,regularization,set_map)        
+        kernel_setters.set_kernel("DotProduct",polynomial_order,regularization,set_map)        
     def set_gaussianper_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = None):
         """
         Set the Gaussian periodic kernel with specified parameters.
@@ -1752,17 +1388,17 @@ class _kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        _kernel_setters.set_kernel("gaussianper",polynomial_order,regularization,set_map)     
-    def set_matern_norm_kernel(polynomial_order:int = 2,regularization:float = 1e-8,set_map = _map_setters.set_mean_distance_map): 
+        kernel_setters.set_kernel("gaussianper",polynomial_order,regularization,set_map)     
+    def set_matern_norm_kernel(polynomial_order:int = 2,regularization:float = 1e-8,set_map = map_setters.set_mean_distance_map): 
         """
         Set the Matérn norm kernel with specified parameters.
 
         Args:
         - polynomial_order (int): The polynomial order for the kernel function.
         - regularization (float): The regularization parameter for the kernel.
-        - set_map (callable, optional): An optional mapping function defined as `_map_setters.set_mean_distance_map`.
+        - set_map (callable, optional): An optional mapping function defined as `map_setters.set_mean_distance_map`.
         """
-        _kernel_setters.set_kernel("maternnorm",polynomial_order,regularization,set_map) 
+        kernel_setters.set_kernel("maternnorm",polynomial_order,regularization,set_map) 
     def set_scalar_product_kernel(polynomial_order:int = 0,regularization:float = 1e-8,set_map = None): 
         """
         Set the scalar product kernel with specified parameters.
@@ -1772,7 +1408,7 @@ class _kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        _kernel_setters.set_kernel("scalar_product",polynomial_order,regularization,set_map)
+        kernel_setters.set_kernel("scalar_product",polynomial_order,regularization,set_map)
 
 class _pipe__map_setters:
     def pipe(s,**kwargs):
@@ -1791,64 +1427,64 @@ class _pipe__map_setters:
 
 
 
-_kernel_settings = {
-    "linear": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_linear_regressor_kernel,  polynomial_order, regularization, map_func
+kernel_settings = {
+    "linear": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_linear_regressorkernel,  polynomial_order, regularization, map_func
     ),
-    "gaussian": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_gaussian_kernel,  polynomial_order, regularization, map_func
+    "gaussian": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_gaussiankernel,  polynomial_order, regularization, map_func
     ),
-    "tensornorm": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_tensornorm_kernel, polynomial_order, regularization, map_func
+    "tensornorm": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_tensornormkernel, polynomial_order, regularization, map_func
     ),
-    "absnorm": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_absnorm_kernel, polynomial_order, regularization, map_func
+    "absnorm": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_absnormkernel, polynomial_order, regularization, map_func
     ),
-    "matern": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_matern_tensor_kernel, polynomial_order, regularization, map_func
+    "matern": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_matern_tensorkernel, polynomial_order, regularization, map_func
     ),
-    "multiquadricnorm": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_multiquadricnorm_kernel, polynomial_order, regularization, map_func
+    "multiquadricnorm": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_multiquadricnormkernel, polynomial_order, regularization, map_func
     ),
-    "multiquadrictensor": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_multiquadrictensor_kernel, polynomial_order, regularization, map_func
+    "multiquadrictensor": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_multiquadrictensorkernel, polynomial_order, regularization, map_func
     ),
-    "sincardtensor": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_sincardtensor_kernel, polynomial_order, regularization, map_func
+    "sincardtensor": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_sincardtensorkernel, polynomial_order, regularization, map_func
     ),
-    "sincardsquaretensor": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_sincardsquaretensor_kernel, polynomial_order, regularization, map_func
+    "sincardsquaretensor": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_sincardsquaretensorkernel, polynomial_order, regularization, map_func
     ),
-    "dotproduct": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_dotproduct_kernel, polynomial_order, regularization, map_func
+    "dotproduct": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_dotproductkernel, polynomial_order, regularization, map_func
     ),
-    "gaussianper": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_gaussianper_kernel, polynomial_order, regularization, map_func
+    "gaussianper": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_gaussianperkernel, polynomial_order, regularization, map_func
     ),
-    "maternnorm": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_matern_norm_kernel, polynomial_order, regularization, map_func
+    "maternnorm": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_matern_normkernel, polynomial_order, regularization, map_func
     ),
-    "scalarproduct": lambda: lambda polynomial_order, regularization, map_func: _kernel_setters.kernel_helper(
-        _kernel_setters.set_scalar_product_kernel, polynomial_order, regularization, map_func
+    "scalarproduct": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
+        kernel_setters.set_scalar_productkernel, polynomial_order, regularization, map_func
     )
 }
 
 _map_settings = {
-    "linear": _map_setters.set_linear_map,
-    "affine": _map_setters.set_affine_map,
-    "log": _map_setters.set_log_map,
-    "exp": _map_setters.set_exp_map,
-    "scalestd": _map_setters.set_scale_std_map,
-    "erf": _map_setters.set_erf_map,
-    "erfinv": _map_setters.set_erfinv_map,
-    "scalefactor": _map_setters.set_scale_factor_map,
-    "bandwidth": _map_setters.set_scale_factor_helper,
-    "grid": _map_setters.set_grid_map,
-    "unitcube": _map_setters.set_unitcube_map,
-    "meandistance": _map_setters.set_mean_distance_map,
-    "mindistance": _map_setters.set_min_distance_map,
-    "standardmin": _map_setters.set_standard_mean_map,
-    "standardmean": _map_setters.set_standard_mean_map
+    "linear": map_setters.set_linear_map,
+    "affine": map_setters.set_affine_map,
+    "log": map_setters.set_log_map,
+    "exp": map_setters.set_exp_map,
+    "scalestd": map_setters.set_scale_std_map,
+    "erf": map_setters.set_erf_map,
+    "erfinv": map_setters.set_erfinv_map,
+    "scalefactor": map_setters.set_scale_factor_map,
+    "bandwidth": map_setters.set_scale_factor_helper,
+    "grid": map_setters.set_grid_map,
+    "unitcube": map_setters.set_unitcube_map,
+    "meandistance": map_setters.set_mean_distance_map,
+    "mindistance": map_setters.set_min_distance_map,
+    "standardmin": map_setters.set_standard_mean_map,
+    "standardmean": map_setters.set_standard_mean_map
 }
 def _requires_bandwidth(map_name: str) -> bool:
     bandwidth_required_maps = {"scale_factor"}
@@ -1864,7 +1500,7 @@ def _requires_rescale(map_name: str) -> bool:
     }
     return map_name in maps_needing_rescale
 
-def _kernel_helper2(kernel, map, polynomial_order=0, regularization=1e-8, bandwidth = 1.0):
+def kernel_helper2(kernel, map, polynomial_order=0, regularization=1e-8, bandwidth = 1.0):
     """
     Set the kernel function with specified parameters using string identifiers.
 
@@ -1877,7 +1513,7 @@ def _kernel_helper2(kernel, map, polynomial_order=0, regularization=1e-8, bandwi
     Returns:
         The configured kernel function.
     """
-    kernel_func_creator = _kernel_settings.get(kernel)
+    kernel_func_creator = kernel_settings.get(kernel)
     map_func = _map_settings.get(map)
 
     if not kernel_func_creator:
@@ -1894,7 +1530,8 @@ def _kernel_helper2(kernel, map, polynomial_order=0, regularization=1e-8, bandwi
     kernel_func = kernel_func_creator()
 
     return kernel_func(polynomial_order, regularization, map_func)
-    
+
+   
 class _Cache:
     """
     A class for caching and computing kernel matrices using a provided positive definite (pd) kernel.
@@ -1931,7 +1568,20 @@ class _Cache:
         kernel.set_kernel_ptr(self.kernel)
         cd.kernel.set_polynomial_order(self.order)
         cd.kernel.set_regularization(self.reg)
-        Knm= op.Knm(**{**self.params,**{'x':z,'y':y,'fy':self.knm_inv,'set_codpy_kernel':None,'rescale':False}})
-        # test = self.fx - op.projection(**{**self.params,**{'z':z,'fx':self.fx,'set_codpy_kernel':None,'rescale':False}})  
+        Knm= op.Knm(**{**self.params,**{'x':z,'y':y,'fy':self.knm_inv,'set_codpykernel':None,'rescale':False}})
+        # test = self.fx - op.projection(**{**self.params,**{'z':z,'fx':self.fx,'set_codpykernel':None,'rescale':False}})  
         return Knm
 
+if __name__ == "__main__":
+    set_kernel("tensornorm",1e-2)
+    test = cd.kernel.get_regularization()
+    set_map("scale_to_unitcube")
+    x = np.random.randn(10, 2)
+    fx = np.random.randn(10, 3)
+    kernel.rescale(x)
+    Knm = op.Knm(x=x,y=x)
+    # Knm_inv = lalg.cholesky(x=Knm,eps=1e-2)
+    Knm_inv = cd.lalg.cholesky(Knm,1e-8)
+    Kinv = op.Knm_inv(x=x,y=x,fx=fx)
+    Kinv1 = np.linalg.solve(x.T @ x, fx.T).T
+    pass
