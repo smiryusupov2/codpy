@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-def column_selector(data, cols_drop=None, cols_keep=None, split=False, **kwargs):
+def column_selector(data,**kwargs):
     """
     Select or drop columns from a pandas DataFrame.
 
@@ -14,24 +14,29 @@ def column_selector(data, cols_drop=None, cols_keep=None, split=False, **kwargs)
     Returns:
         pd.DataFrame or (pd.DataFrame, pd.DataFrame): Modified DataFrame or a tuple of modified and dropped DataFrames.
     """
-    # if not isinstance(dataframe, pd.DataFrame):
-    #     raise ValueError("Input must be a pandas DataFrame")
     if isinstance(data,list):return [column_selector(y,**kwargs) for y in data]
-
-    cols_drop = cols_drop or []
-    cols_keep = cols_keep or []
-
-    if cols_drop:
-        dataframe = dataframe.drop(columns=cols_drop, errors='ignore')
-    if cols_keep:
-        dataframe = dataframe[cols_keep]
-
-    if split:
-        remaining_cols = set(dataframe.columns)
-        dropped_cols = set(cols_drop) - remaining_cols
-        return dataframe, dataframe[dropped_cols]
-
-    return data
+    if not isinstance(data, pd.DataFrame):
+         raise ValueError("Input must be a pandas DataFrame")
+    cols_drop = kwargs.get('cols_drop',[])
+    cols_keep = kwargs.get('cols_keep',[])
+    if len(cols_drop)+len(cols_keep) == 0: return data
+    if len(cols_drop):test = cols_drop[0]
+    else:test = cols_keep[0]
+    if not isinstance(test,str) :
+        test = set(data.columns) - set(cols_drop)
+        if len(cols_keep): test = [c for c in test if c in cols_keep]
+        return data[test]
+    cols_drop = get_starting_cols(list(data.columns),cols_drop)
+    x0 = data
+    if len(cols_drop):
+        x0 = x0.drop(cols_drop,axis=1)
+    cols_keep = get_starting_cols(list(x0.columns),cols_keep)
+    if len(cols_keep):
+        x0 = x0[cols_keep]
+    if kwargs.get("split",False):
+        trash_cols = set(data.columns)-set(x0.columns)
+        return x0,data[trash_cols]
+    return x0
 
 # def column_selector(column_selector_x,**kwargs):
 #     if isinstance(column_selector_x,list):return [column_selector(y,**kwargs) for y in column_selector_x]

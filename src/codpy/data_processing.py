@@ -1,8 +1,10 @@
+# from include_all import *
+
 import pandas as pd
 import numpy as np
 from metrics import *
 from selection import column_selector, select_constant_columns
-from core import op
+from core import *
 from data_conversion import get_data, my_len
 
 
@@ -208,13 +210,14 @@ def lexicographical_permutation(x,fx=[],**kwargs) -> tuple:
     else: out = fx[index_array]
     return (x_sorted,out,index_array)
 
-def hot_encoder(data_frame : pd.DataFrame,cat_cols_include = []) -> pd.DataFrame:
+def hot_encoder(data_frame : pd.DataFrame,cat_cols_include = [],cat_cols_exclude = []) -> pd.DataFrame:
     # data_frame.to_csv (r'data_frame.csv', header=True)
     num_dataframe = data_frame.select_dtypes(include='number')
     num_cols = set(num_dataframe.columns)
     if len(cat_cols_include):num_cols.difference_update(cat_cols_include)
     cat_cols = set(data_frame.columns)
     cat_cols = cat_cols.difference(num_cols)
+    if len(cat_cols_exclude): cat_cols = cat_cols.difference(cat_cols_exclude)
     cat_dataframe = data_frame[list(cat_cols)]
     num_dataframe = data_frame[list(num_cols)]
     index = cat_dataframe.index

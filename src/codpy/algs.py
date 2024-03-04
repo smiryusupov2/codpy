@@ -1,4 +1,4 @@
-from include_all import *
+from data_processing import lexicographical_permutation
 
 
 class alg:
