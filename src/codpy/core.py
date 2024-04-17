@@ -3,6 +3,7 @@ from data_conversion import *
 from codpydll import *
 import numpy as np
 from functools import partial, cache
+from utils import pad_axis
 
 
 
@@ -54,7 +55,7 @@ class op:
         def project_array(x, y, z, fx, reg):
             return cd.op.projection(x, y, z, fx, reg)
 
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -178,7 +179,7 @@ class op:
             * ``kernel`` function
             * ``map``
         """
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -254,7 +255,7 @@ class op:
             - ``'standardmin'``: Standard minimum map pipeline combining minimum distance scaling with other transformations.
             - ``'standardmean'``: Standard mean map pipeline combining mean distance scaling with other transformations.
         """
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -333,7 +334,7 @@ class op:
         """
         x,y = column_selector(x,**kwargs),column_selector(y,**kwargs)
         x,y = pad_axis(x,y)
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -350,7 +351,7 @@ class op:
     def discrepancy_error(x: np.array = None, z : np.array = None, disc_type="raw", 
                     kernel_fun = "tensornorm", map = "unitcube", polynomial_order=2, reg: float = 1e-8, rescale_params: dict = {'max': 2000, 'seed':42}, 
                     rescale = False, verbose = False, **kwargs):
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -365,7 +366,7 @@ class op:
     def norm_projection(x: np.array = None, z: np.array = None, fx: np.array = None, kernel_fun: str = "tensornorm", map: str = "unitcube", 
                     polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], 
                     rescale: bool = False, rescale_params: dict = {'max': 2000, 'seed':42}, verbose = False, **kwargs):
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -434,7 +435,7 @@ def discrepancy(x: np.array = None, y: np.array = None, z : np.array = None, dis
         nmax = int(kwargs.get('discrepancy:nmax'))
         if len(x) + 2 * len(y) + len(z) > nmax: return np.NaN
     params = {'rescalekernel':{'max': 1000, 'seed':42},
-        'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=reg),
+        'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=reg),
         'rescale': rescale,
         }
     kernel.init(**params)
@@ -561,7 +562,7 @@ class diffops:
         :type kwargs: dict
         """
         
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -611,7 +612,7 @@ class diffops:
             >>> gradient = diffops.nabla(x,x,z,fx,kernel_fun="linear", map=None)
         """
 
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -663,7 +664,7 @@ class diffops:
             >>> inv_gradient = nabla_inv(x_data, y_data, z_data, fz=vector_field)
         """
         
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -717,7 +718,7 @@ class diffops:
             >>> divergence = nablaT(x_data, y_data, z_data, fz=vector_field)
         """
 
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -768,7 +769,7 @@ class diffops:
             >>> inv_transpose_gradient = nablaT_inv(x_data, y_data, z_data, fx_data)
         """
         
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -825,7 +826,7 @@ class diffops:
             >>> laplace_operator = nablaT_nabla(x_data, y_data, fx_data)
         """
 
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -861,7 +862,7 @@ class diffops:
         """
         
         params = {'rescalekernel':{'max': 1000, 'seed':42},
-        'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization),
+        'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization),
         'rescale': rescale,
         }
         if rescale == True or _requires_rescale(map_name=map):
@@ -880,7 +881,7 @@ class diffops:
                    polynomial_order:int=2, regularization: float = 1e-8, 
                    rescale:bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
                    verbose = False, **kwargs):
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -915,7 +916,7 @@ class diffops:
             >>> leray_result = Leray(x_data, y_data, fx_data)
         """
 
-        params = {'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
+        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
             params['rescalekernel'] = rescale_params
@@ -1021,20 +1022,20 @@ class kernel:
         return cd.get_kernel_ptr()
     def set_kernel_ptr(kernel_ptr):
         cd.set_kernel_ptr(kernel_ptr)
-    def pipekernel_ptr(kernel_ptr):
-        cd.kernel.pipekernel_ptr(kernel_ptr)
-    def pipekernel_fun(kernel_fun, regularization = 1e-8):
+    def pipe_kernel_ptr(kernel_ptr):
+        cd.kernel.pipe_kernel_ptr(kernel_ptr)
+    def pipe_kernel_fun(kernel_fun, regularization = 1e-8):
         kern1 = kernel.get_kernel_ptr()
         kernel_fun()
         kern2 = kernel.get_kernel_ptr()
         kernel.set_kernel_ptr(kern1)
-        kernel.pipekernel_ptr(kern2)
+        kernel.pipe_kernel_ptr(kern2)
         cd.kernel.set_regularization(regularization)
     def init(x = [], y = [], z = [], **kwargs):
-        set_codpykernel = kwargs.get('set_codpykernel',None)
-        if set_codpykernel is not None: set_codpykernel()
+        set_codpy_kernel = kwargs.get('set_codpy_kernel',None)
+        if set_codpy_kernel is not None: set_codpy_kernel()
         rescale = kwargs.get('rescale',False)
-        if (rescale): kernel.rescale(x, y, z, **kwargs)
+        if (rescale): kernel.rescale(x, y, z)
     def map(x):
         return cd.kernel.map(get_matrix(x))
     def get_map_ptr():
@@ -1271,11 +1272,11 @@ class kernel_setters:
         cd.set_kernel(kernel_string)
         if (set_map) : set_map()
         if (polynomial_order > 0):
-            linearkernel = kernel_setters.kernel_helper(setter = kernel_setters.set_linear_regressorkernel,polynomial_order = polynomial_order,regularization = regularization,set_map = None)
-            kernel.pipekernel_fun(linearkernel,regularization)
+            linearkernel = kernel_setters.kernel_helper(setter = kernel_setters.set_linear_regressor_kernel,polynomial_order = polynomial_order,regularization = regularization,set_map = None)
+            kernel.pipe_kernel_fun(linearkernel,regularization)
         cd.kernel.set_regularization(regularization)
 
-    def set_linear_regressorkernel(polynomial_order:int = 2,regularization:float = 1e-8,set_map = None):
+    def set_linear_regressor_kernel(polynomial_order:int = 2,regularization:float = 1e-8,set_map = None):
         """
         Set the linear regression kernel with specified parameters.
 
@@ -1433,43 +1434,43 @@ class _pipe__map_setters:
 
 kernel_settings = {
     "linear": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_linear_regressorkernel,  polynomial_order, regularization, map_func
+        kernel_setters.set_linear_regressor_kernel,  polynomial_order, regularization, map_func
     ),
     "gaussian": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_gaussiankernel,  polynomial_order, regularization, map_func
+        kernel_setters.set_gaussian_kernel,  polynomial_order, regularization, map_func
     ),
     "tensornorm": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_tensornormkernel, polynomial_order, regularization, map_func
+        kernel_setters.set_tensornorm_kernel, polynomial_order, regularization, map_func
     ),
     "absnorm": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
         kernel_setters.set_absnormkernel, polynomial_order, regularization, map_func
     ),
     "matern": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_matern_tensorkernel, polynomial_order, regularization, map_func
+        kernel_setters.set_matern_tensor_kernel, polynomial_order, regularization, map_func
     ),
     "multiquadricnorm": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_multiquadricnormkernel, polynomial_order, regularization, map_func
+        kernel_setters.set_multiquadricnorm_kernel, polynomial_order, regularization, map_func
     ),
     "multiquadrictensor": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_multiquadrictensorkernel, polynomial_order, regularization, map_func
+        kernel_setters.set_multiquadrictensor_kernel, polynomial_order, regularization, map_func
     ),
     "sincardtensor": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_sincardtensorkernel, polynomial_order, regularization, map_func
+        kernel_setters.set_sincardtensor_kernel, polynomial_order, regularization, map_func
     ),
     "sincardsquaretensor": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_sincardsquaretensorkernel, polynomial_order, regularization, map_func
+        kernel_setters.set_sincardsquaretensor_kernel, polynomial_order, regularization, map_func
     ),
     "dotproduct": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_dotproductkernel, polynomial_order, regularization, map_func
+        kernel_setters.set_dotproduct_kernel, polynomial_order, regularization, map_func
     ),
     "gaussianper": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_gaussianperkernel, polynomial_order, regularization, map_func
+        kernel_setters.set_gaussianper_kernel, polynomial_order, regularization, map_func
     ),
     "maternnorm": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_matern_normkernel, polynomial_order, regularization, map_func
+        kernel_setters.set_matern_norm_kernel, polynomial_order, regularization, map_func
     ),
     "scalarproduct": lambda: lambda polynomial_order, regularization, map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_scalar_productkernel, polynomial_order, regularization, map_func
+        kernel_setters.set_scalar_product_kernel, polynomial_order, regularization, map_func
     )
 }
 
@@ -1572,8 +1573,8 @@ class _Cache:
         kernel.set_kernel_ptr(self.kernel)
         cd.kernel.set_polynomial_order(self.order)
         cd.kernel.set_regularization(self.reg)
-        Knm= op.Knm(**{**self.params,**{'x':z,'y':y,'fy':self.knm_inv,'set_codpykernel':None,'rescale':False}})
-        # test = self.fx - op.projection(**{**self.params,**{'z':z,'fx':self.fx,'set_codpykernel':None,'rescale':False}})  
+        Knm= op.Knm(**{**self.params,**{'x':z,'y':y,'fy':self.knm_inv,'set_codpy_kernel':None,'rescale':False}})
+        # test = self.fx - op.projection(**{**self.params,**{'z':z,'fx':self.fx,'set_codpy_kernel':None,'rescale':False}})  
         return Knm
 
 if __name__ == "__main__":
