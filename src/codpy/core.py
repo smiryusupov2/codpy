@@ -1,5 +1,6 @@
 from selection import *
 from data_conversion import *
+from random_utils import *
 from codpydll import *
 import numpy as np
 from functools import partial, cache
@@ -58,7 +59,6 @@ class op:
         params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             kernel.init(x,y,z, **params)
@@ -182,7 +182,6 @@ class op:
         params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
         if rescale == True or _requires_rescale(map_name=map):
             params['rescale'] = True
-            params['rescalekernel'] = rescale_params
             if verbose:
                 warnings.warn("Rescaling is set to True as it is required for the chosen map.")
             kernel.init(x,y,z, **params)
@@ -300,10 +299,7 @@ class op:
         """
         return cd.op.Knm_inv(get_matrix(x),get_matrix(y),get_matrix(fx),get_matrix(reg))
     
-    def Dnm(x, y, distance = None, kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order=2, regularization: float = 1e-8, rescale = False, 
-                   rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False,
-                   **kwargs) -> np.ndarray:
+    def Dnm(x, y, distance = None, **kwargs) -> np.ndarray:
         """
         Computes a distance matrix induced by a positive definite (pd) kernel.
 
@@ -314,38 +310,18 @@ class op:
             x (np.array): The first set of data points.
             y (np.array): The second set of data points. If not provided, defaults to x.
             distance (function, optional): a name of distance function.
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
         :type kwargs: dict
 
         Returns:
             np.array: A distance matrix representing the distances between each pair of points in x and y as induced by the pd kernel.
         """
-        x,y = column_selector(x,**kwargs),column_selector(y,**kwargs)
+        if isinstance(x,list): return [op.Dnm(x0, y, distance = None, **kwargs) for x0 in x]
+        if isinstance(y,list): return [op.Dnm(x, y0, distance = None, **kwargs) for y0 in y]
+        x,y = column_selector(**{**kwargs,**{'data':x}}),column_selector(**{**kwargs,**{'data':y}})
         x,y = pad_axis(x,y)
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,x, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
+        kernel.init(**{**kwargs,**{"x":x,"y":y,"z":[]}})
         if distance is not None:
-            return cd.op.Dnm(get_matrix(x),get_matrix(y), {'distance' : "norm22"})
+            return cd.op.Dnm(get_matrix(x),get_matrix(y), {'distance' : distance})
         return cd.op.Dnm(get_matrix(x),get_matrix(y))
     
     def discrepancy_error(x: np.array = None, z : np.array = None, disc_type="raw", 
@@ -434,7 +410,7 @@ def discrepancy(x: np.array = None, y: np.array = None, z : np.array = None, dis
     if 'discrepancy:nmax' in kwargs:
         nmax = int(kwargs.get('discrepancy:nmax'))
         if len(x) + 2 * len(y) + len(z) > nmax: return np.NaN
-    params = {'rescalekernel':{'max': 1000, 'seed':42},
+    params = {
         'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=reg),
         'rescale': rescale,
         }
@@ -1013,9 +989,9 @@ class _factories:
         return cd.factories.maps_factory_keys()
 
 class kernel:
-    def rescale(x=[],y=[],z=[],max_=None,seed=42):
-        if max_ is not None:
-            x,y,z = random_select(x=x,xmax = max_,seed=seed),random_select(x=y,xmax = max_,seed=seed),random_select(x=z,xmax = max_,seed=seed)
+    def rescale(x=[],y=[],z=[],max=None,seed=42,**kwargs):
+        if max is not None:
+            x,y,z = random_select(x=x,xmax = max,seed=seed),random_select(x=y,xmax = max,seed=seed),random_select(x=z,xmax = max,seed=seed)
         x,y,z = get_matrix(x),get_matrix(y),get_matrix(z)
         cd.kernel.rescale(x,y,z)
     def get_kernel_ptr():
@@ -1035,7 +1011,7 @@ class kernel:
         set_codpy_kernel = kwargs.get('set_codpy_kernel',None)
         if set_codpy_kernel is not None: set_codpy_kernel()
         rescale = kwargs.get('rescale',False)
-        if (rescale): kernel.rescale(x, y, z)
+        if (rescale): kernel.rescale(x, y, z, **kwargs)
     def map(x):
         return cd.kernel.map(get_matrix(x))
     def get_map_ptr():
@@ -1488,7 +1464,7 @@ _map_settings = {
     "unitcube": map_setters.set_unitcube_map,
     "meandistance": map_setters.set_mean_distance_map,
     "mindistance": map_setters.set_min_distance_map,
-    "standardmin": map_setters.set_standard_mean_map,
+    "standardmin": map_setters.set_standard_min_map,
     "standardmean": map_setters.set_standard_mean_map
 }
 def _requires_bandwidth(map_name: str) -> bool:

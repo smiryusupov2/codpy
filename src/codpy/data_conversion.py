@@ -11,7 +11,7 @@ get_data_switchDict = { pd.DataFrame: lambda x :  x.values,
                         xarray.core.dataarray.DataArray: lambda xs : get_data(xs.values) 
                     }
 
-get_date_switchDict = { str: lambda x,**kwargs :  datetime.datetime.strptime(x, kwargs.get('date_format','%d/%m/%Y')),
+get_date_switchDict = { str: lambda x,**kwargs :  datetime.datetime.strptime(x, kwargs.get('date_format','%d/%m/%Y')).date(),
                         datetime.date:lambda x,**kwargs : x,
                         int : lambda x,**kwargs : get_date(datetime.date.fromordinal(x)),
                         float : lambda x,**kwargs : get_date(int(x)),

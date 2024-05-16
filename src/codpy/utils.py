@@ -85,10 +85,21 @@ def softmaxindice(mat : np.ndarray, label: np.ndarray = [], axis: int = 1, diago
         out = test
     return out
 
-def softminindice(mat : np.ndarray, label: np.ndarray = [], axis: int = 1, diagonal: bool = False, **kwargs):
-    return softmaxindice(-mat, label, axis, diagonal, **kwargs)
+def softmaxvalues(mat : np.ndarray, axis: int = 1, diagonal: bool = False, **kwargs):
+    if diagonal:
+        def helper(n):mat[n,n] = -1e+150
+        [helper(n) for n in range(mat.shape[0])]
+    return np.max(get_matrix(mat), axis)
+
+def softminindice(mat : np.ndarray, axis: int = 1, diagonal: bool = False, **kwargs):
+    return softmaxindice(-mat, axis, diagonal, **kwargs)
+
+def softminvalues(mat : np.ndarray, axis: int = 1, diagonal: bool = False, **kwargs):
+    return -softmaxvalues(-mat, axis, diagonal, **kwargs)
+
 
 if __name__ == "__main__":
+
     # for k in cast_dict:print(k,cast_dict[k])
     # test = [1,2]
     # test=map_invertion(test)
