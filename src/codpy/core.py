@@ -1,10 +1,10 @@
-from selection import *
-from data_conversion import *
-from random_utils import *
+from codpy.selection import *
+from codpy.data_conversion import *
+from codpy.random_utils import *
 from codpydll import *
 import numpy as np
 from functools import partial, cache
-from utils import pad_axis
+from codpy.utils import pad_axis
 
 
 
@@ -14,7 +14,7 @@ class _codpy_param_getter:
 
 
 class op:
-    def projection(x, y, z, fx):
+    def projection(x, y, z, fx,**kwargs):
         """
         Performs projection in kernel regression for efficient computation, targeting a lower sampling space.
         Note:
@@ -104,7 +104,7 @@ class op:
 
         return f_z
 
-    def extrapolation(x, z, fx=[]):
+    def extrapolation(x, z, fx=[],**kwargs):
         """
         Performs extrapolation in the context of kernel regression.
 
@@ -118,7 +118,7 @@ class op:
 
         return op.projection(x = x, y = x, z = z, fx = fx)
 
-    def interpolation(x, z, fx=[]):
+    def interpolation(x, z, fx=[],**kwargs):
         """
         Performs interpolation in the context of kernel regression.
 
@@ -131,7 +131,7 @@ class op:
         """
         return op.projection(x = x, y = z, z = z, fx = fx)
     
-    def gradient_denoiser(x, z, fx,epsilon):
+    def gradient_denoiser(x, z, fx,epsilon,**kwargs):
         """
         A function for performing least squares regression penalized by the norm of the gradient, 
         induced by a positive definite (PD) kernel.
@@ -161,7 +161,7 @@ class op:
         # out = op.extrapolation(**{**self.params,**{'z':z}})
         return out
     
-    def norm(x, y, z, fx):
+    def norm(x, y, z, fx,**kwargs):
         """
         Calculate the kernel-induced norm based on the provided matrices.
 
@@ -190,7 +190,7 @@ class op:
             kernel.init(**params)
         return cd.tools.norm_projection(get_matrix(x),get_matrix(y),get_matrix(z),get_matrix(fx))
 
-    def coefficients(x, y, fx) -> np.ndarray:
+    def coefficients(x, y, fx,**kwargs) -> np.ndarray:
         """
         Computes the regressors or coefficients for kernelized regression, using a specified PD kernel.
 
@@ -265,7 +265,7 @@ class op:
             kernel.init(**params)
         return cd.op.coefficients(get_matrix(x),get_matrix(y),get_matrix(fx), [])
     # @cache
-    def Knm(x, y, fx = []) -> np.ndarray:
+    def Knm(x, y, fy = [],**kwargs) -> np.ndarray:
         """
         Computes the kernel matrix induced by a positive definite (pd) kernel.
 
@@ -281,9 +281,9 @@ class op:
             - prod(Knm(x,y),fx) else. This allow performance and memory optimizations.
 
         """
-        return cd.op.Knm(x, y, fx)
+        return cd.op.Knm(x, y, fy)
 
-    def Knm_inv(x, y, fx=[],reg=[]):
+    def Knm_inv(x, y, fx=[],reg=[],**kwargs):
         """
         Args:
             x (:class:`numpy.ndarray`): Input data points for the gradient computation. np.array of size N , D.
@@ -998,6 +998,10 @@ class kernel:
         return cd.get_kernel_ptr()
     def set_kernel_ptr(kernel_ptr):
         cd.set_kernel_ptr(kernel_ptr)
+    def set_polynomial_order(order):
+        cd.kernel.set_polynomial_order(order)
+    def set_regularization(regularization):
+        cd.kernel.set_regularization(regularization)
     def pipe_kernel_ptr(kernel_ptr):
         cd.kernel.pipe_kernel_ptr(kernel_ptr)
     def pipe_kernel_fun(kernel_fun, regularization = 1e-8):
@@ -1510,7 +1514,7 @@ def kernel_helper2(kernel, map, polynomial_order=0, regularization=1e-8, bandwid
 
     kernel_func = kernel_func_creator()
 
-    return kernel_func(polynomial_order, regularization, map_func)
+    return kernel_func(polynomial_order, regularization, map_func)()
 
    
 class _Cache:
@@ -1534,8 +1538,8 @@ class _Cache:
     params = {}
     def __init__(self,**kwargs):
         self.params = kwargs.copy()
-        self.x = kwargs['x'].copy()
-        self.fx = kwargs.get('fx',None)
+        self.x = get_matrix(kwargs['x'].copy())
+        self.fx = get_matrix(kwargs.get('fx',None))
         self.y = kwargs.get('y',self.x)
         if self.fx is not None: self.fx= self.fx.copy()
         self.params['x'],self.params['y'],self.params['fx'] = self.x,self.y,self.fx

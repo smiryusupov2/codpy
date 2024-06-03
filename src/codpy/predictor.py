@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 from functools import partial, cache
 import itertools
-from core import *
-from algs import *
+from codpy.core import *
+from codpy.algs import *
 import warnings
 
 class greedy_nys_predictor:

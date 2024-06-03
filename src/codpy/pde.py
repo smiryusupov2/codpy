@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from core import kernel, distance_labelling, diffops
-from data_conversion import get_matrix, get_data
+from codpy.core import kernel, distance_labelling, diffops
+from codpy.data_conversion import get_matrix, get_data
 
 ########################################### Partial Differential tools #########################################
 

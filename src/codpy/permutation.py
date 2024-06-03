@@ -4,13 +4,13 @@ import warnings
 import xarray
 from scipy.optimize import linear_sum_assignment
 from typing import List  
-from core import kernel, op, kernel_helper2, _requires_rescale
-from sampling import sharp_discrepancy
-from data_conversion import get_matrix
-from selection import column_selector
-from utils import format_32, format_23
-from dictionary import cast, Dict, Set
-from random_utils import random_select_interface
+from codpy.core import kernel, op, kernel_helper2, _requires_rescale
+from codpy.sampling import sharp_discrepancy
+from codpy.data_conversion import get_matrix
+from codpy.selection import column_selector
+from codpy.utils import format_32, format_23
+from codpy.dictionary import cast, Dict, Set
+from codpy.random_utils import random_select_interface
   
 
 def map_invertion(map,type_in = None):

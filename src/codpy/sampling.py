@@ -3,10 +3,10 @@ import pandas as pd
 import math
 import warnings
 from sklearn.cluster import KMeans, MiniBatchKMeans
-from core import op, kernel, kernel_helper2, _requires_rescale
-from data_conversion import get_matrix
-from selection import column_selector
-from random_utils import random_select
+from codpy.core import op, kernel, kernel_helper2, _requires_rescale
+from codpy.data_conversion import get_matrix
+from codpy.selection import column_selector
+from codpy.random_utils import random_select
 
 def kernel_density_estimator(x, y, kernel_fun = "gaussian", map = None, 
                                          bandwidth = 1.0, rescale = True, rescale_params: dict = {'max': 2000, 'seed':42},

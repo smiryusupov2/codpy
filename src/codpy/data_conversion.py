@@ -4,54 +4,54 @@ import numpy as np
 import datetime
 
 
-get_data_switchDict = { pd.DataFrame: lambda x :  x.values,
-                        pd.Series: lambda x : np.array(x.array, dtype= 'float'),
-                        # torch.Tensor: lambda x : x.detach().numpy(),
-                        tuple: lambda xs : [get_data(x) for x in xs],
+get_data_switchDict = { pd.DataFrame: lambda vals :  vals.values,
+                        pd.Series: lambda vals : np.array(vals.array, dtype= 'float'),
+                        # torch.Tensor: lambda vals : vals.detach().numpy(),
+                        tuple: lambda xs : [get_data(vals) for vals in xs],
                         xarray.core.dataarray.DataArray: lambda xs : get_data(xs.values) 
                     }
 
-get_date_switchDict = { str: lambda x,**kwargs :  datetime.datetime.strptime(x, kwargs.get('date_format','%d/%m/%Y')).date(),
-                        datetime.date:lambda x,**kwargs : x,
-                        int : lambda x,**kwargs : get_date(datetime.date.fromordinal(x)),
-                        float : lambda x,**kwargs : get_date(int(x)),
-                        np.float64 : lambda x,**kwargs : get_date(int(x)),
-                        pd._libs.tslibs.timestamps.Timestamp : lambda x,**kwargs : pd.to_datetime(x),
-                        # torch.Tensor : lambda x,**kwargs: get_date(get_float(x)),
-                        np.ndarray : lambda x,**kwargs: get_date(get_float(x)),
-                        datetime.datetime: lambda x,**kwargs: x,
+get_date_switchDict = { str: lambda vals,**kwargs :  datetime.datetime.strptime(vals, kwargs.get('date_format','%d/%m/%Y')).date(),
+                        datetime.date:lambda vals,**kwargs : vals,
+                        int : lambda vals,**kwargs : get_date(datetime.date.fromordinal(vals)),
+                        float : lambda vals,**kwargs : get_date(int(vals)),
+                        np.float64 : lambda vals,**kwargs : get_date(int(vals)),
+                        pd._libs.tslibs.timestamps.Timestamp : lambda vals,**kwargs : pd.to_datetime(vals),
+                        # torch.Tensor : lambda vals,**kwargs: get_date(get_float(vals)),
+                        np.ndarray : lambda vals,**kwargs: get_date(get_float(vals)),
+                        datetime.datetime: lambda vals,**kwargs: vals,
                     }
 
 
 get_float_switchDict = {
-                        #QuantLib.QuantLib.Date: lambda x, **kwargs: get_float(datetime.datetime(x.year(), x.month(), x.dayOfMonth())),
-                        pd.DataFrame: lambda x, **kwargs: get_data(x),
-                        pd._libs.tslibs.timedeltas.Timedelta: lambda x, **kwargs: float(x/datetime.timedelta(days=1)),
-                        pd._libs.tslibs.timestamps.Timestamp : lambda x, **kwargs: get_float(x.to_pydatetime(), **kwargs),
-                        pd._libs.tslibs.nattype.NaTType : lambda x, **kwargs: np.nan,
-                        pd.core.indexes.base.Index : lambda x, **kwargs: get_float(x.tolist(), **kwargs),
-                        pd.core.series.Series : lambda x, **kwargs: get_float(x.tolist(), **kwargs),
-                        pd.core.indexes.datetimes.DatetimeIndex: lambda x, **kwargs: get_float(x.tolist(), **kwargs),
-                        pd.core.indexes.numeric.Float64Index: lambda x, **kwargs: get_float(x.tolist(), **kwargs),
-                        pd.Index:lambda x, **kwargs: get_float(x.tolist(), **kwargs),
-                        datetime.date :lambda x, **kwargs: float(x.toordinal()),
-                        datetime.datetime: lambda x, **kwargs: x.timestamp(),#/86400, #number of seconds in a day, to keep data and datetime consistent
-                        datetime.timedelta: lambda x, **kwargs: x/datetime.timedelta(days=1),
-                        list: lambda x, **kwargs:  [get_float(z, **kwargs) for z in x],
-                        type({}.keys()) : lambda x, **kwargs: get_float(list(x), **kwargs),
-                        type({}.values()) : lambda x, **kwargs: get_float(list(x), **kwargs),
-                        str: lambda x, **kwargs: get_float(get_date(x.replace(',','.'),**kwargs),**kwargs),
-                        np.array : lambda x, **kwargs: np.array([get_float(z, **kwargs) for z in x]),
-                        np.ndarray : lambda x, **kwargs: np.array([get_float(z, **kwargs) for z in x]),
+                        #QuantLib.QuantLib.Date: lambda vals, **kwargs: get_float(datetime.datetime(vals.year(), vals.month(), vals.dayOfMonth())),
+                        pd.DataFrame: lambda vals, **kwargs: get_data(vals),
+                        pd._libs.tslibs.timedeltas.Timedelta: lambda vals, **kwargs: float(vals/datetime.timedelta(days=1)),
+                        pd._libs.tslibs.timestamps.Timestamp : lambda vals, **kwargs: get_float(vals.to_pydatetime(), **kwargs),
+                        pd._libs.tslibs.nattype.NaTType : lambda vals, **kwargs: np.nan,
+                        pd.core.indexes.base.Index : lambda vals, **kwargs: get_float(vals.tolist(), **kwargs),
+                        pd.core.series.Series : lambda vals, **kwargs: get_float(vals.tolist(), **kwargs),
+                        pd.core.indexes.datetimes.DatetimeIndex: lambda vals, **kwargs: get_float(vals.tolist(), **kwargs),
+                        pd.core.indexes.numeric.Float64Index: lambda vals, **kwargs: get_float(vals.tolist(), **kwargs),
+                        pd.Index:lambda vals, **kwargs: get_float(vals.tolist(), **kwargs),
+                        datetime.date :lambda vals, **kwargs: float(vals.toordinal()),
+                        datetime.datetime: lambda vals, **kwargs: vals.timestamp(),#/86400, #number of seconds in a day, to keep data and datetime consistent
+                        datetime.timedelta: lambda vals, **kwargs: vals/datetime.timedelta(days=1),
+                        list: lambda vals, **kwargs:  [get_float(z, **kwargs) for z in vals],
+                        type({}.keys()) : lambda vals, **kwargs: get_float(list(vals), **kwargs),
+                        type({}.values()) : lambda vals, **kwargs: get_float(list(vals), **kwargs),
+                        str: lambda vals, **kwargs: get_float(get_date(vals.replace(',','.'),**kwargs),**kwargs),
+                        np.array : lambda vals, **kwargs: np.array([get_float(z, **kwargs) for z in vals]),
+                        np.ndarray : lambda vals, **kwargs: np.array([get_float(z, **kwargs) for z in vals]),
                         xarray.core.dataarray.DataArray: lambda xs, **kwargs : get_float(xs.values),
                         }
 
-my_len_switchDict = {list: lambda x: len(x),
-                    pd.core.indexes.base.Index  : lambda x: len(x),
-                    np.array : lambda x: len(x),
-                    np.ndarray : lambda x: x.size,
-                    pd.DataFrame  : lambda x: my_len(x.values),
-                    pd.core.groupby.generic.DataFrameGroupBy : lambda x: x.ngroups
+my_len_switchDict = {list: lambda vals: len(vals),
+                    pd.core.indexes.base.Index  : lambda vals: len(vals),
+                    np.array : lambda vals: len(vals),
+                    np.ndarray : lambda vals: vals.size,
+                    pd.DataFrame  : lambda vals: my_len(vals.values),
+                    pd.core.groupby.generic.DataFrameGroupBy : lambda vals: vals.ngroups
                     }
 
 def get_data(x):
@@ -59,27 +59,28 @@ def get_data(x):
     method = get_data_switchDict.get(type_debug,lambda x: np.asarray(x,dtype='float'))
     return method(x)
 
-def get_float_nan(x, **k):
-    if isinstance(x,list):return [get_float_nan(y,**k) for y in x]
-    if isinstance(x,np.ndarray):return [get_float_nan(y,**k) for y in x]
-    out = float(x)
+def get_float_nan(vals, **k):
+    if isinstance(vals,list):return [get_float_nan(y,**k) for y in vals]
+    if isinstance(vals,np.ndarray):return [get_float_nan(y,**k) for y in vals]
+    out = float(vals)
     # out = np.array(x, dtype=float)
     nan_val = k.get("nan_val",np.nan)
     if pd.isnull(out) : 
         out = nan_val
     return out
-
-def get_float(x, **kwargs):
-    type_ = type(x)
-    method = get_float_switchDict.get(type_,lambda x, **k : get_float_nan(x,**k))
-    out = get_float_nan(method(x,**kwargs),**kwargs)
+def Id(vals,**k):return vals
+def get_float(vals, **kwargs):
+    type_ = type(vals)
+    method = get_float_switchDict.get(type_,Id)
+    temp = method(vals,**kwargs)
+    out = get_float_nan(temp,**kwargs)
     return out
 
-def get_date(x,**kwargs):
-    if isinstance(x,list): return [get_date(n,**kwargs) for n in x]
-    type_debug = type(x)
+def get_date(vals,**kwargs):
+    if isinstance(vals,list): return [get_date(n,**kwargs) for n in x]
+    type_debug = type(vals)
     method = get_date_switchDict.get(type_debug,None)
-    return method(x,**kwargs)
+    return method(vals,**kwargs)
 
 def my_len(x):
     if is_primitive(x):return 0
@@ -94,7 +95,10 @@ def is_primitive(thing):
 
 def get_matrix(x):
     if x is None: return []
-    if isinstance(x,list): return [get_matrix(y) for y in x]
+    if isinstance(x,list): 
+        if len(x)==0: return []
+        test = [get_matrix(y).T for y in x]
+        return np.concatenate(test)
     # if isinstance(x,list): return np.array([np.array(y) for y in x])
     if isinstance(x,tuple): return [get_matrix(y) for y in x]
     x = get_data(x)

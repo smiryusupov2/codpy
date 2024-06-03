@@ -2,10 +2,10 @@
 
 import pandas as pd
 import numpy as np
-from metrics import *
-from selection import column_selector, select_constant_columns
-from core import *
-from data_conversion import get_data, my_len
+from codpy.metrics import *
+from codpy.selection import column_selector, select_constant_columns
+from codpy.core import *
+from codpy.data_conversion import get_data, my_len
 
 
 def get_bound_box(mat: np.ndarray,coeff = None) -> np.ndarray:

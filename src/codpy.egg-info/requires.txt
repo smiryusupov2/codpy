@@ -1,0 +1,7 @@
+codpydll==0.1.3
+pandas==1.5.0
+numpy
+mkl==2021.4.0
+scikit-learn
+scipy
+xarray==2022.9.0
