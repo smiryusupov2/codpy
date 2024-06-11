@@ -97,6 +97,27 @@ def softminindice(mat : np.ndarray, axis: int = 1, diagonal: bool = False, **kwa
 def softminvalues(mat : np.ndarray, axis: int = 1, diagonal: bool = False, **kwargs):
     return -softmaxvalues(-mat, axis, diagonal, **kwargs)
 
+def get_closest_index(mySortedList, myNumber):
+    from bisect import bisect_left
+    if isinstance(myNumber,list):return [get_closest_index(mySortedList,n) for n in myNumber]
+    pos = bisect_left(mySortedList, myNumber)
+    if pos == len(mySortedList):
+        return pos-1
+    return pos
+
+def get_closest_list(mySortedList, myNumber):
+    pos = get_closest_index(mySortedList, myNumber)
+    if pos == 0:
+        return mySortedList[0]
+    if pos == len(mySortedList):
+        return mySortedList[-1]
+    before = mySortedList[pos - 1]
+    after = mySortedList[pos]
+    if after - myNumber < myNumber - before:
+        return after
+    else:
+        return before
+
 
 if __name__ == "__main__":
 

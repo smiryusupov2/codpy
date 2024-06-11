@@ -14,7 +14,7 @@ class _codpy_param_getter:
 
 
 class op:
-    def projection(x, y, z, fx,**kwargs):
+    def projection(x, y, z, fx,reg=[],**kwargs):
         """
         Performs projection in kernel regression for efficient computation, targeting a lower sampling space.
         Note:
@@ -55,16 +55,6 @@ class op:
         
         def project_array(x, y, z, fx, reg):
             return cd.op.projection(x, y, z, fx, reg)
-
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,z, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
 
         if isinstance(z, list):
             return [project_dataframe(x, y, zi, fx, reg) if isinstance(x, pd.DataFrame) else project_array(x, y, zi, fx, reg) for zi in z]
@@ -516,9 +506,7 @@ class discrepancy_functional:
         return out
     
 class diffops:
-    def nabla_Knm(x, y, kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order=2, reg: float = 1e-8, rescale = False, 
-                   rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False, **kwargs):
+    def nabla_Knm(x, y, fy = [],**kwargs):
         """
         Args:
 
@@ -537,18 +525,7 @@ class diffops:
         :param kwargs: Arbitrary keyword arguments.
         :type kwargs: dict
         """
-        
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,x, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
-        return cd.op.nabla_Knm(get_matrix(x),get_matrix(y))
+        return cd.op.nabla_Knm(get_matrix(x),get_matrix(y),get_matrix(fy))
 
     def nabla(x, y, z, fx, kernel_fun = "tensornorm", map = "unitcube", 
                    polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], rescale = False, 
