@@ -37,7 +37,7 @@ def flatten(list):
     return functools.reduce(operator.iconcat, list, [])
 
 
-def softmaxindice(mat : np.ndarray, label: np.ndarray = [], axis: int = 1, diagonal: bool = False, **kwargs):
+def softmaxindices(mat : np.ndarray, axis: int = 1, label: np.ndarray = [],diagonal: bool = False, **kwargs):
     """
     Selects indices of maximum values along a specified axis in a matrix, with optional modifications.
     
@@ -60,12 +60,12 @@ def softmaxindice(mat : np.ndarray, label: np.ndarray = [], axis: int = 1, diago
 
     Example:
         >>> mat = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-        >>> max_indices = softmaxindice(mat)
+        >>> max_indices = softmaxindices(mat)
         
         max_indices will be [2, 2, 2] for axis=1
         
         >>> labels = np.array(['a', 'b', 'c'])
-        >>> max_labels = softmaxindice(mat, label=labels)
+        >>> max_labels = softmaxindices(mat, label=labels)
         
         max_labels will be ['c', 'c', 'c'] for axis=1
 
@@ -91,8 +91,8 @@ def softmaxvalues(mat : np.ndarray, axis: int = 1, diagonal: bool = False, **kwa
         [helper(n) for n in range(mat.shape[0])]
     return np.max(get_matrix(mat), axis)
 
-def softminindice(mat : np.ndarray, axis: int = 1, diagonal: bool = False, **kwargs):
-    return softmaxindice(-mat, axis, diagonal, **kwargs)
+def softminindices(mat : np.ndarray, axis: int = 1, diagonal: bool = False, **kwargs):
+    return softmaxindices(-mat, axis, diagonal, **kwargs)
 
 def softminvalues(mat : np.ndarray, axis: int = 1, diagonal: bool = False, **kwargs):
     return -softmaxvalues(-mat, axis, diagonal, **kwargs)
@@ -118,6 +118,23 @@ def get_closest_list(mySortedList, myNumber):
     else:
         return before
 
+def gather(matrix, indices):
+    mask = np.full(matrix.shape,False)
+    def helper(i): mask[i,int(indices[i,0])] = True
+    [helper(i) for i in range(matrix.shape[0])]
+    return get_matrix(matrix[mask])
+
+def fill(matrix, values,indices=None,op = None):
+    if indices is None:
+        def helper(j): 
+            if op is None: matrix[:,j] = values
+            else: matrix[:,j] = op(matrix[:,j],values)
+            [helper(j) for j in range(matrix.shape[1])]
+    else:
+        def helper(i): 
+            if op is None: matrix[i,int(indices[i])] = values[i]
+            else: matrix[i,int(indices[i])] = op(matrix[i,int(indices[i])],values[i])
+        [helper(i) for i in range(matrix.shape[0])]
 
 if __name__ == "__main__":
 

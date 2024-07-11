@@ -1,4 +1,6 @@
-from include_all import *
+from codpy.core import get_matrix
+from codpydll import *
+import numpy as np
 
 def VanDerMonde(x: np.ndarray, orders) -> np.ndarray:
     """
@@ -132,3 +134,13 @@ class lalg:
         The singular value decomposition of the matrix.
         """
         return cd.lalg.svd(x, eps)
+    
+    def lstsq(A,b=[],eps = 1e-8):
+        out= cd.lalg.lstsq(get_matrix(A),get_matrix(b),eps)
+        return out
+    
+    def SelfAdjointEigenDecomposition(x): return cd.lalg.SelfAdjointEigenDecomposition(x)
+    def fix_nonpositive_semidefinite(x,eps=1e-8): 
+        eigenvector,eigenvalues = lalg.SelfAdjointEigenDecomposition(get_matrix(x))
+        eigenvalues = np.array([max(e,eps) for e in eigenvalues])
+        return lalg.prod(eigenvector*eigenvalues,eigenvector.T)

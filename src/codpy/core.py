@@ -4,7 +4,7 @@ from codpy.random_utils import *
 from codpydll import *
 import numpy as np
 from functools import partial, cache
-from codpy.utils import pad_axis
+from codpy.utils import pad_axis,softminindices,softmaxindices
 
 
 
@@ -12,6 +12,8 @@ class _codpy_param_getter:
     def get_params(**kwargs) : return kwargs.get('codpy',{})
     def get_kernel_fun(**kwargs): return _codpy_param_getter.get_params(**kwargs)['set_kernel']
 
+def set_verbose(verbose = True):
+    cd.verbose(verbose)
 
 class op:
     def projection(x, y, z, fx,reg=[],**kwargs):
@@ -119,9 +121,9 @@ class op:
             * ``kernel`` function
             * ``map``
         """
-        return op.projection(x = x, y = z, z = z, fx = fx)
+        return op.projection(x = x, y = z, z = z, fx = fx,**kwargs)
     
-    def gradient_denoiser(x, z, fx,epsilon,**kwargs):
+    def gradient_denoiser(x, z, fx=[],epsilon=1e-9,**kwargs):
         """
         A function for performing least squares regression penalized by the norm of the gradient, 
         induced by a positive definite (PD) kernel.
@@ -151,7 +153,7 @@ class op:
         # out = op.extrapolation(**{**self.params,**{'z':z}})
         return out
     
-    def norm(x, y, z, fx,**kwargs):
+    def norm(x, y, z, fx=[],**kwargs):
         """
         Calculate the kernel-induced norm based on the provided matrices.
 
@@ -169,18 +171,9 @@ class op:
             * ``kernel`` function
             * ``map``
         """
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,z, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
         return cd.tools.norm_projection(get_matrix(x),get_matrix(y),get_matrix(z),get_matrix(fx))
 
-    def coefficients(x, y, fx,**kwargs) -> np.ndarray:
+    def coefficients(x, y, fx=[],**kwargs) -> np.ndarray:
         """
         Computes the regressors or coefficients for kernelized regression, using a specified PD kernel.
 
@@ -244,15 +237,6 @@ class op:
             - ``'standardmin'``: Standard minimum map pipeline combining minimum distance scaling with other transformations.
             - ``'standardmean'``: Standard mean map pipeline combining mean distance scaling with other transformations.
         """
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,x, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
         return cd.op.coefficients(get_matrix(x),get_matrix(y),get_matrix(fx), [])
     # @cache
     def Knm(x, y, fy = [],**kwargs) -> np.ndarray:
@@ -271,9 +255,9 @@ class op:
             - prod(Knm(x,y),fx) else. This allow performance and memory optimizations.
 
         """
-        return cd.op.Knm(x, y, fy)
+        return cd.op.Knm(get_matrix(x), get_matrix(y), get_matrix(fy))
 
-    def Knm_inv(x, y, fx=[],reg=[],**kwargs):
+    def Knm_inv(x, y, fx=[],epsilon=1e-9,reg_matrix=[],**kwargs):
         """
         Args:
             x (:class:`numpy.ndarray`): Input data points for the gradient computation. np.array of size N , D.
@@ -287,7 +271,8 @@ class op:
                 - if fx is empty: matrix np.array of size (NxM), that corresponds to the least square computation (Knm(y,x)Knm(x,y)+reg)^{-1}Knm(y,x).
                 - prod(Knm_inv(x,y),fx) else. This allow performance and memory optimizations. The output corresponds then to the coefficient of fx in the kernel induced basis.
         """
-        return cd.op.Knm_inv(get_matrix(x),get_matrix(y),get_matrix(fx),get_matrix(reg))
+        kernel.set_regularization(epsilon)
+        return cd.op.Knm_inv(get_matrix(x),get_matrix(y),get_matrix(fx),get_matrix(reg_matrix))
     
     def Dnm(x, y, distance = None, **kwargs) -> np.ndarray:
         """
@@ -305,49 +290,18 @@ class op:
         Returns:
             np.array: A distance matrix representing the distances between each pair of points in x and y as induced by the pd kernel.
         """
-        if isinstance(x,list): return [op.Dnm(x0, y, distance = None, **kwargs) for x0 in x]
-        if isinstance(y,list): return [op.Dnm(x, y0, distance = None, **kwargs) for y0 in y]
-        x,y = column_selector(**{**kwargs,**{'data':x}}),column_selector(**{**kwargs,**{'data':y}})
-        x,y = pad_axis(x,y)
-        kernel.init(**{**kwargs,**{"x":x,"y":y,"z":[]}})
         if distance is not None:
             return cd.op.Dnm(get_matrix(x),get_matrix(y), {'distance' : distance})
         return cd.op.Dnm(get_matrix(x),get_matrix(y))
     
-    def discrepancy_error(x: np.array = None, z : np.array = None, disc_type="raw", 
-                    kernel_fun = "tensornorm", map = "unitcube", polynomial_order=2, reg: float = 1e-8, rescale_params: dict = {'max': 2000, 'seed':42}, 
-                    rescale = False, verbose = False, **kwargs):
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x, x, x, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
-        return cd.tools.discrepancy_error(x,z, disc_type)
+    def discrepancy_error(x: np.array, z : np.array, disc_type="raw", **kwargs):
+        return cd.tools.discrepancy_error(get_matrix(x),get_matrix(z), disc_type)
 
-    def norm_projection(x: np.array = None, z: np.array = None, fx: np.array = None, kernel_fun: str = "tensornorm", map: str = "unitcube", 
-                    polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], 
-                    rescale: bool = False, rescale_params: dict = {'max': 2000, 'seed':42}, verbose = False, **kwargs):
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,x,x, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
-        return cd.tools.norm_projection(x,x,z,fx)
+    def norm_projection(x: np.array , z: np.array , fx: np.array = None, **kwargs):
+        return cd.tools.norm_projection(get_matrix(x),get_matrix(x),get_matrix(z),get_matrix(fx))
 
 
-def distance_labelling(x, y, label = None, distance = None, kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order=2, regularization: float = 1e-8, rescale = False,
-                    maxmin: str = 'max', axis: int = 1, **kwargs) -> np.ndarray:
+def distance_labelling(x, y, label = None, distance = None, maxmin: str = 'min', axis: int = 1, **kwargs) -> np.ndarray:
     """
     Computes and labels distances using a kernel-induced distance matrix.
 
@@ -381,33 +335,22 @@ def distance_labelling(x, y, label = None, distance = None, kernel_fun = "tensor
         np.array: An array of labelled distances between the data points in x and y.
     """
     # print('######','distance_labelling','######')
+    D = op.Dnm(x, y, distance, **kwargs)
+    if  maxmin == 'min': 
+        indices= softminindices(D, axis=axis)
+    else:
+        indices= softmaxindices(D, axis=axis)
+    if label is not None: return label[indices]
+    else: return indices
 
-    x, y = column_selector(x,**kwargs),column_selector(y,**kwargs)
-    D = op.Dnm(x, y, distance, kernel_fun = kernel_fun, map = map, 
-                   polynomial_order=polynomial_order, regularization = regularization, rescale = False, **kwargs)
-    if  maxmin == 'max': 
-        return softmaxindice(D, axis=axis)
-    return softminindice(D, axis=axis)
 
-
-def discrepancy(x: np.array = None, y: np.array = None, z : np.array = None, disc_type="raw", 
-                kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order=2, reg: float = 1e-8, rescale = False, **kwargs): 
+def discrepancy(x: np.array, z : np.array, y: np.array = None, disc_type="raw", **kwargs): 
 
     if 'discrepancy:xmax' in kwargs: x= random_select_interface(xmaxlabel = 'discrepancy:xmax', seedlabel = 'discrepancy:seed',**{**kwargs,**{'x':x}})
     if 'discrepancy:ymax' in kwargs: y= random_select_interface(xmaxlabel = 'discrepancy:ymax', seedlabel = 'discrepancy:seed',**{**kwargs,**{'x':y}})
     if 'discrepancy:zmax' in kwargs: z= random_select_interface(xmaxlabel = 'discrepancy:zmax', seedlabel = 'discrepancy:seed',**{**kwargs,**{'x':z}})
-    if 'discrepancy:nmax' in kwargs:
-        nmax = int(kwargs.get('discrepancy:nmax'))
-        if len(x) + 2 * len(y) + len(z) > nmax: return np.NaN
-    params = {
-        'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=reg),
-        'rescale': rescale,
-        }
-    kernel.init(**params)
-    debug = 0.
     if (len(y)):
-        debug += cd.tools.discrepancy_error(x,y,disc_type)
+        debug = cd.tools.discrepancy_error(x,y,disc_type)
         if (len(z)):
             debug += cd.tools.discrepancy_error(y,z,disc_type)
         return np.sqrt(debug)
@@ -506,7 +449,7 @@ class discrepancy_functional:
         return out
     
 class diffops:
-    def nabla_Knm(x, y, fy = [],**kwargs):
+    def nabla_Knm(x: np.array, y: np.array, fy = [],**kwargs):
         """
         Args:
 
@@ -527,9 +470,7 @@ class diffops:
         """
         return cd.op.nabla_Knm(get_matrix(x),get_matrix(y),get_matrix(fy))
 
-    def nabla(x, y, z, fx, kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], rescale = False, 
-                   rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False, **kwargs):
+    def nabla(x: np.array, z: np.array, y=None, fx=[], **kwargs):
         """
         Compute the kernel-induced gradient of a function.
 
@@ -562,26 +503,12 @@ class diffops:
             >>> z = np.random.randn(100, 1)
             >>> fx = x * 2
             >>> fz = z * 2
-            >>> gradient = diffops.nabla(x,x,z,fx,kernel_fun="linear", map=None)
+            >>> gradient = diffops.nabla(x,x,z,fx)
         """
-
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,z, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
-
-        return cd.op.nabla(get_matrix(x),get_matrix(y),get_matrix(z), fx,get_matrix(reg))
+        if y is None: y =x
+        return cd.op.nabla(get_matrix(x),get_matrix(y),get_matrix(z), get_matrix(fx))
     
-    def nabla_inv(x, y, z, fz, kernel_fun:str = "tensornorm", map: str = "unitcube", 
-                   polynomial_order:int = 2, regularization: float = 1e-8, reg: np.ndarray = [],
-                    rescale: bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
-                    verbose = False, **kwargs):
+    def nabla_inv(x, z, y=None,fz=[], **kwargs):
         """
         Compute the inverse of the kernel-induced gradient operation.
 
@@ -616,23 +543,10 @@ class diffops:
             >>> vector_field = np.array([...])
             >>> inv_gradient = nabla_inv(x_data, y_data, z_data, fz=vector_field)
         """
-        
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,z, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
+        if y is None: y =x
         return cd.op.nabla_inv(get_matrix(x),get_matrix(y),get_matrix(z), fz)
     
-    def nablaT(x, y, z, fz, kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order=2, regularization: float = 1e-8, reg: np.ndarray = [], 
-                   rescale = False, rescale_params: dict = {'max': 1000, 'seed':42},  
-                   verbose = False, **kwargs):
+    def nablaT(x, y, z, fz, **kwargs):
         """
         Compute the divergence of a vector field using a kernel-induced method.
 
@@ -670,23 +584,9 @@ class diffops:
             >>> vector_field = np.array([...])
             >>> divergence = nablaT(x_data, y_data, z_data, fz=vector_field)
         """
-
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,z, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
-
-        return cd.op.nablaT(get_matrix(x),get_matrix(y),get_matrix(z),fz)
+        return cd.op.nablaT(get_matrix(x),get_matrix(y),get_matrix(z),get_matrix(fz))
     
-    def nablaT_inv(x, y, z, fx, kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order=2, reg: float = 1e-8, rescale = False, 
-                   rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False, **kwargs):
+    def nablaT_inv(x, z, y=None, fx=[], **kwargs):
         """
         Compute the inverse of the transposed gradient operation.
 
@@ -721,23 +621,10 @@ class diffops:
             >>> fx_data = np.array([...])
             >>> inv_transpose_gradient = nablaT_inv(x_data, y_data, z_data, fx_data)
         """
-        
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,z, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
-
+        if y is None:y=x
         return cd.op.nablaT_inv(get_matrix(x),get_matrix(y),get_matrix(z),get_matrix(fx))
     
-    def nablaT_nabla(x, y, fx, kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order=2, regularization: float = 1e-8, rescale = False, 
-                   rescale_params: dict = {'max': 1000, 'seed':42}, verbose = False, **kwargs):
+    def nablaT_nabla(x, y, fx=[], **kwargs):
         """
         Compute the kernel-induced discrete Laplace operator.
 
@@ -778,23 +665,9 @@ class diffops:
             >>> fx_data = np.array([...])
             >>> laplace_operator = nablaT_nabla(x_data, y_data, fx_data)
         """
-
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,x, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
-        
         return cd.op.nablaT_nabla(x=get_matrix(x),y=get_matrix(y),fx=get_matrix(fx))
     
-    def nablaT_nabla_inv(x, y, fx, kernel_fun = "tensornorm", map = "unitcube", 
-                   polynomial_order=2, regularization: float = 1e-8, rescale = False, rescale_params: dict = {'max': 1000, 'seed':42},
-                   verbose = False, **kwargs):
+    def nablaT_nabla_inv(x, y, fx=[], **kwargs):
         """
         Args:
 
@@ -813,43 +686,13 @@ class diffops:
         :param kwargs: Arbitrary keyword arguments.
         :type kwargs: dict
         """
-        
-        params = {'rescalekernel':{'max': 1000, 'seed':42},
-        'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization),
-        'rescale': rescale,
-        }
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,x, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
-
+       
         return cd.op.nablaT_nabla_inv(get_matrix(x),get_matrix(y),get_matrix(fx))
     
-    def Leray_T(x, y, fx, kernel_fun:str = "tensornorm", map:str = "unitcube", 
-                   polynomial_order:int=2, regularization: float = 1e-8, 
-                   rescale:bool = False, rescale_params: dict = {'max': 1000, 'seed':42}, 
-                   verbose = False, **kwargs):
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,x, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
-        return cd.op.Leray_T(get_matrix(x),get_matrix(y),fx)
+    def Leray_T(x, y, fx=[], **kwargs):
+        return cd.op.Leray_T(get_matrix(x),get_matrix(y),get_matrix(fx))
     
-    def Leray(x, y, fx, kernel_fun:str = "tensornorm", map:str = "unitcube", 
-                   polynomial_order:int=2, regularization: float = 1e-8, 
-                   rescale:bool = False, rescale_params: dict = {'max': 1000, 'seed':42},  
-                   verbose = False, **kwargs):
+    def Leray(x, y, fx=[], **kwargs):
         """
         Compute the Leray operator for a given set of input matrices.
 
@@ -868,22 +711,9 @@ class diffops:
             >>> fx_data = np.array([...])
             >>> leray_result = Leray(x_data, y_data, fx_data)
         """
-
-        params = {'set_codpy_kernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization)}
-        if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
-            if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,x, **params)
-        else:
-            params['rescale'] = rescale
-            kernel.init(**params)
-
-        return cd.op.Leray(get_matrix(x),get_matrix(y),fx)
+        return cd.op.Leray(get_matrix(x),get_matrix(y),get_matrix(fx))
     
-    def hessian(x, z, fx, kernel_fun:str = "tensornorm", map:str = "unitcube", 
-                   polynomial_order:int = 2, regularization: float = 1e-8, rescale:bool = False, **kwargs) -> np.ndarray:
+    def hessian(x, z, fx=[], **kwargs) -> np.ndarray:
         """
         Compute the kernel-induced Hessian matrix of a function.
 

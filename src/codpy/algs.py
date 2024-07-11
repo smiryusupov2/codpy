@@ -1,5 +1,7 @@
-from data_processing import lexicographical_permutation
-
+from codpy.data_processing import lexicographical_permutation
+from codpy.data_conversion import get_matrix
+from codpydll import *
+import pandas as pd
 
 class alg:
     def iso_probas_projection(x, fx, probas, fun_permutation = lexicographical_permutation, kernel_fun = None, map = None,
@@ -32,17 +34,27 @@ class alg:
         out = cd.alg.Pi(x = x,y = x,z = z, fz = fz,nmax = nmax)
         return out
     
-    def HybridGreedyNystroem(x,fx,tol=1e-5,iter=1,n_batch=10,error_type='classifier',**kwargs):
+    def HybridGreedyNystroem(x,fx,tol=1e-5,N=0,n_batch=10,error_type='classifier',**kwargs):
+        import codpy.core
+        # codpy.core.set_verbose(True)   
+
         reordering_format_switchDict = { pd.DataFrame: lambda **kwargs :  HybridGreedyNystroem_df(**kwargs) }
         def HybridGreedyNystroem_df(**kwargs):
             return HybridGreedyNystroem_np(**kwargs)
-        def HybridGreedyNystroem_np(x,fx,tol=1e-5,iter=10,n_batch=10,error_type='classifier',**kwargs):
+        def HybridGreedyNystroem_np(x,fx,tol,N,n_batch,error_type,**kwargs):
             start_indices = kwargs.get("start_indices",[])
-            cn,indices = cd.alg.HybridGreedyNystroem(get_matrix(x),get_matrix(fx),start_indices,tol,iter,n_batch,error_type)
+            x,fx = get_matrix(x),get_matrix(fx)
+            cn,indices = cd.alg.HybridGreedyNystroem(x,fx,start_indices,tol,N,n_batch,error_type)
             return cn,indices
         type_debug = type(x)
         method = reordering_format_switchDict.get(type_debug,HybridGreedyNystroem_np)
-        return method(x,fx,**kwargs)
+        return method(x,fx,tol,N,n_batch,error_type,**kwargs)
+
+    def add(Knm,Knm_inv,x,y):
+        # import codpy.core
+        # codpy.core.set_verbose(True)   
+        return cd.alg.add(Knm,Knm_inv,x,y)
+
 
 if __name__ == "__main__":
     from include_all import *

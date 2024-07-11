@@ -7,6 +7,7 @@ from codpy.core import op, kernel, kernel_helper2, _requires_rescale
 from codpy.data_conversion import get_matrix
 from codpy.selection import column_selector
 from codpy.random_utils import random_select
+from codpydll import *
 
 def kernel_density_estimator(x, y, kernel_fun = "gaussian", map = None, 
                                          bandwidth = 1.0, rescale = True, rescale_params: dict = {'max': 2000, 'seed':42},
@@ -133,12 +134,11 @@ def rejection_sampling(proposed_sample, probas,acceptance_ratio = 0.):
     return samples
 
 def get_normals(N,D, nmax = 10):
-        kernel.init()
         out = cd.alg.get_normals(N = N,D = D,nmax = nmax)
         # mean,var = np.mean(out,axis=0),np.var(out,axis=0)
         return out
 
-def get_uniform(N,D, nmax = 10):
+def get_uniforms(N,D, nmax = 10):
     """
     Generate uniformly distributed random samples from normally distributed samples.
 
@@ -157,35 +157,20 @@ def get_uniform(N,D, nmax = 10):
     Example:
         Generate 100 samples with 2 dimensions
         
-        >>> uniform_samples = get_uniform(100, 2)
+        >>> uniform_samples = get_uniforms(100, 2)
     """
     out = get_normals(N,D, nmax=nmax)
     out = np.vectorize(math.erf)(out)/2. + 0.5
     return out
 
-def get_uniform_like(kwargs):return get_uniform(**{**kwargs,**{'N':kwargs['x'].shape[0],'D':kwargs['x'].shape[1]}})
-def get_normals_like(kwargs):return get_normals(**{**kwargs,**{'N':kwargs['x'].shape[0],'D':kwargs['x'].shape[1]}})
-def get_random_normals_like(kwargs):return np.random.normal(size = kwargs['x'].shape)
-def get_random_uniform_like(kwargs):return np.random.uniform(size = kwargs['x'].shape)
+def get_uniforms_like(x,**kwargs):return get_uniforms(N=x.shape[0],D=x.shape[1])
+def get_normals_like(x,**kwargs):return get_normals(N=x.shape[0],D=x.shape[1])
+def get_random_normals_like(x,**kwargs):return np.random.normal(size = x.shape)
+def get_random_uniforms_like(x,**kwargs):return np.random.uniform(size = x.shape)
 
-def match(x, **kwargs):
-    kernel.init(**kwargs)
-    x = column_selector(x,**kwargs)
-    Ny = kwargs.get('Ny',x.shape[0])
-    if Ny >= x.shape[0]: return x
-    match_format_switchDict = { pd.DataFrame: lambda x,**kwargs :  match_dataframe(x,**kwargs) }
-    def match_dataframe(x, **kwargs):
-        out = match(get_matrix(x),**kwargs)
-        return pd.DataFrame(out,columns = x.columns)
-
-    def debug_fun(x,**kwargs):
-        if 'sharp_discrepancy:xmax' in kwargs: x = random_select_interface(xmaxlabel = 'sharp_discrepancy:xmax', seedlabel = 'sharp_discrepancy:seed',**{**kwargs,**{'x':x}})
-        kernel.init(x = x, **kwargs)
-        out = cd.alg.match(get_matrix(x),Ny)
-        return out
-    type_debug = type(x)
-    method = match_format_switchDict.get(type_debug,debug_fun)
-    out = method(x,**kwargs)
+def match(x,N, **kwargs):
+    if N >= x.shape[0]: return x
+    out = cd.alg.match(get_matrix(x),N)
     return out
 
 def kmeans(x, **kwargs):

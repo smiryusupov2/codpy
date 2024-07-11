@@ -114,37 +114,24 @@ def reordering(x: np.ndarray, y: np.ndarray, permut: str ='source', iter=10, lsa
     """
     if lsap_fun is None:
         lsap_fun = lsap
-    def reordering_dataframe(x: pd.DataFrame = [], y: pd.DataFrame = [], permut = 'source', iter = 10, lsap_fun=None):
-        a,b,permutation = reordering(x.values, y.values, permute = permut, iter=iter, lsap_fun=lsap_fun)
-        x,y = pd.DataFrame(a,columns = x.columns, index = x.index),pd.DataFrame(b,columns = y.columns, index = y.index)
-        return x,y,permutation
 
-    def reordering_np(x: np.ndarray, y: np.ndarray, permut, iter = 10, lsap_fun = lsap):
-        if x.shape[1] != y.shape[1]:
-            kernel.init(x = x,y =None, z = None)
-            permutation = cd.alg.encoder(get_matrix(x),get_matrix(y), iter = iter)
-            if permut != 'source':x_,y_ = x,y[permutation]
-            else: 
-                permutation = map_invertion(permutation, type_in = np.ndarray)
-                x_,y_ = x[permutation],y
-        else:
-            kernel.init(x = x,y =y, z = None)
-            D = op.Dnm(x = x, y = y)
-            permutation = lsap_fun(D)
-            if permut != 'source':
-                permutation = map_invertion(permutation, type_in = np.ndarray)
-                x_,y_ = x,y[permutation]
-            else: x_,y_ = x[permutation],y
-        # D = op.Dnm(x,y,**kwargs)
-        # test = D.trace().sum()
-        return x_,y_,permutation
-
-    if isinstance(x, pd.DataFrame) and isinstance(y, pd.DataFrame):
-        return reordering_dataframe(x, y)
-    elif isinstance(x, np.ndarray) and isinstance(y, np.ndarray):
-        return reordering_np(x, y, permut=permut, iter = iter, lsap_fun=lsap_fun)
+    if x.shape[1] != y.shape[1]:
+        permutation = cd.alg.encoder(get_matrix(x),get_matrix(y), iter = iter)
+        if permut != 'source':x_,y_ = x,y[permutation]
+        else: 
+            permutation = map_invertion(permutation, type_in = np.ndarray)
+            x_,y_ = x[permutation],y
     else:
-        raise ValueError("Invalid types for x and y. Only numpy arrays and pandas DataFrames are supported.")
+        kernel.init(x = x,y =y, z = None)
+        D = op.Dnm(x = x, y = y)
+        permutation = lsap_fun(D)
+        if permut != 'source':
+            permutation = map_invertion(permutation, type_in = np.ndarray)
+            x_,y_ = x,y[permutation]
+        else: x_,y_ = x[permutation],y
+    # D = op.Dnm(x,y,**kwargs)
+    # test = D.trace().sum()
+    return x_,y_,permutation
 
 def grid_projection(**kwargs):
     x = kwargs.get('x',[])

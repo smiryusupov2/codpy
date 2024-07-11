@@ -54,9 +54,9 @@ my_len_switchDict = {list: lambda vals: len(vals),
                     pd.core.groupby.generic.DataFrameGroupBy : lambda vals: vals.ngroups
                     }
 
-def get_data(x):
+def get_data(x,dtype='float'):
     type_debug = type(x)
-    method = get_data_switchDict.get(type_debug,lambda x: np.asarray(x,dtype='float'))
+    method = get_data_switchDict.get(type_debug,lambda x: np.asarray(x,dtype=dtype))
     return method(x)
 
 def get_float_nan(vals, **k):
@@ -93,7 +93,7 @@ def is_primitive(thing):
     debug = type(thing)
     return isinstance(thing, primitive)
 
-def get_matrix(x):
+def get_matrix(x,dtype='float'):
     if x is None: return []
     if isinstance(x,list): 
         if len(x)==0: return []
@@ -101,7 +101,7 @@ def get_matrix(x):
         return np.concatenate(test)
     # if isinstance(x,list): return np.array([np.array(y) for y in x])
     if isinstance(x,tuple): return [get_matrix(y) for y in x]
-    x = get_data(x)
+    x = get_data(x,dtype=dtype)
     if is_primitive(x) : return x
     dim = len(x.shape)
     if dim==2:return x

@@ -15,8 +15,7 @@ def column_selector(data,**kwargs):
         pd.DataFrame or (pd.DataFrame, pd.DataFrame): Modified DataFrame or a tuple of modified and dropped DataFrames.
     """
     if isinstance(data,list):return [column_selector(y,**kwargs) for y in data]
-    if not isinstance(data, pd.DataFrame):
-         raise ValueError("Input must be a pandas DataFrame")
+    if not isinstance(data,pd.DataFrame):return data
     cols_drop = kwargs.get('cols_drop',[])
     cols_keep = kwargs.get('cols_keep',[])
     if len(cols_drop)+len(cols_keep) == 0: return data
