@@ -4,6 +4,8 @@ parent_path = os.path.dirname(parent_path)
 if parent_path not in sys.path: sys.path.append(parent_path)
 from include import *
 import numpy as np
+from codpy.core import *
+from codpy.lalg import *
 import scipy.stats as stats
 import pandas as pd
 from sklearn.datasets import fetch_california_housing
