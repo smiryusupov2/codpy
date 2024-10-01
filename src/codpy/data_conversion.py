@@ -97,7 +97,7 @@ def get_matrix(x,dtype='float'):
     if x is None: return []
     if isinstance(x,list): 
         if len(x)==0: return []
-        test = [get_matrix(y).T for y in x]
+        test = [get_matrix(y,dtype=dtype).T for y in x]
         return np.concatenate(test)
     # if isinstance(x,list): return np.array([np.array(y) for y in x])
     if isinstance(x,tuple): return [get_matrix(y) for y in x]

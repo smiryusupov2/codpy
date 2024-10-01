@@ -4,6 +4,7 @@ import warnings
 import xarray
 from scipy.optimize import linear_sum_assignment
 from typing import List  
+from codpydll import *
 from codpy.core import kernel, op, kernel_helper2, _requires_rescale
 from codpy.sampling import sharp_discrepancy
 from codpy.data_conversion import get_matrix
@@ -69,7 +70,7 @@ def scipy_lsap(C: np.ndarray) -> np.ndarray:
     return out
 
 
-def lsap(C: np.ndarray) -> np.ndarray:
+def lsap(C: np.ndarray,sub=False) -> np.ndarray:
     """
     Solve the Linear Sum Assignment Problem (LSAP) using CodPy's optimization module.
 
@@ -95,7 +96,7 @@ def lsap(C: np.ndarray) -> np.ndarray:
         >>> print(optimal_assignment)  
         # Output: [1, 0, 2]
     """
-    return np.array(cd.alg.LSAP(C))
+    return np.array(cd.alg.LSAP(C,sub))
 
 def reordering(x: np.ndarray, y: np.ndarray, permut: str ='source', iter=10, lsap_fun = None):
     """
@@ -371,3 +372,19 @@ def _get_xyz(fx,**kwargs):
 
 
 
+if __name__ == "__main__":
+    import core,time
+    import pandas as pd
+    N,D = [2**n for n in range(8,15)],3
+    times = []
+    for n in N:
+        A = np.random.normal(size=[n,D])
+        B = np.random.normal(size=[n,D])
+        C = core.op.Dnm(A,B,distance="norm22")
+        start = time.time()
+        permutation = lsap(C,False)
+        end = time.time()
+        times.append(end-start)
+    result = pd.DataFrame({"size":N,"times":times})
+    print(result)
+    pass

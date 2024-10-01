@@ -119,6 +119,7 @@ def get_closest_list(mySortedList, myNumber):
         return before
 
 def gather(matrix, indices):
+    indices = get_matrix(indices,dtype=int)
     mask = np.full(matrix.shape,False)
     def helper(i): mask[i,int(indices[i,0])] = True
     [helper(i) for i in range(matrix.shape[0])]

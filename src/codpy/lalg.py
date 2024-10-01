@@ -91,7 +91,7 @@ class lalg:
         return cd.lalg.scalar_product(x,y)
     def cholesky(x,eps = 0): 
         """
-        Compute the Cholesky decomposition of a matrix.
+        Compute the inverse of a square symetrical matrix using Cholesky decomposition.
 
         This method performs the Cholesky decomposition on a given matrix x. It optionally 
         uses a small value eps for numerical stability.
@@ -101,9 +101,22 @@ class lalg:
             eps (float, optional): A small value added for numerical stability. Default is 0.
 
         Returns:
-            The Cholesky decomposition of the matrix.
+            The inverse of the regularized matrix.
         """
         return cd.lalg.cholesky(x,eps)
+    def inverse(x): 
+        """
+        Compute the inverse of a square matrix using LU decomposition.
+
+        This method performs the LU decomposition on a given matrix x to compute itrs inverse.
+
+        Args:
+            x: The matrix to decompose.
+
+        Returns:
+            The inverse of the matrix.
+        """
+        return cd.lalg.inverse(x)
     def polar(x,eps = 0): 
         """
         Compute the polar decomposition of a matrix.
