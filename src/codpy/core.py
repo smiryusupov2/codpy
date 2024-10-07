@@ -1323,6 +1323,9 @@ def kernel_helper2(kernel, map, polynomial_order=0, regularization=1e-8, bandwid
 
     return kernel_func(polynomial_order, regularization, map_func)()
 
+def set_kernel(*args,**kwargs):
+    return lambda: kernel_helper2(*args,**kwargs)
+
    
 class _Cache:
     """

@@ -196,7 +196,7 @@ class Kernel:
             self.permutation = cd.alg.encoder(self.get_x(),self.get_fx())
         else:
             D = core.op.Dnm(x = x, y = y, distance = kwargs.get("distance", None))
-            self.permutation = lsap(D,kwargs.get("sub", False))
+            self.permutation = lsap(D,bool(kwargs.get("sub", False)))
         # self.set_fx(self.get_fx()[self.permutation])
         self.set_x(self.get_x()[self.permutation])
         return self
@@ -263,7 +263,9 @@ class Kernel:
 
     def rescale(self,**kwargs):
         self.set_kernel_ptr(**kwargs)
-        if self.get_x() is not None: core.kernel.rescale(self.get_x())
+        if self.get_x() is not None: 
+            core.kernel.rescale(self.get_x())
+            self.kernel =  core.kernel.get_kernel_ptr()
 
     def __call__(self, z, **kwargs):
         if isinstance(z,list): return  [self.__call__(x,**kwargs) for x in z]
