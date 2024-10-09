@@ -6,7 +6,7 @@ import pandas as pd
 from codpydll import *
 from sklearn.cluster import KMeans, MiniBatchKMeans
 
-from codpy.core import _requires_rescale, kernel, op
+from codpy.core import _requires_rescale, op
 from codpy.data_conversion import get_matrix
 from codpy.selection import column_selector
 

@@ -8,7 +8,7 @@ from .core import _kernel_helper2
 
 
 class alg:
-    def iso_probas_projection(
+    def _iso_probas_projection(
         x,
         fx,
         probas,
@@ -38,10 +38,10 @@ class alg:
                 warnings.warn(
                     "Rescaling is set to True as it is required for the chosen map."
                 )
-            kernel.init(x, x, x, **params)
+            kernel_interface.init(x, x, x, **params)
         else:
             params["rescale"] = rescale
-            kernel.init(**params)
+            kernel_interface.init(**params)
         Nx, Dx = np.shape(x)
         Nx, Df = np.shape(fx)
         Ny = len(probas)
@@ -62,35 +62,11 @@ class alg:
 
     def Pi(x, z, fz=[], nmax=10, rescale=False, **kwargs):
         # print('######','Pi','######')
-        kernel.init(**kwargs)
+        kernel_interface.init(**kwargs)
         if rescale:
-            kernel.rescale(x, z)
+            kernel_interface.rescale(x, z)
         out = cd.alg.Pi(x=x, y=x, z=z, fz=fz, nmax=nmax)
         return out
-
-    def HybridGreedyNystroem(
-        x, fx, tol=1e-5, N=0, n_batch=10, error_type="classifier", **kwargs
-    ):
-        # codpy.core.set_verbose(True)
-
-        reordering_format_switchDict = {
-            pd.DataFrame: lambda **kwargs: HybridGreedyNystroem_df(**kwargs)
-        }
-
-        def HybridGreedyNystroem_df(**kwargs):
-            return HybridGreedyNystroem_np(**kwargs)
-
-        def HybridGreedyNystroem_np(x, fx, tol, N, n_batch, error_type, **kwargs):
-            start_indices = kwargs.get("start_indices", [])
-            x, fx = get_matrix(x), get_matrix(fx)
-            cn, indices = cd.alg.HybridGreedyNystroem(
-                x, fx, start_indices, tol, N, n_batch, error_type
-            )
-            return cn, indices
-
-        type_debug = type(x)
-        method = reordering_format_switchDict.get(type_debug, HybridGreedyNystroem_np)
-        return method(x, fx, tol, N, n_batch, error_type, **kwargs)
 
     def HybridGreedyNystroem(
         x,
@@ -138,7 +114,7 @@ if __name__ == "__main__":
 
     x, fx = np.random.rand(10, 2), np.random.rand(10, 3)
     lalg.prod(x, x)
-    kernel.rescale(x)
+    kernel_interface.rescale(x)
     Knm = op.Knm(x=x, y=x)
     Knm_inv = lalg.cholesky(x=Knm, eps=1e-2)
     Knm_inv = lalg.lstsq(A=Knm)

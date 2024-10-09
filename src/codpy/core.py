@@ -20,6 +20,8 @@ class _codpy_param_getter:
 def set_verbose(verbose=True):
     cd.verbose(verbose)
 
+def set_num_threads(n) ->None:
+    cd.set_num_threads(n)
 
 class op:
     def projection(x, y, z, fx, reg=[], **kwargs):
@@ -108,7 +110,7 @@ class op:
                 f_z = pd.DataFrame(f_z, columns=list(fx.columns), index=z.index)
             return f_z
 
-        kernel.init(**kwargs)
+        kernel_interface.init(**kwargs)
         type_debug = type(kwargs.get("x", []))
 
         def debug_fun(**kwargs):
@@ -294,7 +296,7 @@ class op:
                 - if fx is empty: matrix np.array of size (NxM), that corresponds to the least square computation (Knm(y,x)Knm(x,y)+reg)^{-1}Knm(y,x).
                 - prod(Knm_inv(x,y),fx) else. This allow performance and memory optimizations. The output corresponds then to the coefficient of fx in the kernel induced basis.
         """
-        kernel.set_regularization(epsilon)
+        kernel_interface.set_regularization(epsilon)
         return cd.op.Knm_inv(
             get_matrix(x), get_matrix(y), get_matrix(fx), get_matrix(reg_matrix)
         )
@@ -786,7 +788,7 @@ class _factories:
         return cd.factories.maps_factory_keys()
 
 
-class kernel:
+class kernel_interface:
     def rescale(x=[], y=[], z=[], max=None, seed=42, **kwargs):
         if max is not None:
             x, y, z = (
@@ -813,11 +815,11 @@ class kernel:
         cd.kernel.pipe_kernel_ptr(kernel_ptr)
 
     def pipe_kernel_fun(kernel_fun, regularization=1e-8):
-        kern1 = kernel.get_kernel_ptr()
+        kern1 = kernel_interface.get_kernel_ptr()
         kernel_fun()
-        kern2 = kernel.get_kernel_ptr()
-        kernel.set_kernel_ptr(kern1)
-        kernel.pipe_kernel_ptr(kern2)
+        kern2 = kernel_interface.get_kernel_ptr()
+        kernel_interface.set_kernel_ptr(kern1)
+        kernel_interface.pipe_kernel_ptr(kern2)
         cd.kernel.set_regularization(regularization)
 
     def init(x=[], y=[], z=[], **kwargs):
@@ -826,16 +828,7 @@ class kernel:
             set_codpy_kernel()
         rescale = kwargs.get("rescale", False)
         if rescale:
-            kernel.rescale(x, y, z, **kwargs)
-
-    def map(x):
-        return cd.kernel.map(get_matrix(x))
-
-    def get_map_ptr():
-        return cd.kernel.get_map_ptr()
-
-    def set_map_ptr(map_ptr):
-        cd.kernel.set_map_ptr(map_ptr)
+            kernel_interface.rescale(x, y, z, **kwargs)
 
 
 class map_setters:
@@ -1051,7 +1044,7 @@ def check_map_strings(strings):
 
 def set_map(strings, check_=True, kwargs={}):
     if check_:
-        if kernel.get_kernel_ptr() == None:
+        if kernel_interface.get_kernel_ptr() == None:
             raise AssertionError("set a kernel first, see set_kernel")
         check_map_strings(strings)
     if isinstance(strings, list):
@@ -1113,7 +1106,7 @@ class kernel_setters:
                 regularization=regularization,
                 set_map=None,
             )
-            kernel.pipe_kernel_fun(linearkernel, regularization)
+            kernel_interface.pipe_kernel_fun(linearkernel, regularization)
         cd.kernel.set_regularization(regularization)
 
     def set_linear_regressor_kernel(
@@ -1484,21 +1477,21 @@ _map_settings = {
     "standardmean": map_setters.set_standard_mean_map,
 }
 
-
-def _requires_bandwidth(map_name: str) -> bool:
-    bandwidth_required_maps = {"scale_factor"}
-    return map_name in bandwidth_required_maps
-
-
 def _requires_rescale(map_name: str) -> bool:
     maps_needing_rescale = {
         "unitcube",
         "meandistance",
         "mindistance",
         "standardmin",
-        "standardmean",
+        "standardmean"
     }
     return map_name in maps_needing_rescale
+
+
+
+def _requires_bandwidth(map_name: str) -> bool:
+    bandwidth_required_maps = {"scale_factor"}
+    return map_name in bandwidth_required_maps
 
 
 def _kernel_helper2(
@@ -1548,65 +1541,9 @@ def kernel_setter(kernel, map, polynomial_order=0, regularization=1e-8, bandwidt
     Returns:
         The configured kernel function.
     """
-    return lambda x: _kernel_helper2(
+    return lambda : _kernel_helper2(
         kernel, map, polynomial_order, regularization, bandwidth
     )
-
-
-class _Cache:
-    """
-    A class for caching and computing kernel matrices using a provided positive definite (pd) kernel.
-    This class allows for the computation of a kernel matrix based on training features, responses, and internal parameters.
-
-    Attributes:
-        params (dict): A dictionary of parameters used for kernel matrix computations.
-        x (np.array): Training feature data.
-        fx (np.array): Training response data.
-        y (np.array): Internal parameter, set to x by default.
-        knm_inv (np.array): Inverse kernel matrix.
-        order (int): Polynomial order of the kernel.
-        reg (float): Regularization parameter of the kernel.
-        kernel (function): Pointer to the kernel function.
-
-    Methods:
-        __call__(z, fx): Computes the kernel matrix based on test input features z and internal parameter y.
-    """
-
-    params = {}
-
-    def __init__(self, **kwargs):
-        self.params = kwargs.copy()
-        self.x = get_matrix(kwargs["x"].copy())
-        self.fx = get_matrix(kwargs.get("fx", None))
-        self.y = kwargs.get("y", self.x)
-        if self.fx is not None:
-            self.fx = self.fx.copy()
-        self.params["x"], self.params["y"], self.params["fx"] = self.x, self.y, self.fx
-        self.knm_inv = op.Knm_inv(**self.params)
-        self.order = cd.kernel.get_polynomial_order()
-        self.reg = cd.kernel.get_regularization()
-        self.kernel = kernel.get_kernel_ptr()
-
-    def __call__(self, **kwargs):
-        y, z = get_matrix(self.params["y"]), get_matrix(kwargs["z"])
-        # return op.projection(**{**self.params,**{'x':y,'y':y,'z':z,'fx':kwargs['fx']}}) #for debug
-        kernel.set_kernel_ptr(self.kernel)
-        cd.kernel.set_polynomial_order(self.order)
-        cd.kernel.set_regularization(self.reg)
-        Knm = op.Knm(
-            **{
-                **self.params,
-                **{
-                    "x": z,
-                    "y": y,
-                    "fy": self.knm_inv,
-                    "set_codpy_kernel": None,
-                    "rescale": False,
-                },
-            }
-        )
-        # test = self.fx - op.projection(**{**self.params,**{'z':z,'fx':self.fx,'set_codpy_kernel':None,'rescale':False}})
-        return Knm
 
 
 if __name__ == "__main__":

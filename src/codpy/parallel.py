@@ -14,7 +14,7 @@ def parallel_task(param_list,fun,**kwargs):
     cores = min(mp.cpu_count(),len(param_list))
 
     out = []
-    with concurrent.futures.ProcessPoolExecutor(max_workers=cores) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=cores) as executor:
         results = executor.map(fun, param_list, chunksize= max(int( len(param_list)/cores),1) )
         for result,i in zip(results,tqdm (range (len(param_list)), desc="parallel…", ascii=False, ncols=75)):
             out.append(result)

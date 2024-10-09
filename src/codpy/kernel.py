@@ -14,9 +14,6 @@ class Kernel:
     """
     A kernel class
     """
-
-    params = {}
-
     def __init__(
         self,
         max_pool: int = 1000,
@@ -55,7 +52,6 @@ class Kernel:
             self.set_kernel = set_kernel
         else:
             self.set_kernel = self.default_kernel_functor()
-
         self.x = None
         if kwargs.get("x", None) is not None or kwargs.get("fx", None) is not None:
             self.set(**kwargs)
@@ -135,21 +131,21 @@ class Kernel:
         if self.get_order() is None:
             return None
         if not hasattr(self, "polynomial_values") or self.polynomial_values is None:
-            self.set_polynomial_regressor(self.get_x(), self.get_fx())
+            self._set_polynomial_regressor(self.get_x(), self.get_fx())
         return self.polynomial_values
 
     def _get_polyvariables(self):
         if self.get_order() is None:
             return None
         if not hasattr(self, "polyvariables") or self.polyvariables is None:
-            self.set_polynomial_regressor(self.get_x(), self.get_fx())
+            self._set_polynomial_regressor(self.get_x(), self.get_fx())
         return self.polyvariables
 
     def _get_polynomial_kernel(self, **kwargs):
         if self.get_order() is None:
             return None
         if not hasattr(self, "polynomial_kernel") or self.polynomial_kernel is None:
-            self.set_polynomial_regressor(self.get_x(), self.get_fx())
+            self._set_polynomial_regressor(self.get_x(), self.get_fx())
         return self.polynomial_kernel
 
     def get_polynomial_regressor(
@@ -204,7 +200,7 @@ class Kernel:
         Example:
             >>> x_data = np.array([...])
             >>> y_data = np.array([...])
-            >>> kernel_matrix = kernel.Knm(x_data, y_data)
+            >>> kernel_matrix = Kernel(x=x_data,y=y_data).Knm()
         """
 
         self.set_kernel_ptr()
@@ -301,7 +297,7 @@ class Kernel:
         self.x = x.copy()
         self.set_y()
         if set_polynomial_regressor:
-            self.set_polynomial_regressor()
+            self._set_polynomial_regressor()
         self._set_knm_inv(None)
         self._set_knm(None)
         self.rescale()
@@ -337,7 +333,7 @@ class Kernel:
         else:
             self.fx = None
         if set_polynomial_regressor:
-            self.set_polynomial_regressor()
+            self._set_polynomial_regressor()
         self.set_theta(None)
 
     def set_theta(self, theta):
@@ -378,9 +374,8 @@ class Kernel:
     def select(self, x, N, fx=None, all=False, norm_="frobenius", **kwargs):
         """
         norm_ : `"frobenius"`, `"classifier"`
-        `"classifier"` is the norm that fx are probabilities: ||f - f_{k,\theta}(.)||
-        ||A - B|| : .. A \in N,D, B, N,D
-        in classifier A,B are normalized to transform into probabilities/ softmax
+        `"classifier"` is a norm adapted to fx representing probabilities to be in a given label class: ||f - f_{k,\theta}(.)||
+        ||A - B|| = ||A/A.sum(axis=-1) - B.sum(axis=-1)||_{\ell^2} : .. A \in N,D, B \in N,D
         """
         # check if the number of y's is passed
         if N is None:
@@ -447,11 +442,12 @@ class Kernel:
         self.set_x(self.x[indices])
         return indices
 
-    def set(self, x=None, fx=None):
+    def set(self, x=None, fx=None, y=None):
         if x is None and fx is None:
             return
         if x is not None and fx is None:
             self.set_x(core.get_matrix(x.copy()))
+            self.set_y(y=y)
             self.set_fx(None)
             self.rescale()
 
@@ -468,7 +464,7 @@ class Kernel:
             self.set_fx(core.get_matrix(fx))
 
         if x is not None and fx is not None:
-            self.set_x(x), self.set_fx(fx)
+            self.set_x(x), self.set_fx(fx),self.set_y(y=y)
             self.rescale()
             pass
         return self
@@ -535,8 +531,9 @@ class Kernel:
     def update(self, z, fz, eps=None, **kwargs):
         """
         This method allows to define a regressor
-        to defined on the set X on new value z,fz
+        defined on the set X, but fit to others value z,fz
         :math: f_{k, theta}(Z) ~  K(Z,X)theta = f(Z)
+        :math: theta = K(Z,X)^{-1}f(Z)
         """
         self.set_kernel_ptr()
         if isinstance(z, list):
@@ -566,7 +563,7 @@ class Kernel:
 
     def add(self, y=None, fy=None):
         """
-        The method allows optimizes the computation
+        The method allows optimized computation
         for training set augmentation.
 
         :math:K([X,Y], [X,Y]) \in (N_X+N_Y), (N_X+N_Y)
@@ -594,13 +591,13 @@ class Kernel:
         else:
             self.set_fx(fx)
 
-        self.set_polynomial_regressor()
+        self._set_polynomial_regressor()
         return self
 
     def kernel_distance(self, z):
         """
-        MMD based distance matrix:
-        :math:d(x,y) = K(x,x) + K(y,y)-2K(x,y)
+        return an MMD based distance matrix:
+        :math:d(x,z) = K(x,x) + K(z,z)-2K(x,z)
         """
         return core.op.Dnm(x=z, y=self.x)
 
@@ -612,16 +609,16 @@ class Kernel:
         if not hasattr(self, "kernel"):
             self.set_kernel()
             # self.order= None
-            self.kernel = core.kernel.get_kernel_ptr()
+            self.kernel = core.kernel_interface.get_kernel_ptr()
         return self.kernel
 
     def set_kernel_ptr(self):
         """
         Set codpy interface to the current kernel function
         """
-        core.kernel.set_kernel_ptr(self.get_kernel())
-        core.kernel.set_polynomial_order(0)
-        core.kernel.set_regularization(self.reg)
+        core.kernel_interface.set_kernel_ptr(self.get_kernel())
+        core.kernel_interface.set_polynomial_order(0)
+        core.kernel_interface.set_regularization(self.reg)
 
     def rescale(self) -> None:
         """
@@ -632,9 +629,9 @@ class Kernel:
         if self.get_x() is not None:
             # instructs to set the map parameter
             # applied to the data
-            core.kernel.rescale(self.get_x())
+            core.kernel_interface.rescale(self.get_x(),max = self.max_nystrom)
             # retrives the kernel
-            self.kernel = core.kernel.get_kernel_ptr()
+            self.kernel = core.kernel_interface.get_kernel_ptr()
 
     def __call__(self, z: np.ndarray) -> np.ndarray:
         """

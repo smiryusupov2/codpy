@@ -210,7 +210,7 @@ def lexicographical_permutation(x,fx=[],**kwargs) -> tuple:
     else: out = fx[index_array]
     return (x_sorted,out,index_array)
 
-def hot_encoder(data_frame : pd.DataFrame,cat_cols_include = [],cat_cols_exclude = []) -> pd.DataFrame:
+def hot_encoder(data_frame : pd.DataFrame,cat_cols_include = [],cat_cols_exclude = [], sort_columns=False) -> pd.DataFrame:
     # data_frame.to_csv (r'data_frame.csv', header=True)
     num_dataframe = data_frame.select_dtypes(include='number')
     num_cols = set(num_dataframe.columns)
@@ -230,6 +230,8 @@ def hot_encoder(data_frame : pd.DataFrame,cat_cols_include = [],cat_cols_exclude
             cat_dataframe = pd.concat([num_dataframe,cat_dataframe], axis=1,join="inner")
         else :
             cat_dataframe = num_dataframe
+    if sort_columns:
+        cat_dataframe = cat_dataframe.reindex(sorted(cat_dataframe.columns), axis=1)
     # cat_dataframe.to_csv (r'hot_encoder.csv', header=True)
     return cat_dataframe
 
