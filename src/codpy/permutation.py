@@ -1,20 +1,22 @@
-import pandas as pd
-import numpy as np
 import warnings
-import xarray
-from scipy.optimize import linear_sum_assignment
-from typing import List  
-from codpydll import *
-from codpy.core import kernel, op, kernel_helper2, _requires_rescale
-from codpy.sampling import sharp_discrepancy
-from codpy.data_conversion import get_matrix
-from codpy.selection import column_selector
-from codpy.utils import format_32, format_23
-from codpy.dictionary import cast, Dict, Set
-from codpy.random_utils import random_select_interface
-  
+from typing import List
 
-def map_invertion(map,type_in = None):
+import numpy as np
+import pandas as pd
+import xarray
+from codpydll import *
+from scipy.optimize import linear_sum_assignment
+
+from codpy.core import _requires_rescale, kernel, op
+from codpy.data_conversion import get_matrix
+from codpy.dictionary import Dict, Set, cast
+from codpy.random_utils import random_select_interface
+from codpy.sampling import sharp_discrepancy
+from codpy.selection import column_selector
+from codpy.utils import format_23, format_32
+
+
+def map_invertion(map, type_in=None):
     """
     Invert a mapping, transforming a map from one distribution to another into its inverse.
 
@@ -30,10 +32,12 @@ def map_invertion(map,type_in = None):
         >>> original_map = {...}
         >>> inverted_map = map_inversion(original_map)
     """
-    if type_in is None: type_in = type(map)
-    out = cast(data = map, type_in = type_in, type_out = Dict[int, Set[int]])
+    if type_in is None:
+        type_in = type(map)
+    out = cast(data=map, type_in=type_in, type_out=Dict[int, Set[int]])
     out = cd.alg.map_invertion(out)
-    return cast(out,type_out = type_in, type_in = Dict[int, Set[int]])
+    return cast(out, type_out=type_in, type_in=Dict[int, Set[int]])
+
 
 def scipy_lsap(C: np.ndarray) -> np.ndarray:
     """
@@ -44,7 +48,7 @@ def scipy_lsap(C: np.ndarray) -> np.ndarray:
     the Hungarian algorithm (or Munkres algorithm) for this purpose.
 
     Args:
-        C (:class:`numpy.ndarray`): A 2D array representing the cost matrix. Each element ``C[i, j]`` is the cost 
+        C (:class:`numpy.ndarray`): A 2D array representing the cost matrix. Each element ``C[i, j]`` is the cost
                     of assigning the ith worker to the jth job.
 
     Returns:
@@ -52,25 +56,25 @@ def scipy_lsap(C: np.ndarray) -> np.ndarray:
 
     Example:
         Create a cost matrix
-        
+
         >>> cost_matrix = np.array([[4, 1, 3], [2, 0, 5], [3, 2, 2]])
 
         Solve the LSAP
-        
+
         >>> optimal_assignment = scipy_lsap(cost_matrix)
-        >>> print(optimal_assignment)  
+        >>> print(optimal_assignment)
         # Output: [1, 0, 2]
     """
     N = C.shape[0]
-    D = np.min((N,C.shape[1]))
+    D = np.min((N, C.shape[1]))
     permutation = linear_sum_assignment(C, maximize=False)
-    out = np.array(range(0,D))
-    for n in range(0,D):
+    out = np.array(range(0, D))
+    for n in range(0, D):
         out[permutation[1][n]] = permutation[0][n]
     return out
 
 
-def lsap(C: np.ndarray,sub=False) -> np.ndarray:
+def lsap(C: np.ndarray, sub=False) -> np.ndarray:
     """
     Solve the Linear Sum Assignment Problem (LSAP) using CodPy's optimization module.
 
@@ -79,7 +83,7 @@ def lsap(C: np.ndarray,sub=False) -> np.ndarray:
     the Hungarian algorithm (or Munkres algorithm) for this purpose.
 
     Args:
-        C (:class:`numpy.ndarray`): A 2D array representing the cost matrix. Each element ``C[i, j]`` is the cost 
+        C (:class:`numpy.ndarray`): A 2D array representing the cost matrix. Each element ``C[i, j]`` is the cost
                     of assigning the ith worker to the jth job.
 
     Returns:
@@ -87,22 +91,25 @@ def lsap(C: np.ndarray,sub=False) -> np.ndarray:
 
     Example:
         Create a cost matrix
-        
+
         >>> cost_matrix = np.array([[4, 1, 3], [2, 0, 5], [3, 2, 2]])
 
         Solve the LSAP
-        
+
         >>> optimal_assignment = scipy_lsap(cost_matrix)
-        >>> print(optimal_assignment)  
+        >>> print(optimal_assignment)
         # Output: [1, 0, 2]
     """
-    return np.array(cd.alg.LSAP(C,sub))
+    return np.array(cd.alg.LSAP(C, sub))
 
-def reordering(x: np.ndarray, y: np.ndarray, permut: str ='source', iter=10, lsap_fun = None):
+
+def reordering(
+    x: np.ndarray, y: np.ndarray, permut: str = "source", iter=10, lsap_fun=None
+):
     """
     Reorder elements in one distribution (source) to align with another distribution (target).
     This function can handle both NumPy arrays and pandas DataFrames.
-    
+
     Args:
         x (numpy.ndarray or pandas.DataFrame): Source distribution.
         y (numpy.ndarray or pandas.DataFrame): Target distribution.
@@ -117,60 +124,72 @@ def reordering(x: np.ndarray, y: np.ndarray, permut: str ='source', iter=10, lsa
         lsap_fun = lsap
 
     if x.shape[1] != y.shape[1]:
-        permutation = cd.alg.encoder(get_matrix(x),get_matrix(y), iter = iter)
-        if permut != 'source':x_,y_ = x,y[permutation]
-        else: 
-            permutation = map_invertion(permutation, type_in = np.ndarray)
-            x_,y_ = x[permutation],y
+        permutation = cd.alg.encoder(get_matrix(x), get_matrix(y), iter=iter)
+        if permut != "source":
+            x_, y_ = x, y[permutation]
+        else:
+            permutation = map_invertion(permutation, type_in=np.ndarray)
+            x_, y_ = x[permutation], y
     else:
-        kernel.init(x = x,y =y, z = None)
-        D = op.Dnm(x = x, y = y)
+        kernel.init(x=x, y=y, z=None)
+        D = op.Dnm(x=x, y=y)
         permutation = lsap_fun(D)
-        if permut != 'source':
-            permutation = map_invertion(permutation, type_in = np.ndarray)
-            x_,y_ = x,y[permutation]
-        else: x_,y_ = x[permutation],y
+        if permut != "source":
+            permutation = map_invertion(permutation, type_in=np.ndarray)
+            x_, y_ = x, y[permutation]
+        else:
+            x_, y_ = x[permutation], y
     # D = op.Dnm(x,y,**kwargs)
     # test = D.trace().sum()
-    return x_,y_,permutation
+    return x_, y_, permutation
+
 
 def grid_projection(**kwargs):
-    x = kwargs.get('x',[])
-    grid_projection_switchDict = { pd.DataFrame: lambda x,**kwargs :  grid_projection_dataframe(x),
-                                    xarray.core.dataarray.DataArray: lambda x,**kwargs :  grid_projection_xarray(x) }
+    x = kwargs.get("x", [])
+    grid_projection_switchDict = {
+        pd.DataFrame: lambda x, **kwargs: grid_projection_dataframe(x),
+        xarray.core.dataarray.DataArray: lambda x, **kwargs: grid_projection_xarray(x),
+    }
+
     def grid_projection_dataframe(**kwargs):
-        x = kwargs.get('x',[])
+        x = kwargs.get("x", [])
         out = cd.alg.grid_projection(x.values)
-        out = pd.DataFrame(out,columns = x.columns, index = x.index)
+        out = pd.DataFrame(out, columns=x.columns, index=x.index)
         return out
+
     def grid_projection_xarray(**kwargs):
-        x = kwargs.get('x',[])
-        index_string = kwargs.get("index","N")
+        x = kwargs.get("x", [])
+        index_string = kwargs.get("index", "N")
         indexes = x[index_string]
         out = x.copy()
         for index in indexes:
-            mat = x[index_string==int(index)].values
+            mat = x[index_string == int(index)].values
             mat = cd.alg.grid_projection(mat.T)
-            out[index_string==int(index)] = mat.T
+            out[index_string == int(index)] = mat.T
         return out
+
     def grid_projection_np(**kwargs):
-        x = kwargs.get('x',[])
-        if x.ndim==3:
+        x = kwargs.get("x", [])
+        if x.ndim == 3:
             shapes = x.shape
             x = format_32(x)
             out = cd.alg.grid_projection(x)
-            out = format_23(out,shapes)
+            out = format_23(out, shapes)
             return out
-        else: return cd.alg.grid_projection(get_matrix(x))
+        else:
+            return cd.alg.grid_projection(get_matrix(x))
+
     type_debug = type(x)
-    method = grid_projection_switchDict.get(type_debug,lambda x : grid_projection_np(**kwargs))
+    method = grid_projection_switchDict.get(
+        type_debug, lambda x: grid_projection_np(**kwargs)
+    )
     return method(x)
 
 
 def match(x, Ny=None, sharp_discrepancy_xmax=None, sharp_discrepancy_seed=None):
     """
     Match function to resample or reorder data points in x to match a specified distribution size Ny.
-    
+
     Args:
         x (numpy.ndarray or pandas.DataFrame): Input data points to be matched.
         Ny (int): Number of points to match to, if None, matches to the size of ``x``.
@@ -183,7 +202,7 @@ def match(x, Ny=None, sharp_discrepancy_xmax=None, sharp_discrepancy_seed=None):
     x = column_selector(x)
     if Ny is None:
         Ny = x.shape[0]
-    if Ny >= x.shape[0]: 
+    if Ny >= x.shape[0]:
         return x
 
     def match_dataframe(x):
@@ -192,8 +211,10 @@ def match(x, Ny=None, sharp_discrepancy_xmax=None, sharp_discrepancy_seed=None):
 
     def match_array(x):
         if sharp_discrepancy_xmax is not None:
-            x = random_select_interface(x, xmax=sharp_discrepancy_xmax, seed=sharp_discrepancy_seed)
-        kernel.init(x=x) 
+            x = random_select_interface(
+                x, xmax=sharp_discrepancy_xmax, seed=sharp_discrepancy_seed
+            )
+        kernel.init(x=x)
         out = cd.alg.match(get_matrix(x), Ny)
         return out
 
@@ -202,7 +223,10 @@ def match(x, Ny=None, sharp_discrepancy_xmax=None, sharp_discrepancy_seed=None):
     elif isinstance(x, np.ndarray):
         return match_array(x)
     else:
-        raise ValueError("Invalid type for x. Only numpy arrays and pandas DataFrames are supported.")
+        raise ValueError(
+            "Invalid type for x. Only numpy arrays and pandas DataFrames are supported."
+        )
+
 
 class encoder:
     """
@@ -215,18 +239,18 @@ class encoder:
 
     Args:
         y (array_like): The data to be encoded.
-        x (array_like, optional): Additional data points to be considered in encoding. Defaults to None, 
+        x (array_like, optional): Additional data points to be considered in encoding. Defaults to None,
                                   in which case ``x`` is set to ``y``.
         Dx (int, optional): The desired dimensionality of the encoded subspace. If specified and different
                             from the dimensionality of ``x``, ``x`` will be matched to this dimension. Defaults to None.
-        permut (str, optional): Specifies the permutation strategy, either 'source' or another specified method. 
+        permut (str, optional): Specifies the permutation strategy, either 'source' or another specified method.
                                 Defaults to ``'source'``.
         kernel_fun (str, optional): The kernel function to use for encoding. Defaults to ``'tensornorm'``.
         map (str, optional): The mapping function to use with the kernel. Defaults to ``'unitcube'``.
         polynomial_order (int, optional): The polynomial order for the kernel function. Defaults to ``2``.
         regularization (float, optional): The regularization parameter for the kernel. Defaults to ``1e-8``.
         rescale (bool, optional): Whether to rescale the data. Defaults to ``False``.
-        rescale_params (dict, optional): Parameters for the rescaling process if rescale is True. 
+        rescale_params (dict, optional): Parameters for the rescaling process if rescale is True.
                                          Defaults to ``{'max': 1000, 'seed': 42}``.
 
     Usage:
@@ -240,49 +264,76 @@ class encoder:
 
         The encoder uses kernel methods to perform a non-linear dimensionality reduction, particularly useful when
         the features in the dataset exhibit non-linear relationships. The choice of kernel and mapping function
-        can significantly affect the encoding quality and should be selected based on the nature of the data and 
+        can significantly affect the encoding quality and should be selected based on the nature of the data and
         the specific requirements of the application.
     """
-    def __init__(self,y: np.ndarray,x: np.ndarray = None, Dx: int = None, permut: str='source', 
-                 kernel_fun: str = "tensornorm", map: str = "unitcube", polynomial_order:int = 2, 
-                 regularization:float = 1e-8, rescale:bool = False, rescale_params: dict = {'max': 1000, 'seed':42},
-                 verbose = False):
+
+    def __init__(
+        self,
+        y: np.ndarray,
+        x: np.ndarray = None,
+        Dx: int = None,
+        permut: str = "source",
+        kernel_fun: str = "tensornorm",
+        map: str = "unitcube",
+        polynomial_order: int = 2,
+        regularization: float = 1e-8,
+        rescale: bool = False,
+        rescale_params: dict = {"max": 1000, "seed": 42},
+        verbose=False,
+    ):
         self.kernel_fun, self.map = kernel_fun, map
-        y,x = column_selector(y),column_selector(x)
+        y, x = column_selector(y), column_selector(x)
         if x is None:
             x = y
             if Dx is not None and Dx != x.shape[1]:
-                x = match(y.T,Ny=Dx).T
-            else:return
+                x = match(y.T, Ny=Dx).T
+            else:
+                return
 
-        params = {'rescalekernel':{'max': 1000, 'seed':42},
-        'set_codpykernel' : kernel_helper2(kernel=kernel_fun, map= map, polynomial_order=polynomial_order, regularization=regularization),
-        'rescale': rescale,
+        params = {
+            "rescalekernel": {"max": 1000, "seed": 42},
+            "set_codpykernel": kernel_helper2(
+                kernel=kernel_fun,
+                map=map,
+                polynomial_order=polynomial_order,
+                regularization=regularization,
+            ),
+            "rescale": rescale,
         }
         if rescale == True or _requires_rescale(map_name=map):
-            params['rescale'] = True
-            params['rescalekernel'] = rescale_params
+            params["rescale"] = True
+            params["rescalekernel"] = rescale_params
             if verbose:
-                warnings.warn("Rescaling is set to True as it is required for the chosen map.")
-            kernel.init(x,y,x, **params)
+                warnings.warn(
+                    "Rescaling is set to True as it is required for the chosen map."
+                )
+            kernel.init(x, y, x, **params)
         else:
-            params['rescale'] = rescale
+            params["rescale"] = rescale
             kernel.init(**params)
 
-        permutation = cd.alg.encoder(get_matrix(x),get_matrix(y))
+        permutation = cd.alg.encoder(get_matrix(x), get_matrix(y))
         self.permutation = permutation
-        if permut == 'source': 
-            permut = map_invertion(permutation,type_in = List[int])
-            if isinstance(x,pd.DataFrame): x= pd.DataFrame(x.iloc[permut], columns = x.columns)
-            else: x=x[permut]
+        if permut == "source":
+            permut = map_invertion(permutation, type_in=List[int])
+            if isinstance(x, pd.DataFrame):
+                x = pd.DataFrame(x.iloc[permut], columns=x.columns)
+            else:
+                x = x[permut]
             self.x, self.y, self.fx = y, y, x
         else:
-            if isinstance(y,pd.DataFrame): y  = pd.DataFrame(y.iloc[permutation], columns = y.columns)
-            else: y=y[permutation]
-            self.x, self.y, self.fx =  y, y, x
+            if isinstance(y, pd.DataFrame):
+                y = pd.DataFrame(y.iloc[permutation], columns=y.columns)
+            else:
+                y = y[permutation]
+            self.x, self.y, self.fx = y, y, x
 
     def __call__(self, z):
-        return op.projection(self.x, self.y, z, self.fx, kernel_fun=self.kernel_fun, map=self.map)
+        return op.projection(
+            self.x, self.y, z, self.fx, kernel_fun=self.kernel_fun, map=self.map
+        )
+
 
 class decoder:
     """
@@ -305,10 +356,13 @@ class decoder:
         >>> enc = encoder(x, z)
         >>> reconstructed_data = dec(z)
     """
-    def __init__(self,encoder: object):
-        self.x, self.y, self.fx= encoder.fx ,encoder.fx, encoder.x
 
-    def __call__(self, z: np.ndarray, kernel_fun: str = "tensornorm", map: str = "unitcube"):
+    def __init__(self, encoder: object):
+        self.x, self.y, self.fx = encoder.fx, encoder.fx, encoder.x
+
+    def __call__(
+        self, z: np.ndarray, kernel_fun: str = "tensornorm", map: str = "unitcube"
+    ):
         """
         Apply the decoding to encoded data points.
 
@@ -320,71 +374,85 @@ class decoder:
         Returns:
             array_like: The projected data in the original space.
         """
-        return op.projection(x = self.x, y = self.y, z = z, fx = self.fx, kernel_fun=kernel_fun,
-                                map=map)
+        return op.projection(
+            x=self.x, y=self.y, z=z, fx=self.fx, kernel_fun=kernel_fun, map=map
+        )
 
 
-
-def get_rand(x, grid_projection = False, seed = None, rand = np.random.random_sample, **kwargs):
-    N,D = x.shape
+def get_rand(
+    x, grid_projection=False, seed=None, rand=np.random.random_sample, **kwargs
+):
+    N, D = x.shape
     if N is None or D is None:
-        x = column_selector(x,**kwargs)
-    if seed: np.random.seed(seed)
-    shape = [N,D]
+        x = column_selector(x, **kwargs)
+    if seed:
+        np.random.seed(seed)
+    shape = [N, D]
     x = rand(shape)
-    if grid_projection: x = grid_projection(x=x)
+    if grid_projection:
+        x = grid_projection(x=x)
     return x
 
-def _get_x(fx,**kwargs):
-    x = kwargs.get('get_rand', get_rand)({**kwargs,**{'x':fx}})
-    Dx = kwargs.get("Dx",fx.shape[1])
+
+def _get_x(fx, **kwargs):
+    x = kwargs.get("get_rand", get_rand)({**kwargs, **{"x": fx}})
+    Dx = kwargs.get("Dx", fx.shape[1])
     Dfx = fx.shape[1]
-    if (kwargs.get("reordering",True)):
-        kwargs['x'],kwargs['y'] = x,fx
-        if Dx==Dfx:
-            kwargs['distance'] = "norm22"
-            x,y,permutation = reordering(**kwargs, permut = 'source')
+    if kwargs.get("reordering", True):
+        kwargs["x"], kwargs["y"] = x, fx
+        if Dx == Dfx:
+            kwargs["distance"] = "norm22"
+            x, y, permutation = reordering(**kwargs, permut="source")
         else:
-            def helper(**kwargs): return gen.encoder(**kwargs).params['fx']
-            x = kwargs.get("encoder",helper)(**kwargs,permut='source')
+
+            def helper(**kwargs):
+                return gen.encoder(**kwargs).params["fx"]
+
+            x = kwargs.get("encoder", helper)(**kwargs, permut="source")
     return x
 
-def _get_y(x,**kwargs):
-    Ny = kwargs.get("Ny",x.shape[0])
-    if Ny < x.shape[0]: return kwargs.get("cluster_fun", sharp_discrepancy)(x,**kwargs)
+
+def _get_y(x, **kwargs):
+    Ny = kwargs.get("Ny", x.shape[0])
+    if Ny < x.shape[0]:
+        return kwargs.get("cluster_fun", sharp_discrepancy)(x, **kwargs)
     return x
 
-def _get_z(x,**kwargs):
-    rand = kwargs.get("random_sample",np.random.random_sample)
-    Nz = kwargs.get("Nz",x.shape[0])
-    Dz = kwargs.get("Dx",x.shape[1])
-    shape = [Nz,Dz]
+
+def _get_z(x, **kwargs):
+    rand = kwargs.get("random_sample", np.random.random_sample)
+    Nz = kwargs.get("Nz", x.shape[0])
+    Dz = kwargs.get("Dx", x.shape[1])
+    shape = [Nz, Dz]
     z = rand(shape)
     return z
 
-def _get_xyz(fx,**kwargs):
-    kwargs['fx'] = fx
-    kwargs['x'] = kwargs.get("get_x", _get_x)(**kwargs)
-    kwargs['y'] = kwargs.get("get_y", _get_y)(**kwargs)
+
+def _get_xyz(fx, **kwargs):
+    kwargs["fx"] = fx
+    kwargs["x"] = kwargs.get("get_x", _get_x)(**kwargs)
+    kwargs["y"] = kwargs.get("get_y", _get_y)(**kwargs)
     z = kwargs.get("get_z", _get_z)(**kwargs)
 
-    return kwargs['x'], kwargs['y'], z
-
+    return kwargs["x"], kwargs["y"], z
 
 
 if __name__ == "__main__":
-    import core,time
+    import time
+
+    import core
     import pandas as pd
-    N,D = [2**n for n in range(8,15)],3
+
+    N, D = [2**n for n in range(8, 15)], 3
     times = []
     for n in N:
-        A = np.random.normal(size=[n,D])
-        B = np.random.normal(size=[n,D])
-        C = core.op.Dnm(A,B,distance="norm22")
+        A = np.random.normal(size=[n, D])
+        B = np.random.normal(size=[n, D])
+        C = core.op.Dnm(A, B, distance="norm22")
         start = time.time()
-        permutation = lsap(C,False)
+        permutation = lsap(C, False)
         end = time.time()
-        times.append(end-start)
-    result = pd.DataFrame({"size":N,"times":times})
+        times.append(end - start)
+    result = pd.DataFrame({"size": N, "times": times})
     print(result)
     pass

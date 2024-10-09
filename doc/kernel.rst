@@ -1,7 +1,7 @@
-Kernels and maps
+Kernel class
 ============
 
-.. automodule:: codpy.core
+.. automodule:: codpy.kernel
    :members:
    :undoc-members:
    :show-inheritance:

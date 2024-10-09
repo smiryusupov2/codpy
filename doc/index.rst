@@ -12,6 +12,7 @@ Welcome to Codpy's documentation!
 
    description
    install
+   kernel
    core
    permutation
    sampling

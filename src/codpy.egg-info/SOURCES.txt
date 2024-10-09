@@ -12,11 +12,13 @@ src/codpy/data_processing.py
 src/codpy/dictionary.py
 src/codpy/file.py
 src/codpy/include_all.py
+src/codpy/kernel.py
 src/codpy/lalg.py
 src/codpy/metrics.py
 src/codpy/parallel.py
 src/codpy/pde.py
 src/codpy/permutation.py
+src/codpy/plot_utils.py
 src/codpy/predictor.py
 src/codpy/random_utils.py
 src/codpy/sampling.py
