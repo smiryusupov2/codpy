@@ -219,20 +219,7 @@ class op:
             x (np.array): The input data points for which the regression coefficients are computed.
             y (np.array): Internal parameter, can be y = x.
             fx (np.array, optional): Responses associated with 'x'.
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
+
 
         Returns:
             np.array: The computed regression coefficients or regressors that model the
@@ -359,19 +346,6 @@ def distance_labelling(
             - If True, uses softmax labelling.
             - If False (default), uses softmin labelling.
             :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-    :type kernel_fun: :class:`str`, optional
-    :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-    :type map: :class:`str`, optional
-    :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-    :type polynomial_order: :class:`float`, optional
-    :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-    :type regularization: :class:`numpy.ndarray`, optional
-    :param rescale: Whether to rescale the data.
-    :type rescale: :class:`bool`, optional
-    :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-    :type rescale_params: :class:`dict`, optional
-    :param kwargs: Arbitrary keyword arguments.
-    :type kwargs: dict
 
     Returns:
         np.array: An array of labelled distances between the data points in x and y.
@@ -558,20 +532,6 @@ class diffops:
         """
         Args:
 
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
         """
         return cd.op.nabla_Knm(get_matrix(x), get_matrix(y), get_matrix(fy))
 
@@ -584,20 +544,7 @@ class diffops:
             y (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Secondary data points used in the kernel computation.
             z (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Tertiary data points used in the kernel computation.
             fx (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Function values or responses at the data points in `x`.
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
+
 
         Returns:
             :class:`numpy.ndarray`: The computed gradient of the function.
@@ -623,20 +570,7 @@ class diffops:
             y (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Secondary data points.
             z (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Tertiary data points.
             fz (:class:`numpy.ndarray`, optional): The vector field for the inverse gradient computation.
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
+
 
         Returns:
             :class:`numpy.ndarray`: The computed inverse gradient of the vector field.
@@ -664,20 +598,7 @@ class diffops:
             y class:`numpy.ndarray`: Secondary data points used in the kernel computation.
             z class:`numpy.ndarray`: Tertiary data points used in the kernel computation.
             fz class:`numpy.ndarray`: The vector field for which the divergence is computed. Defaults to an empty list.
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
+
 
         Returns:
             class:`numpy.ndarray`: The computed divergence of the vector field at each point in `x`.
@@ -702,20 +623,7 @@ class diffops:
             y (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Secondary data points.
             z (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Tertiary data points.
             fx (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Function values or responses at the data points.
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
+
 
         Returns:
             :class:`numpy.ndarray`: The computed inverse of the transposed gradient.
@@ -746,21 +654,7 @@ class diffops:
             x (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Input data points for the Laplace operator computation.
             y (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Secondary data points used in the kernel computation.
             fx (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Function values or responses at the data points.
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
-        Returns:
+
             class:`numpy.ndarray`: The computed discrete Laplace operator values for each point in `x`.
 
         Note:
@@ -781,20 +675,6 @@ class diffops:
         """
         Args:
 
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
         """
 
         return cd.op.nablaT_nabla_inv(get_matrix(x), get_matrix(y), get_matrix(fx))
@@ -831,20 +711,7 @@ class diffops:
             x (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Input data points where the Hessian matrix is calculated.
             z (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Tertiary data points used in the kernel computation.
             fx (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Function values or responses at the data points in `x`.
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
+
 
         Returns:
             :class:`numpy.ndarray`: The computed Hessian matrix of the function.
