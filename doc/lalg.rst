@@ -1,7 +1,7 @@
 Linear Algebra module
 ============
 
-.. automodule:: src.lalg
+.. automodule:: codpy.lalg
    :members:
    :undoc-members:
    :show-inheritance:

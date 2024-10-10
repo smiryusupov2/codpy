@@ -28,19 +28,28 @@ extensions = [
     "sphinx_math_dollar",
 ]
 
-mathjax_config = {
-    "tex2jax": {
-        "inlineMath": [["\\(", "\\)"]],
-        "displayMath": [["\\[", "\\]"]],
-    },
-}
+# mathjax_config = {
+#     "tex2jax": {
+#         "inlineMath": [["\\(", "\\)"]],
+#         "displayMath": [["\\[", "\\]"]],
+#     },
+# }
+
+# mathjax3_config = {
+#     "tex": {
+#         "inlineMath": [["\\(", "\\)"]],
+#         "displayMath": [["\\[", "\\]"]],
+#     }
+# }
 
 mathjax3_config = {
     "tex": {
-        "inlineMath": [["\\(", "\\)"]],
-        "displayMath": [["\\[", "\\]"]],
+        "inlineMath": [["$", "$"], ["\\(", "\\)"]],
+        "displayMath": [["$$", "$$"], ["\\[", "\\]"]],
     }
 }
+
+
 mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
 templates_path = ["_templates"]
 exclude_patterns = []

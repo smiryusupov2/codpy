@@ -1,7 +1,7 @@
 General algorithms
-============
+==================
 
-.. automodule:: src.algs
+.. automodule:: codpy.algs
    :members:
    :undoc-members:
    :show-inheritance:

@@ -109,7 +109,6 @@ class alg:
 
 
 if __name__ == "__main__":
-    from core import kernel
     from include_all import *
 
     x, fx = np.random.rand(10, 2), np.random.rand(10, 3)

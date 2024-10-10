@@ -1,7 +1,7 @@
 Sampling algorithms
-============
+===================
 
-.. automodule:: src.sampling
+.. automodule:: codpy.sampling
    :members:
    :undoc-members:
    :show-inheritance:

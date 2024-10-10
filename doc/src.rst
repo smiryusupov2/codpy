@@ -7,7 +7,7 @@ Submodules
 src.algs module
 ---------------
 
-.. automodule:: src.algs
+.. automodule:: codpy.algs
    :members:
    :noindex:
    :private-members: no
@@ -15,7 +15,7 @@ src.algs module
 src.core module
 ---------------
 
-.. automodule:: src.core
+.. automodule:: codpy.core
    :members:
    :noindex:
    :private-members: no
@@ -23,7 +23,7 @@ src.core module
 src.pde module
 --------------
 
-.. automodule:: src.pde
+.. automodule:: codpy.pde
    :members:
    :noindex:
    :private-members: no
@@ -31,7 +31,7 @@ src.pde module
 src.permutation module
 ----------------------
 
-.. automodule:: src.permutation
+.. automodule:: codpy.permutation
    :members:
    :noindex:
    :private-members: no
@@ -39,7 +39,7 @@ src.permutation module
 src.sampling module
 -------------------
 
-.. automodule:: src.sampling
+.. automodule:: codpy.sampling
    :members:
    :noindex:
    :private-members: no
@@ -47,7 +47,7 @@ src.sampling module
 Module contents
 ---------------
 
-.. automodule:: src
+.. automodule:: codpy
    :members:
    :noindex:
    :private-members: no

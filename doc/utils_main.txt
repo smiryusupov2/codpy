@@ -6,7 +6,8 @@ Helper functions
    :caption: Utility Modules
    :private-members: no
 
-   utils/clustering_utils
-   utils/data_conversion
-   utils/data_processing
+
+   data_conversion
+   data_processing
+   utils
    # Add other modules

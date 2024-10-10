@@ -3,9 +3,9 @@ from functools import partial
 import numpy as np
 from codpydll import *
 
-from codpy.data_conversion import *
+from codpy.data_conversion import get_matrix
 from codpy.random_utils import *
-from codpy.selection import *
+from codpy.selection import column_selector
 from codpy.utils import softmaxindices, softminindices
 
 
@@ -20,8 +20,10 @@ class _codpy_param_getter:
 def set_verbose(verbose=True):
     cd.verbose(verbose)
 
-def set_num_threads(n) ->None:
+
+def set_num_threads(n) -> None:
     cd.set_num_threads(n)
+
 
 class op:
     def projection(x, y, z, fx, reg=[], **kwargs):
@@ -1477,16 +1479,16 @@ _map_settings = {
     "standardmean": map_setters.set_standard_mean_map,
 }
 
+
 def _requires_rescale(map_name: str) -> bool:
     maps_needing_rescale = {
         "unitcube",
         "meandistance",
         "mindistance",
         "standardmin",
-        "standardmean"
+        "standardmean",
     }
     return map_name in maps_needing_rescale
-
 
 
 def _requires_bandwidth(map_name: str) -> bool:
@@ -1541,7 +1543,7 @@ def kernel_setter(kernel, map, polynomial_order=0, regularization=1e-8, bandwidt
     Returns:
         The configured kernel function.
     """
-    return lambda : _kernel_helper2(
+    return lambda: _kernel_helper2(
         kernel, map, polynomial_order, regularization, bandwidth
     )
 

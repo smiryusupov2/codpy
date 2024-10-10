@@ -19,15 +19,11 @@ Welcome to Codpy's documentation!
    algs
    pde
    lalg
-   utils_main
 
 .. toctree::
    :maxdepth: 2
    :caption: Learn and Explore:
 
-   tutorials
-   examples
-   benchmarks
    src
 
 .. toctree::

@@ -1,7 +1,7 @@
 PDE module
 ============
 
-.. automodule:: src.pde
+.. automodule:: codpy.pde
    :members:
    :undoc-members:
    :show-inheritance:

@@ -1,5 +1,5 @@
 Kernels and maps
-============
+================
 
 .. automodule:: codpy.core
    :members:

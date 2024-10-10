@@ -1,7 +1,7 @@
 Permutation algorithms
-============
+======================
 
-.. automodule:: src.permutation
+.. automodule:: codpy.permutation
    :members:
    :undoc-members:
    :show-inheritance:
