@@ -1,0 +1,13 @@
+Helper functions
+=============
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Utility Modules
+   :private-members: no
+
+
+   data_conversion
+   data_processing
+   utils
+   # Add other modules
