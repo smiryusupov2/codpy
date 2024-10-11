@@ -65,7 +65,7 @@ setup(
         "mkl",
         "scikit-learn",
         "scipy",
-        "numpy=1.24.3",
+        "numpy==1.24.3",
         "xarray==2022.9.0",
         "matplotlib",
         "statsmodels"
