@@ -3,6 +3,8 @@
 Codpy is a kernel based, open source software library for high performance numerical computations relying on the [RKHS](https://en.wikipedia.org/wiki/Reproducingkernel_Hilbert_space) theory.
 It contains a set of core tools that we use for machine Learning, statistics and numerical simulations, see our [introduction to codpy](https://arxiv.org/pdf/2402.07084) for a review of the method, as well as several examples running this library.
 
+See full [documentation](https://codpy.readthedocs.io/en/dev/description.html).
+
 
 ## Technical requirement
 
