@@ -1,0 +1,5 @@
+sphinx>=4.0
+sphinx_rtd_theme>=0.5
+sphinx_togglebutton
+sphinx.ext.napoleon
+sphinx_math_dollar
