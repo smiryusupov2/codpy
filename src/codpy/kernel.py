@@ -404,6 +404,8 @@ class Kernel:
             self.y = self.get_x()
         else:
             self.y = y.copy()
+        self._set_knm_inv(None)
+        self._set_knm(None)
 
     def get_y(self, **kwargs) -> np.ndarray:
         """
@@ -555,11 +557,12 @@ class Kernel:
             # udefined by user
             # to compute Y
             theta, indices = alg.HybridGreedyNystroem(
-                x=self.get_x(), fx=fx, N=N, tol=0.0, error_type=norm_, **kwargs
+                x=self.get_x(), fx=fx, N=N, tol=0.0, error_type=norm_, n_batch=1,**kwargs
             )
             #
-            if all is False:
-                # Select the subset of points based on the greedy Nystrom approximation
+            if all is True:
+                # if there is a flag all, then
+                # f_\theta(.) = K(.,Y)K(X,Y)^{-1}f(X)
                 self.set(
                     x=self.x,
                     y=self.x[indices],
@@ -567,7 +570,8 @@ class Kernel:
                     set_polynomial_regressor=False,
                 )
             else:
-                # If selecting all points, update the internal state to reflect X=Y
+                # else X = Y is set:
+                #  f_\theta(.) = K(.,Y)K(Y,Y)^{-1}f(Y)
                 self.set_x(self.x[indices], set_polynomial_regressor=False)
                 self.set_fx(self.fx[indices], set_polynomial_regressor=False)
                 self.set_theta(theta)
@@ -578,16 +582,23 @@ class Kernel:
             indices = list(range(self.x.shape[0]))
             return indices
 
-        # Otherwise, perform Maximum Mean Discrepancy (MMD)-based selection of points
-        indices = [0]  # Start with the first point
-        complement_indices = list(range(1, N))  # Remaining points
-
-        # Iteratively select points with the maximum MMD distance
-        for _ in range(N - 1):
-            Dnm = core.op.Dnm(x[indices], x[complement_indices])  # Compute MMD distance
-            indice = np.max(Dnm, axis=0)  # Select index with max distance
-            indice = np.argmax(indice)
-            indice = complement_indices[indice]
+        # if the size of x => N, then it
+        # returns the points having the largest distance
+        # with respect to maximum mean discrepancy (MMD)
+        indice = 0
+        indices = [0]
+        complement_indices = list(range(1, x.shape[0]))
+        Dnm = None
+        for n in range(N - 1):
+            # Computed MMD distance matrix
+            _Dnm = core.op.Dnm(x[[indice]], x[complement_indices])
+            if Dnm is None: Dnm=_Dnm.copy()
+            else: Dnm=np.concatenate([Dnm,_Dnm],axis=0)
+            new_indice = np.max(Dnm, axis=0)
+            # selects the indices with maximum MMD
+            new_indice = np.argmax(new_indice)
+            Dnm = np.delete(Dnm,new_indice,1)
+            indice = complement_indices[new_indice]
             complement_indices.remove(indice)
             indices.append(indice)
             pass
@@ -618,7 +629,7 @@ class Kernel:
             self.rescale()
 
         if x is None and fx is not None:
-            if self.kernel is None:
+            if self.get_kernel() is None:
                 raise Exception("Please input x at least once")
             if fx.shape[0] != self.x.shape[0]:
                 raise Exception(
@@ -632,6 +643,7 @@ class Kernel:
         if x is not None and fx is not None:
             self.set_x(x), self.set_fx(fx), self.set_y(y=y)
             self.rescale()
+            pass
         return self
 
     def map(

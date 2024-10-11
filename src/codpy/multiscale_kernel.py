@@ -20,6 +20,8 @@ class MiniBatchkmeans(MiniBatchKMeans):
     def __call__(self,z, **kwargs):
         return self.predict(z)
 
+
+
 class MultiScaleKernel(Kernel):
     params = {}
     def __init__(self,N,method = MiniBatchkmeans,**kwargs):
@@ -29,7 +31,7 @@ class MultiScaleKernel(Kernel):
 
 
     def set(self,x=None,fx=None,y=None,**kwargs):
-        self.clustering = self.method(x=x,N=self.N,**kwargs)
+        self.clustering = self.method(x=x,N=self.N,fx=fx,**kwargs)
         y,labels = self.clustering.cluster_centers_,self.clustering.labels_
         self.labels = map_invertion(labels)
         super().set(x=x,fx=fx,y=y,**kwargs)

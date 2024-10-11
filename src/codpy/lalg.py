@@ -2,24 +2,22 @@ from codpy.core import get_matrix
 from codpydll import *
 import numpy as np
 
-def VanDerMonde(x: np.ndarray, orders) -> np.ndarray:
+def VanDerMonde(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
-    Compute the Vandermonde matrix for a given input array `x` and specified orders.
+    Compute the inverse of the Vandermonde system for a given input array `x` and specified orders.
+    Useful for Lagrange polynomial interpolations to design higher order numerical schemes
 
-    The Vandermonde matrix is generated for each element of the input array `x`. 
+    The Vandermonde system consists in solving $A x = y$, where $A=(x_i)^j$. 
     If `x` is a one-dimensional array, the function directly computes the Vandermonde matrix.
     If `x` is a multi-dimensional array, the function computes the Vandermonde matrix for each row.
 
     Args:
-        x (array_like): Input array. Can be a one-dimensional or multi-dimensional array.
-        orders (int or array_like): The powers to which the elements of `x` are raised. 
-        If an integer, it specifies the maximum order. If an array, it contains the specific orders to use.
-        **kwargs: Additional keyword arguments to be passed to the underlying Vandermonde computation function.
+        x (array_like): Input one-dimensional matrix, optionally a facility is provided to matrix.
+        y (array_like): Input matrix. 
 
     Returns:
-        ndarray: The computed Vandermonde matrix. If `x` is one-dimensional, the function returns a 2D array.
-            If `x` is multi-dimensional, the function returns a 3D array where each 2D array along the first axis
-            corresponds to the Vandermonde matrix of a row in `x`.
+        ndarray: 
+        $A^{-1} y$, if x is one-dimensional. $[A_i^{-1} y]$, for $i=1,\cdots,N$, $N$ being the number of row of $x$ , if x is a matrix.
 
     Examples:
         For a one-dimensional input:
@@ -43,11 +41,15 @@ def VanDerMonde(x: np.ndarray, orders) -> np.ndarray:
     """
     x = get_matrix(x)
     if x.ndim==1: 
-        return cd.tools.VanDerMonde(x,orders)
-    out = np.array([cd.tools.VanDerMonde(x[n],orders) for n in range(0,x.shape[0])])
+        return cd.tools.VanDerMonde(x,y)
+    out = np.array([cd.tools.VanDerMonde(x[n],y) for n in range(0,x.shape[0])])
     return out
 
 class lalg:
+    """
+    A namespace to grant access to linear algebra tools, using Intel(R) Math Kernel Library (MKL) as backend.
+    MKL is a parallelized, highly optimized library for linear algebra and other math tools.
+    """
     def prod(x,y): 
         """
         Compute the product of two matrices.
@@ -149,10 +151,29 @@ class lalg:
         return cd.lalg.svd(x, eps)
     
     def lstsq(A,b=[],eps = 1e-8):
+        """
+        Compute the inverse of a rectangular matrix using the least square method.
+        This method performs a safe matrix invertion, computing $(A^T A + \epsilon I)^{-1}A^T b$, the inversion relying on a fast cholesky decomposition. 
+        For semi-definite matrix and without regularization $\epsilon=0$, the cholesky decomposition might fail, 
+        in which case the algorithm rely on SVD decomposition to perform the invertion, a safer, but computationally intensive procedure.
+
+        Args:
+            A: The matrix to invert.
+            b: an optional matrix as second member.
+            eps (float, optional): A small value added for numerical stability. Default is 1e-9 to cope with numerical error.
+
+        Returns:
+        $(A^T A + \epsilon I)^{-1}A^T b$ .
+        """
         out= cd.lalg.lstsq(get_matrix(A),get_matrix(b),eps)
         return out
     
-    def SelfAdjointEigenDecomposition(x): return cd.lalg.SelfAdjointEigenDecomposition(x)
+    def SelfAdjointEigenDecomposition(A): 
+        """
+        Compute the self adjoint Eigen decomposition $A = U D U^T$.
+        """
+        return cd.lalg.SelfAdjointEigenDecomposition(A)
+
     def fix_nonpositive_semidefinite(x,eps=1e-8): 
         eigenvector,eigenvalues = lalg.SelfAdjointEigenDecomposition(get_matrix(x))
         eigenvalues = np.array([max(e,eps) for e in eigenvalues])

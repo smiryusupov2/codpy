@@ -75,32 +75,16 @@ class alg:
         N=0,
         n_batch=10,
         error_type="classifier",
-        start_indices=None,
+        start_indices=[],
         **kwargs,
     ):
         # NumPy arrays input
-        def HybridGreedyNystroem_np(x, fx, tol, N, n_batch, error_type, start_indices):
-            x, fx = get_matrix(x), get_matrix(fx)
-            cn, indices = cd.alg.HybridGreedyNystroem(
-                x, fx, start_indices, tol, N, n_batch, error_type
-            )
-            return cn, indices
+        x, fx = get_matrix(x), get_matrix(fx)
+        cn, indices = cd.alg.HybridGreedyNystroem(
+            x, fx, start_indices, tol, N, n_batch, error_type
+        )
+        return cn, indices
 
-        # from pd.DataFrames to NumPy arrays
-        def HybridGreedyNystroem_df(x, fx, tol, N, n_batch, error_type, start_indices):
-            return HybridGreedyNystroem_np(
-                x, fx, tol, N, n_batch, error_type, start_indices
-            )
-
-        # Switcher to pd or np
-        if isinstance(x, pd.DataFrame):
-            return HybridGreedyNystroem_df(
-                x, fx, tol, N, n_batch, error_type, start_indices
-            )
-        else:
-            return HybridGreedyNystroem_np(
-                x, fx, tol, N, n_batch, error_type, start_indices
-            )
 
     def add(Knm, Knm_inv, x, y):
         # import codpy.core

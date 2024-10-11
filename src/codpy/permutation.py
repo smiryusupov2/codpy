@@ -19,6 +19,7 @@ from codpy.utils import format_23, format_32
 def map_invertion(map, type_in=None):
     """
     Invert a mapping, transforming a map from one distribution to another into its inverse.
+    It is an optimized invertion algorithm, designed to handle large scale map invertion.
 
     Args:
         map (dict or similar): The mapping to invert.
@@ -78,14 +79,16 @@ def scipy_lsap(C: np.ndarray) -> np.ndarray:
 def lsap(C: np.ndarray, sub=False) -> np.ndarray:
     """
     Solve the Linear Sum Assignment Problem (LSAP) using CodPy's optimization module.
+    The codpy LSAP might provide a slightly faster alternative than scipy LSAP module, as it is a C++ optimized version of it.
+    It comes also with a parallelized, but sub optimal version, for large scale lsap problems.
 
     This function finds an optimal assignment that minimizes the total cost based on the
-    cost matrix C. It uses the `linear_sum_assignment` method from CodPy, which implements
-    the Hungarian algorithm (or Munkres algorithm) for this purpose.
+    cost matrix C. 
 
     Args:
         C (:class:`numpy.ndarray`): A 2D array representing the cost matrix. Each element ``C[i, j]`` is the cost
                     of assigning the ith worker to the jth job.
+        sub=False / True
 
     Returns:
         :class:`numpy.ndarray`: An array representing the optimal assignment. For each job (column in the cost matrix), it gives the index of the worker assigned to that job.
