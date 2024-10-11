@@ -1,0 +1,416 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sampling algorithms &mdash; CodPy 0.0.10 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=7ab3649f" />
+      <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=a83ce22a"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>let toggleHintShow = 'Click to show';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="General algorithms" href="algs.html" />
+    <link rel="prev" title="Permutation algorithms" href="permutation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CodPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Library Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="description.html">CodPy description</a></li>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">Kernel class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core.html">Kernels and maps</a></li>
+<li class="toctree-l1"><a class="reference internal" href="permutation.html">Permutation algorithms</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Sampling algorithms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.kernel_density_estimator"><code class="docutils literal notranslate"><span class="pre">kernel_density_estimator()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.kernel_conditional_density_estimator"><code class="docutils literal notranslate"><span class="pre">kernel_conditional_density_estimator()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.rejection_sampling"><code class="docutils literal notranslate"><span class="pre">rejection_sampling()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.get_normals"><code class="docutils literal notranslate"><span class="pre">get_normals()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.get_uniforms"><code class="docutils literal notranslate"><span class="pre">get_uniforms()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.get_uniforms_like"><code class="docutils literal notranslate"><span class="pre">get_uniforms_like()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.get_normals_like"><code class="docutils literal notranslate"><span class="pre">get_normals_like()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.get_random_normals_like"><code class="docutils literal notranslate"><span class="pre">get_random_normals_like()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.get_random_uniforms_like"><code class="docutils literal notranslate"><span class="pre">get_random_uniforms_like()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.match"><code class="docutils literal notranslate"><span class="pre">match()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.kmeans"><code class="docutils literal notranslate"><span class="pre">kmeans()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.MiniBatchkmeans"><code class="docutils literal notranslate"><span class="pre">MiniBatchkmeans()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.sampling.sharp_discrepancy"><code class="docutils literal notranslate"><span class="pre">sharp_discrepancy()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="algs.html">General algorithms</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pde.html">PDE module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="lalg.html">Linear Algebra module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Learn and Explore:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="src.html">API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="documentation.html">Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CodPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Sampling algorithms</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/sampling.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-codpy.sampling">
+<span id="sampling-algorithms"></span><h1>Sampling algorithms<a class="headerlink" href="#module-codpy.sampling" title="Link to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.kernel_density_estimator">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">kernel_density_estimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_fun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gaussian'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bandwidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rescale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rescale_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'max':</span> <span class="pre">2000,</span> <span class="pre">'seed':</span> <span class="pre">42}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.kernel_density_estimator" title="Link to this definition"></a></dt>
+<dd><blockquote>
+<div><p>Estimate the kernel density of a distribution.</p>
+<p>This function implements a kernel density estimator (KDE), a non-parametric method to estimate
+the probability density function of a random variable. It evaluates the density estimate based on
+two input distributions using a specified kernel function.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>**kwargs</strong> – <dl>
+<dt>Arbitrary keyword arguments, including:</dt><dd><p>x (array-like): The first input distribution for which the density estimate is to be computed.
+y (array-like): The second input distribution used in the density estimation process.
+kernel (optional): The kernel function to be used for density estimation. This can be specified</p>
+<blockquote>
+<div><p>as part of the kwargs. If not specified, a default kernel is used.</p>
+</div></blockquote>
+</dd>
+<dt>Returns:</dt><dd><p>array-like: The estimated density values based on the kernel density estimation.</p>
+</dd>
+<dt>Example:</dt><dd><p>Two sample distributions</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Compute the kernel density estimation</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">density</span> <span class="o">=</span> <span class="n">kernel_density_estimator</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.kernel_conditional_density_estimator">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">kernel_conditional_density_estimator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_vals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gaussian'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'bandwidth'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bandwidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rescale_params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'max':</span> <span class="pre">2000,</span> <span class="pre">'seed':</span> <span class="pre">42}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.kernel_conditional_density_estimator" title="Link to this definition"></a></dt>
+<dd><p>Estimate the conditional density of ‘y’ given ‘x’ using the Nadaraya-Watson estimator.</p>
+<p>This function calculates the conditional density of values in ‘y_vals’ given the values in ‘x_vals’,
+based on a joint distribution (‘x_data’, ‘y_data’). It uses KDE method for the estimation, with the
+kernel specified in ‘kwargs’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_vals</strong> (<em>array-like</em>) – Values of ‘x’ for which the conditional density of ‘y’ is estimated.</p></li>
+<li><p><strong>y_vals</strong> (<em>array-like</em>) – Values of ‘y’ for which the density is to be estimated conditionally on ‘x_vals’.</p></li>
+<li><p><strong>x_data</strong> (<em>array-like</em>) – Observed data for ‘x’ in the joint distribution with ‘y’.</p></li>
+<li><p><strong>y_data</strong> (<em>array-like</em>) – Observed data for ‘y’ in the joint distribution with ‘x’.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Parameters for the kernel function used in the Nadaraya-Watson estimator.
+If not provided, default parameters are used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The estimated conditional density of ‘y’ given ‘x’.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>array-like</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>Define joint distribution data for ‘x’ and ‘y’</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Values for conditional density estimation</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Compute the conditional density</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conditional_density</span> <span class="o">=</span> <span class="n">kernel_conditional_density_estimator</span><span class="p">(</span><span class="n">x_vals</span><span class="p">,</span> <span class="n">y_vals</span><span class="p">,</span> <span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.rejection_sampling">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">rejection_sampling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proposed_sample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">acceptance_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.rejection_sampling" title="Link to this definition"></a></dt>
+<dd><p>Perform rejection sampling on a set of proposed samples.</p>
+<p>This function implements the rejection sampling algorithm, a technique in Monte Carlo methods.
+It evaluates each proposed sample against an acceptance criterion based on the sample’s probability and
+an acceptance ratio. Samples are accepted with a probability proportional to their probability in the
+target distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>proposed_sample</strong> (<em>array-like</em>) – An array of proposed samples to be evaluated.</p></li>
+<li><p><strong>probas</strong> (<em>array-like</em>) – An array of probabilities corresponding to each proposed sample.</p></li>
+<li><p><strong>acceptance_ratio</strong> (<em>float</em><em>, </em><em>optional</em>) – A threshold ratio for accepting samples. This value can be used
+to control the acceptance rate. Default is 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of samples that are accepted based on the rejection sampling criterion.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>Proposed samples and their probabilities</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">proposed_samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">probabilities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Perform rejection sampling</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">accepted_samples</span> <span class="o">=</span> <span class="n">rejection_sampling</span><span class="p">(</span><span class="n">proposed_samples</span><span class="p">,</span> <span class="n">probabilities</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note:
+The function assumes that the proposed samples and their probabilities are of the same length.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.get_normals">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">get_normals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.get_normals" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.get_uniforms">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">get_uniforms</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.get_uniforms" title="Link to this definition"></a></dt>
+<dd><p>Generate uniformly distributed random samples from normally distributed samples.</p>
+<p>This function first generates random samples from a normal distribution and then
+transforms them into a uniform distribution using the error function (erf). It’s
+based on the probability integral transform where the Gaussian CDF is used for this conversion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>N</strong> (<em>int</em>) – The number of samples to generate.</p></li>
+<li><p><strong>D</strong> (<em>int</em>) – The dimensionality of each sample.</p></li>
+<li><p><strong>nmax</strong> (<em>int</em>) – <p>.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An array of shape (N, D) containing uniformly distributed random samples.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>Generate 100 samples with 2 dimensions</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">uniform_samples</span> <span class="o">=</span> <span class="n">get_uniforms</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.get_uniforms_like">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">get_uniforms_like</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.get_uniforms_like" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.get_normals_like">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">get_normals_like</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.get_normals_like" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.get_random_normals_like">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">get_random_normals_like</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.get_random_normals_like" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.get_random_uniforms_like">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">get_random_uniforms_like</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.get_random_uniforms_like" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.match">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">match</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.match" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.kmeans">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">kmeans</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.kmeans" title="Link to this definition"></a></dt>
+<dd><p>Perform K-means clustering on a dataset.</p>
+<p>This function applies the K-means clustering algorithm to partition the input data into ‘Ny’ clusters.
+It uses the KMeans implementation from Scikit-Learn. The number of clusters, initialization method, and
+other parameters of the KMeans algorithm can be specified via keyword arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>array-like</em><em> or </em><em>DataFrame</em>) – Input data for clustering. Should be in a suitable format for clustering (e.g., numerical).</p></li>
+<li><p><strong>**kwargs</strong> – Arbitrary keyword arguments, which may include:
+Ny (int, optional): The number of clusters to form. Default is the number of rows in ‘x’.
+init (str, optional): Method for initialization (‘k-means++’, ‘random’, or an ndarray). Default is ‘k-means++’.
+max_iter (int, optional): Maximum number of iterations of the k-means algorithm. Default is 300.
+random_state (int, optional): Determines random number generation for centroid initialization.
+Use an int for reproducibility. Default is 42.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Cluster centers if ‘Ny’ is less than the number of rows in ‘x’, otherwise returns ‘x’ as is.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>array-like or DataFrame</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>Example with NumPy array</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_blobs</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">make_blobs</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">centers</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">clusters</span> <span class="o">=</span> <span class="n">kmeans</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Ny</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Example with pandas DataFrame</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;feature1&#39;</span><span class="p">,</span> <span class="s1">&#39;feature2&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">clusters</span> <span class="o">=</span> <span class="n">kmeans</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">Ny</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note:
+This function requires Scikit-Learn’s KMeans implementation. Ensure that sklearn.cluster.KMeans is imported.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.MiniBatchkmeans">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">MiniBatchkmeans</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.MiniBatchkmeans" title="Link to this definition"></a></dt>
+<dd><p>Perform mini-batch K-means clustering on a dataset.</p>
+<p>This function applies the mini-batch K-means clustering algorithm, an efficient variant of
+the standard K-means algorithm, to partition the input data into ‘Ny’ clusters. It is particularly
+useful for large datasets. The function uses the MiniBatchKMeans implementation from Scikit-Learn.
+The number of clusters, batch size, and other parameters of the MiniBatchKMeans algorithm can be
+specified via keyword arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>array-like</em><em> or </em><em>DataFrame</em>) – Input data for clustering. Should be in a format suitable for clustering (e.g., numerical).</p></li>
+<li><p><strong>**kwargs</strong> – Arbitrary keyword arguments, which may include:
+Ny (int, optional): The number of clusters to form. Default is the number of rows in ‘x’.
+max_iter (int, optional): Maximum number of iterations of the mini-batch k-means algorithm. Default is 300.
+random_state (int, optional): Determines random number generation for centroid initialization. Use an int for reproducibility. Default is 42.
+batch_size (int, optional): Size of the mini-batches. Default is 4352 (256*17).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Cluster centers if ‘Ny’ is less than the number of rows in ‘x’, otherwise returns ‘x’ as is.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>array-like or DataFrame</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>Example with NumPy array</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_blobs</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">X</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">make_blobs</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span> <span class="n">centers</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">clusters</span> <span class="o">=</span> <span class="n">MiniBatchkmeans</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Ny</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Example with pandas DataFrame</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;feature1&#39;</span><span class="p">,</span> <span class="s1">&#39;feature2&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">clusters</span> <span class="o">=</span> <span class="n">MiniBatchkmeans</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">Ny</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note:
+This function requires Scikit-Learn’s MiniBatchKMeans implementation. Ensure that sklearn.cluster.MiniBatchKMeans is imported.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.sampling.sharp_discrepancy">
+<span class="sig-prename descclassname"><span class="pre">codpy.sampling.</span></span><span class="sig-name descname"><span class="pre">sharp_discrepancy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.sampling.sharp_discrepancy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="permutation.html" class="btn btn-neutral float-left" title="Permutation algorithms" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="algs.html" class="btn btn-neutral float-right" title="General algorithms" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Jean-Marc MERCIER, Shohruh MIRYUSUPOV.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
