@@ -1,4 +1,5 @@
 version: 2
-redirects:  
-  - from: /    
-    to: /html_docs/index.html
+build:  
+  commands:
+    - mkdir -p $READTHEDOCS_OUTPUT/html/
+    - cp -r html_docs/* $READTHEDOCS_OUTPUT/html/
