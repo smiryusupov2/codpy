@@ -1,17 +1,12 @@
 # Overview
 
-Codpy is a kernel based, open source software library for high performance numerical computation, relying on the [RKHS](https://en.wikipedia.org/wiki/Reproducingkernel_Hilbert_space) theory.
-It contains a set of core tools that we use for machine Learning, statistics and numerical simulations. As a machine learning platform, it enjoys some interesting properties :
-
- * It is a numerically efficient machine learning platform. We provide benchmark tools to compare codpy to other popular machine learning platforms.
- * It is a white box method. Any learning machine has access to worst-error bounds computations. These allow to compute confidence levels of prediction on any test set. Moreover, reproducibility properties of kernel methods allow to fully understand and explain obtained results.
- * Each learning machine has access to all classical differential operators. These properties allow us to use this library with any PDE (partial differential equations) approach.
- * Each learning machine has access to optimal transport tools, much needed for statistics.
+Codpy is a kernel based, open source software library for high performance numerical computations relying on the [RKHS](https://en.wikipedia.org/wiki/Reproducingkernel_Hilbert_space) theory.
+It contains a set of core tools that we use for machine Learning, statistics and numerical simulations, see our [introduction to codpy](https://arxiv.org/pdf/2402.07084) for a review of the method, as well as several examples running this library.
 
 
 ## Technical requirement
 
-This version of the library is CPUs based, and is tested on
+This version of the library is multi-core CPU architectures, and is tested on
 
  * windows / amd64 platforms  
 
@@ -20,10 +15,6 @@ This version of the library is CPUs based, and is tested on
 Once installed (see below), navigate to ```<path\to\python39>\Lib\site-packages\codpy```. The directory structure should be
 
 * ```codpy```
-    *   ```docs```  
-        *   codpy-book.pdf is the codpy reference manual.  
-        *   *.ipynb are jupyter notebooks to reproduce the example of codpy book.  
-    *   ```com```  : low level tools and interface.  
     *   ```pred``` : Wrappers to a number of prediction machines : kernels, neural networks, and more.  
     *   ```data``` : Wrappers to data set handling  
     *   ```proj``` : some examples of applications  

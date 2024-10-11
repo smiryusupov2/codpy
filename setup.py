@@ -5,10 +5,10 @@ from distutils.core import setup
 
 from setuptools import find_packages, setup
 
-__version__ = "0.1.8"
+__version__ = "0.1.11"
 
 DISTNAME = "codpy"
-DESCRIPTION = "An RKHS based module for machine learning and data mining"
+DESCRIPTION = "An RKHS based module for numerics, statistic and machine learning"
 MAINTAINER = "jean-marc mercier"
 MAINTAINER_EMAIL = "jeanmarc.mercier@gmail.com"
 URL = "https://github.com/johnlem/codpy_alpha"
@@ -57,16 +57,18 @@ setup(
         "Environment :: Win32 (MS Windows)",
         "Programming Language :: Python",
         "Topic :: Scientific/Engineering",
-        "Operating System :: Microsoft :: Windows :: Windows 10",
+        "Operating System :: Microsoft :: Windows :: Windows 11",
     ],
     install_requires=[
-        "codpydll==0.1.3",
-        "pandas",
-        "numpy",
+        "codpydll==0.1.4",
+        "pandas==1.5.0",
         "mkl",
         "scikit-learn",
         "scipy",
+        "numpy=1.24.3",
         "xarray==2022.9.0",
+        "matplotlib",
+        "statsmodels"
     ],
     long_description=long_description,
     long_description_content_type="text/markdown",

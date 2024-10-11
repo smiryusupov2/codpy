@@ -15,6 +15,7 @@ src/codpy/include_all.py
 src/codpy/kernel.py
 src/codpy/lalg.py
 src/codpy/metrics.py
+src/codpy/multiscale_kernel.py
 src/codpy/parallel.py
 src/codpy/pde.py
 src/codpy/permutation.py
