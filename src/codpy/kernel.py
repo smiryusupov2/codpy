@@ -19,6 +19,8 @@ class Kernel:
 
     def __init__(
         self,
+        x=None,
+        fx=None,
         max_pool: int = 1000,
         max_nystrom: int = 1000,
         reg: float = 1e-9,
@@ -55,9 +57,9 @@ class Kernel:
             self.set_kernel = set_kernel
         else:
             self.set_kernel = self.default_kernel_functor()
-        self.x = None
-        if kwargs.get("x", None) is not None or kwargs.get("fx", None) is not None:
-            self.set(**kwargs)
+
+        if x is not None or fx is not None:
+            self.set(x=x, fx=fx, **kwargs)
 
     def default_kernel_functor(self) -> callable:
         """
@@ -557,7 +559,13 @@ class Kernel:
             # udefined by user
             # to compute Y
             theta, indices = alg.HybridGreedyNystroem(
-                x=self.get_x(), fx=fx, N=N, tol=0.0, error_type=norm_, n_batch=1,**kwargs
+                x=self.get_x(),
+                fx=fx,
+                N=N,
+                tol=0.0,
+                error_type=norm_,
+                n_batch=1,
+                **kwargs,
             )
             #
             if all is True:
@@ -592,12 +600,14 @@ class Kernel:
         for n in range(N - 1):
             # Computed MMD distance matrix
             _Dnm = core.op.Dnm(x[[indice]], x[complement_indices])
-            if Dnm is None: Dnm=_Dnm.copy()
-            else: Dnm=np.concatenate([Dnm,_Dnm],axis=0)
+            if Dnm is None:
+                Dnm = _Dnm.copy()
+            else:
+                Dnm = np.concatenate([Dnm, _Dnm], axis=0)
             new_indice = np.max(Dnm, axis=0)
             # selects the indices with maximum MMD
             new_indice = np.argmax(new_indice)
-            Dnm = np.delete(Dnm,new_indice,1)
+            Dnm = np.delete(Dnm, new_indice, 1)
             indice = complement_indices[new_indice]
             complement_indices.remove(indice)
             indices.append(indice)

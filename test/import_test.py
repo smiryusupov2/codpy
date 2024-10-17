@@ -9,7 +9,9 @@ import scipy.stats as stats
 from include import *
 from sklearn.datasets import fetch_california_housing
 
+from codpy import core
 from codpy.core import *
+from codpy.kernel import Kernel
 from codpy.lalg import *
 
 parent_path = os.path.dirname(__file__)
@@ -60,10 +62,12 @@ def test_norm(func, decimal=3):
     np.testing.assert_almost_equal(norm, norm_, decimal=decimal)
 
 
-def test_Knm():
+def test_Knm(decimal=3):
     x = np.random.randn(100, 1)
-    kernel.rescale(x)
-    Knm = op.Knm(x=x, y=x)
+
+    Knm = Kernel(
+        set_kernel=core.kernel_setter("maternnorm", "standardmean", 0, 1e-9), x=x
+    ).Knm(x, x)
 
 
 def test_Knm_inv(decimal=3):
