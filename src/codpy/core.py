@@ -782,13 +782,16 @@ class diffops:
             return hess[indices, :, :, :]
 
 
-class _factories:
+class factories:
+    def get_kernel_factory():
+        return cd.factories.get_kernels_factory()
     def get_kernel_factory_keys():
         return cd.factories.kernel_factory_keys()
 
+    def get_map_factory():
+        return cd.factories.get_maps_factory()
     def get_map_factory_keys():
         return cd.factories.maps_factory_keys()
-
 
 class kernel_interface:
     def rescale(x=[], y=[], z=[], max=None, seed=42, **kwargs):
@@ -799,7 +802,7 @@ class kernel_interface:
                 random_select(x=z, xmax=max, seed=seed),
             )
         x, y, z = get_matrix(x), get_matrix(y), get_matrix(z)
-        cd.kernel.rescale(x, y, z)
+        cd.kernel_interface.rescale(x, y, z)
 
     def get_kernel_ptr():
         return cd.get_kernel_ptr()
@@ -808,13 +811,13 @@ class kernel_interface:
         cd.set_kernel_ptr(kernel_ptr)
 
     def set_polynomial_order(order):
-        cd.kernel.set_polynomial_order(order)
+        cd.kernel_interface.set_polynomial_order(order)
 
     def set_regularization(regularization):
-        cd.kernel.set_regularization(regularization)
+        cd.kernel_interface.set_regularization(regularization)
 
     def pipe_kernel_ptr(kernel_ptr):
-        cd.kernel.pipe_kernel_ptr(kernel_ptr)
+        cd.kernel_interface.pipe_kernel_ptr(kernel_ptr)
 
     def pipe_kernel_fun(kernel_fun, regularization=1e-8):
         kern1 = kernel_interface.get_kernel_ptr()
@@ -822,7 +825,7 @@ class kernel_interface:
         kern2 = kernel_interface.get_kernel_ptr()
         kernel_interface.set_kernel_ptr(kern1)
         kernel_interface.pipe_kernel_ptr(kern2)
-        cd.kernel.set_regularization(regularization)
+        cd.kernel_interface.set_regularization(regularization)
 
     def init(x=[], y=[], z=[], **kwargs):
         set_codpy_kernel = kwargs.get("set_codpy_kernel", None)
@@ -848,7 +851,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the linear map configuration.
         """
-        cd.kernel.set_map("linear_map", kwargs)
+        cd.kernel_interface.set_map("linear_map", kwargs)
 
     def set_affine_map(**kwargs):
         """
@@ -857,7 +860,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the affine map configuration.
         """
-        cd.kernel.set_map("affine_map", kwargs)
+        cd.kernel_interface.set_map("affine_map", kwargs)
 
     def set_log_map(**kwargs):
         """
@@ -866,7 +869,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the log map configuration.
         """
-        cd.kernel.set_map("log", kwargs)
+        cd.kernel_interface.set_map("log", kwargs)
 
     def set_exp_map(**kwargs):
         """
@@ -875,7 +878,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the exponential map configuration.
         """
-        cd.kernel.set_map("exp", kwargs)
+        cd.kernel_interface.set_map("exp", kwargs)
 
     def set_scale_std_map(**kwargs):
         """
@@ -884,7 +887,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the scale standard map configuration.
         """
-        cd.kernel.set_map("scale_std", kwargs)
+        cd.kernel_interface.set_map("scale_std", kwargs)
 
     def set_erf_map(**kwargs):
         """
@@ -893,7 +896,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the ERF map configuration.
         """
-        cd.kernel.set_map("scale_to_erf", kwargs)
+        cd.kernel_interface.set_map("scale_to_erf", kwargs)
 
     def set_erfinv_map(**kwargs):
         """
@@ -902,7 +905,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the inverse ERF map configuration.
         """
-        cd.kernel.set_map("scale_to_erfinv", kwargs)
+        cd.kernel_interface.set_map("scale_to_erfinv", kwargs)
 
     def set_scale_factor_map(**kwargs):
         """
@@ -911,7 +914,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the scale factor map configuration.
         """
-        cd.kernel.set_map("scale_factor", kwargs)
+        cd.kernel_interface.set_map("scale_factor", kwargs)
 
     def set_scale_factor_helper(**kwargs):
         """
@@ -931,7 +934,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the unit cube map configuration.
         """
-        cd.kernel.set_map("scale_to_unitcube", kwargs)
+        cd.kernel_interface.set_map("scale_to_unitcube", kwargs)
 
     def set_grid_map(**kwargs):
         """
@@ -940,7 +943,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the grid map configuration.
         """
-        cd.kernel.set_map("map_to_grid", kwargs)
+        cd.kernel_interface.set_map("map_to_grid", kwargs)
 
     def set_mean_distance_map(**kwargs):
         """
@@ -949,7 +952,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the mean distance map configuration.
         """
-        cd.kernel.set_map("scale_to_mean_distance", kwargs)
+        cd.kernel_interface.set_map("scale_to_mean_distance", kwargs)
 
     def set_min_distance_map(**kwargs):
         """
@@ -958,7 +961,7 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the minimum distance map configuration.
         """
-        cd.kernel.set_map("scale_to_min_distance", kwargs)
+        cd.kernel_interface.set_map("scale_to_min_distance", kwargs)
 
     def set_standard_mean_map(**kwargs):
         """
@@ -1039,7 +1042,7 @@ def check_map_strings(strings):
     if isinstance(strings, list):
         [check_map_strings(s) for s in strings]
     else:
-        ok = strings in _factories.get_map_factory_keys()
+        ok = strings in factories.get_map_factory_keys()
         if not ok:
             raise NameError("unknown map:" + strings)
 
@@ -1051,23 +1054,24 @@ def set_map(strings, check_=True, kwargs={}):
         check_map_strings(strings)
     if isinstance(strings, list):
         ss = strings.copy()
-        cd.kernel.set_map(ss.pop(0), kwargs)
+        cd.kernel_interface.set_map(ss.pop(0), kwargs)
         [_pipe__map_setters.pipe(s) for s in ss]
     else:
-        cd.kernel.set_map(strings, kwargs)
+        cd.kernel_interface.set_map(strings, kwargs)
 
 
 def checkkernel_strings(strings):
-    ok = strings in _factories.get_kernel_factory_keys()
+    ok = strings in factories.get_kernel_factory_keys()
     if not ok:
         raise NameError("unknown kernel:" + strings)
 
 
-def set_kernel(strings, reg=1e-8, check_=True):
+def set_kernel(kernel_key, reg=1e-8, check_=True,extras={}):
     if check_:
-        checkkernel_strings(strings)
-    cd.set_kernel(strings)
-    cd.kernel.set_regularization(reg)
+        checkkernel_strings(kernel_key)
+    kernel_ptr = factories.get_kernel_factory()[kernel_key](extras)
+    kernel_ptr.set_kernel_ptr(kernel_ptr)
+    cd.kernel_interface.set_regularization(reg)
 
 
 class kernel_setters:
@@ -1097,7 +1101,7 @@ class kernel_setters:
         The method configures the kernel and its associated parameters, preparing it for use
         in subsequent calculations.
         """
-        cd.kernel.set_polynomial_order(polynomial_order)
+        cd.kernel_interface.set_polynomial_order(polynomial_order)
         cd.set_kernel(kernel_string)
         if set_map:
             set_map()
@@ -1109,7 +1113,7 @@ class kernel_setters:
                 set_map=None,
             )
             kernel_interface.pipe_kernel_fun(linearkernel, regularization)
-        cd.kernel.set_regularization(regularization)
+        cd.kernel_interface.set_regularization(regularization)
 
     def set_linear_regressor_kernel(
         polynomial_order: int = 2, regularization: float = 1e-8, set_map=None
@@ -1122,9 +1126,9 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        cd.kernel.set_polynomial_order(polynomial_order)
+        cd.kernel_interface.set_polynomial_order(polynomial_order)
         cd.set_kernel("linear_regressor")
-        cd.kernel.set_regularization(regularization)
+        cd.kernel_interface.set_regularization(regularization)
         if set_map:
             set_map()
 
@@ -1333,7 +1337,7 @@ class kernel_setters:
 
 class _pipe__map_setters:
     def pipe(s, **kwargs):
-        cd.kernel.pipe_map(s, kwargs)
+        cd.kernel_interface.pipe_map(s, kwargs)
 
     def pipe_log_map(**kwargs):
         _pipe__map_setters.pipe("log", **kwargs)
@@ -1549,15 +1553,6 @@ def kernel_setter(kernel, map, polynomial_order=0, regularization=1e-8, bandwidt
 
 
 if __name__ == "__main__":
-    set_kernel("tensornorm", 1e-2)
-    test = cd.kernel.get_regularization()
-    set_map("scale_to_unitcube")
-    x = np.random.randn(10, 2)
-    fx = np.random.randn(10, 3)
-    kernel.rescale(x)
-    Knm = op.Knm(x=x, y=x)
-    # Knm_inv = lalg.cholesky(x=Knm,eps=1e-2)
-    Knm_inv = cd.lalg.cholesky(Knm, 1e-8)
-    Kinv = op.Knm_inv(x=x, y=x, fx=fx)
-    Kinv1 = np.linalg.solve(x.T @ x, fx.T).T
+    x,y = np.random.randn(10, 2),np.random.randn(10, 2)
+
     pass
