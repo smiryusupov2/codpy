@@ -14,6 +14,7 @@ current_dir = os.path.abspath(os.path.dirname(__file__))
 parent_path = os.path.dirname(__file__)
 if parent_path not in sys.path: sys.path.append(parent_path)
 parent_path = os.path.dirname(parent_path)
+if parent_path not in sys.path: sys.path.append(parent_path)
 codpy_path = os.path.join(parent_path,"src","codpy")
 if codpy_path not in sys.path: sys.path.append(codpy_path)
 examples_path = os.path.join(parent_path,"examples")
@@ -66,7 +67,7 @@ autodoc_default_options = {
 }
 
 sphinx_gallery_conf = {
-    "examples_dirs": "../examples/",  # Directory where .py scripts are stored
+    "examples_dirs": "examples",  # Directory where .py scripts are stored
     "gallery_dirs": "gallery_examples",  # Directory to save generated HTML and notebooks
     "filename_pattern": r".*\.py",  # Process all Python files
     "backreferences_dir": "gen_modules/backreferences",
