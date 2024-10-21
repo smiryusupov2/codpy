@@ -13,7 +13,6 @@ build
 *.log
 *.toc
 *.out
-html_docs
 .Rproj.user
 **/Output*
 codpy/data/creditcardfraud.csv

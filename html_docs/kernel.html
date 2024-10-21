@@ -1,0 +1,822 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kernel class &mdash; CodPy 0.1.11 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=1e825a29"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>let toggleHintShow = 'Click to show';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "displayMath": [["$$", "$$"], ["\\[", "\\]"]]}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Kernels and maps" href="core.html" />
+    <link rel="prev" title="Installation Guide" href="install.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CodPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Library Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Kernel class</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.kernel.Kernel"><code class="docutils literal notranslate"><span class="pre">Kernel</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.__init__"><code class="docutils literal notranslate"><span class="pre">Kernel.__init__()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.default_kernel_functor"><code class="docutils literal notranslate"><span class="pre">Kernel.default_kernel_functor()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.set_custom_kernel"><code class="docutils literal notranslate"><span class="pre">Kernel.set_custom_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.get_order"><code class="docutils literal notranslate"><span class="pre">Kernel.get_order()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.get_polynomial_values"><code class="docutils literal notranslate"><span class="pre">Kernel.get_polynomial_values()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.get_polynomial_regressor"><code class="docutils literal notranslate"><span class="pre">Kernel.get_polynomial_regressor()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.Knm"><code class="docutils literal notranslate"><span class="pre">Kernel.Knm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.get_knm_inv"><code class="docutils literal notranslate"><span class="pre">Kernel.get_knm_inv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.get_knm"><code class="docutils literal notranslate"><span class="pre">Kernel.get_knm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.get_x"><code class="docutils literal notranslate"><span class="pre">Kernel.get_x()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.set_x"><code class="docutils literal notranslate"><span class="pre">Kernel.set_x()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.set_y"><code class="docutils literal notranslate"><span class="pre">Kernel.set_y()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.get_y"><code class="docutils literal notranslate"><span class="pre">Kernel.get_y()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.get_fx"><code class="docutils literal notranslate"><span class="pre">Kernel.get_fx()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.set_fx"><code class="docutils literal notranslate"><span class="pre">Kernel.set_fx()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.set_theta"><code class="docutils literal notranslate"><span class="pre">Kernel.set_theta()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.get_theta"><code class="docutils literal notranslate"><span class="pre">Kernel.get_theta()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.get_Delta"><code class="docutils literal notranslate"><span class="pre">Kernel.get_Delta()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.select"><code class="docutils literal notranslate"><span class="pre">Kernel.select()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.set"><code class="docutils literal notranslate"><span class="pre">Kernel.set()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.map"><code class="docutils literal notranslate"><span class="pre">Kernel.map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.update_set"><code class="docutils literal notranslate"><span class="pre">Kernel.update_set()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.update"><code class="docutils literal notranslate"><span class="pre">Kernel.update()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.add"><code class="docutils literal notranslate"><span class="pre">Kernel.add()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.kernel_distance"><code class="docutils literal notranslate"><span class="pre">Kernel.kernel_distance()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.get_kernel"><code class="docutils literal notranslate"><span class="pre">Kernel.get_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.set_kernel_ptr"><code class="docutils literal notranslate"><span class="pre">Kernel.set_kernel_ptr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.kernel.Kernel.rescale"><code class="docutils literal notranslate"><span class="pre">Kernel.rescale()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.kernel.Kernel.__call__"><code class="docutils literal notranslate"><span class="pre">Kernel.__call__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="core.html">Kernels and maps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples.html">Examples</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CodPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Kernel class</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/kernel.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-codpy.kernel">
+<span id="kernel-class"></span><h1>Kernel class<a class="headerlink" href="#module-codpy.kernel" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">codpy.kernel.</span></span><span class="sig-name descname"><span class="pre">Kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_pool</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nystrom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-09</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_kernel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.kernel.Kernel" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl>
+<dt>A kernel class to manipulate datas for various kernel-based operations, such as interpolations or extrapolations of functions, or mapping between distributions.</dt><dd><dl>
+<dt>Note:</dt><dd><p>This class is similar to libraries as scikit-learn or XGBoost, with the following correspondances.</p>
+<ul class="simple">
+<li><p>Datas are loaded into memory in the contructor <a class="reference internal" href="#codpy.kernel.Kernel.__init__" title="codpy.kernel.Kernel.__init__"><code class="xref py py-func docutils literal notranslate"><span class="pre">__init__()</span></code></a>, or via <a class="reference internal" href="#codpy.kernel.Kernel.set" title="codpy.kernel.Kernel.set"><code class="xref py py-func docutils literal notranslate"><span class="pre">set()</span></code></a></p></li>
+<li><p>For matching distributions, use <a class="reference internal" href="#codpy.kernel.Kernel.map" title="codpy.kernel.Kernel.map"><code class="xref py py-func docutils literal notranslate"><span class="pre">map()</span></code></a>,</p></li>
+<li><p>The <cite>predict</cite> function is made directly through <a class="reference internal" href="#codpy.kernel.Kernel.__call__" title="codpy.kernel.Kernel.__call__"><code class="xref py py-func docutils literal notranslate"><span class="pre">__call__()</span></code></a></p></li>
+</ul>
+<p>It implements the following methods :</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>In the context of functions interpolation / extrapolation</dt><dd><p><div class="math notranslate nohighlight">
+\[f_{k,\theta}(\cdot) = K(\cdot, Y) K(X, Y)^{-1} f(X)\]</div>
+.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>For matching distributions</dt><dd><p><div class="math notranslate nohighlight">
+\[f_{k,\theta}(\cdot) = K(\cdot, Y) K(X, Y)^{-1} f(X\circ \sigma)\]</div>
+, where <span class="math notranslate nohighlight">\(\sigma\)</span> is a permutation.</p>
+</dd>
+</dl>
+</li>
+<li><p>Fitting is done just-in-time (at first prediction), and means computing the parameters <span class="math notranslate nohighlight">\(\theta = K(X, Y)^{-1} f(X)\)</span>, together with <span class="math notranslate nohighlight">\(\sigma\)</span> for distributions. The function <a class="reference internal" href="#codpy.kernel.Kernel.get_theta" title="codpy.kernel.Kernel.get_theta"><code class="xref py py-func docutils literal notranslate"><span class="pre">get_theta()</span></code></a> performs those computations and corresponds to fit in others frameworks.</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_pool</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nystrom</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-09</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_kernel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">callable</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initializes the Kernel class with default or user-defined parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – A bi-dimensional numpy array.</p></li>
+<li><p><strong>fx</strong> – A bi-dimensional numpy array. If <cite>x</cite> or <cite>fx</cite> is not <cite>None</cite>, then call <a class="reference internal" href="#codpy.kernel.Kernel.set" title="codpy.kernel.Kernel.set"><code class="xref py py-func docutils literal notranslate"><span class="pre">set()</span></code></a></p></li>
+<li><p><strong>max_pool</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, optional) – Maximum pool size for the kernel operations. Defaults to 1000.</p></li>
+<li><p><strong>max_nystrom</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, optional) – Maximum number of Nystrom samples. Defaults to 1000.</p></li>
+<li><p><strong>reg</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, optional) – Regularization parameter for kernel operations. Defaults to 1e-9.</p></li>
+<li><p><strong>order</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, optional) – Polynomial order for polynomial kernel functions. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>dim</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, optional) – Dimensionality of the input data. Defaults to 1.</p></li>
+<li><p><strong>set_kernel</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">callable</span></code>, optional) – A custom kernel function initializer. If not provided, a default kernel is used.</p></li>
+<li><p><strong>kwargs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>) – Additional keyword arguments for further customization.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.default_kernel_functor">
+<span class="sig-name descname"><span class="pre">default_kernel_functor</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">callable</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.default_kernel_functor" title="Link to this definition"></a></dt>
+<dd><p>Initialize and return the default kernel function.</p>
+<p>This method provides the default kernel initialization using the <cite>maternnorm</cite> kernel
+with the <cite>standardmean</cite> map. It sets a polynomial order of 0 and a regularization value of 1e-9.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The initialized default kernel function using <code class="xref py py-func docutils literal notranslate"><span class="pre">core.kernel_setter()</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">callable</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">default_kernel</span> <span class="o">=</span> <span class="n">kernel</span><span class="o">.</span><span class="n">default_kernel_functor</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.set_custom_kernel">
+<span class="sig-name descname"><span class="pre">set_custom_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poly_order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bandwidth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.set_custom_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set a custom kernel using <cite>core.kernel_helper2</cite> with flexible parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of the kernel function to use (e.g., <code class="docutils literal notranslate"><span class="pre">'gaussian'</span></code>).</p></li>
+<li><p><strong>map_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Name of the mapping function (e.g., <code class="docutils literal notranslate"><span class="pre">'standardmean'</span></code>).</p></li>
+<li><p><strong>poly_order</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, optional) – The polynomial order if using a polynomial kernel. Defaults to 0.</p></li>
+<li><p><strong>reg</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, optional) – Regularization parameter. If not provided, uses the instance’s <cite>reg</cite> value.</p></li>
+<li><p><strong>bandwidth</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, optional) – Bandwidth for kernel functions that require it. Defaults to 1.0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.get_order">
+<span class="sig-name descname"><span class="pre">get_order</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.get_order" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the polynomial order for the kernel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The polynomial order if available, otherwise <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">order</span> <span class="o">=</span> <span class="n">kernel</span><span class="o">.</span><span class="n">get_order</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.get_polynomial_values">
+<span class="sig-name descname"><span class="pre">get_polynomial_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.get_polynomial_values" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the predicted polynomial values based on the current input data.</p>
+<p>This method returns the values obtained from the polynomial regression model.
+If the polynomial values are not yet computed, it calls <code class="xref py py-meth docutils literal notranslate"><span class="pre">_set_polynomial_regressor()</span></code>
+to set up the polynomial regressor using the current input data <code class="docutils literal notranslate"><span class="pre">x</span></code> and function values <code class="docutils literal notranslate"><span class="pre">fx</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>kwargs</strong> – Additional keyword arguments for flexibility (not used directly).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The predicted polynomial values or <code class="docutils literal notranslate"><span class="pre">None</span></code> if the polynomial order is not set.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">poly_values</span> <span class="o">=</span> <span class="n">kernel</span><span class="o">.</span><span class="n">get_polynomial_values</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.get_polynomial_regressor">
+<span class="sig-name descname"><span class="pre">get_polynomial_regressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.get_polynomial_regressor" title="Link to this definition"></a></dt>
+<dd><p>Set up the polynomial regressor based on the input data and the polynomial order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – New input data points for the regressor.</p></li>
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Input data points.</p></li>
+<li><p><strong>fx</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Function values corresponding to the input data.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The predicted polynomial values or <cite>None</cite> if unavailable.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">z_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pred</span> <span class="o">=</span> <span class="n">kernel</span><span class="o">.</span><span class="n">get_polynomial_regressor</span><span class="p">(</span><span class="n">z_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.Knm">
+<span class="sig-name descname"><span class="pre">Knm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.Knm" title="Link to this definition"></a></dt>
+<dd><p>Compute the kernel matrix <span class="math notranslate nohighlight">\(K(x, y)\)</span> using the current kernel settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Input data points <span class="math notranslate nohighlight">\((N, D)\)</span>, where <span class="math notranslate nohighlight">\(N\)</span> is the number of points and <span class="math notranslate nohighlight">\(D\)</span> is the dimensionality.</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Secondary data points <span class="math notranslate nohighlight">\((M, D)\)</span>, where <span class="math notranslate nohighlight">\(M\)</span> is the number of points and <span class="math notranslate nohighlight">\(D\)</span> is the dimensionality.</p></li>
+<li><p><strong>fy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Optional function values for kernel computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The computed kernel matrix <span class="math notranslate nohighlight">\(K\)</span> of size <span class="math notranslate nohighlight">\((N, M)\)</span>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">kernel_matrix</span> <span class="o">=</span> <span class="n">Kernel</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x_data</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">y_data</span><span class="p">)</span><span class="o">.</span><span class="n">Knm</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.get_knm_inv">
+<span class="sig-name descname"><span class="pre">get_knm_inv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon_delta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.get_knm_inv" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the inverse of the kernel matrix <span class="math notranslate nohighlight">\(K^{-1}(x, y)\)</span> using least squares computations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>epsilon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, optional) – Regularization parameter for the inverse computation. Defaults to None.</p></li>
+<li><p><strong>epsilon_delta</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Delta values for adjusting regularization. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The inverse kernel matrix or the product with function values if provided.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>If the regularization parameter (<code class="docutils literal notranslate"><span class="pre">reg</span></code>) is empty:</dt><dd><ul>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">fx</span></code> is empty: Returns a <code class="docutils literal notranslate"><span class="pre">NumPy</span></code> array of size <span class="math notranslate nohighlight">\((N, M)\)</span>, representing the least square inverse of <span class="math notranslate nohighlight">\(K(x, y)\)</span>.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">fx</span></code> is provided: Returns the product of <span class="math notranslate nohighlight">\(K^{-1}(x, y)\)</span> and <span class="math notranslate nohighlight">\(f(x)\)</span>. This allows performance and memory optimizations.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>If the regularization parameter (<code class="docutils literal notranslate"><span class="pre">reg</span></code>) is provided:</dt><dd><ul>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">fx</span></code> is empty: Returns a <code class="docutils literal notranslate"><span class="pre">NumPy</span></code> array of size <span class="math notranslate nohighlight">\((N, M)\)</span>, computed as <span class="math notranslate nohighlight">\((K(y, x) K(x, y) + \epsilon)^{-1} K(y, x)\)</span></p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">fx</span></code> is provided: Returns the product of <span class="math notranslate nohighlight">\(K^{-1}(x, y)\)</span> and <span class="math notranslate nohighlight">\(f(x)\)</span>.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">inv_kernel</span> <span class="o">=</span> <span class="n">kernel</span><span class="o">.</span><span class="n">get_knm_inv</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y_data</span><span class="p">,</span> <span class="n">fx</span><span class="o">=</span><span class="n">fx_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.get_knm">
+<span class="sig-name descname"><span class="pre">get_knm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.get_knm" title="Link to this definition"></a></dt>
+<dd><p>Retrieve or compute the Gram matrix <span class="math notranslate nohighlight">\(K(x, y)\)</span> for the kernel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The Gram matrix <span class="math notranslate nohighlight">\(K(x,y)\)</span>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.get_x">
+<span class="sig-name descname"><span class="pre">get_x</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.get_x" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the input data <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The input data or <code class="docutils literal notranslate"><span class="pre">None</span></code> if not set.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.set_x">
+<span class="sig-name descname"><span class="pre">set_x</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_polynomial_regressor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.set_x" title="Link to this definition"></a></dt>
+<dd><p>Set the input data <code class="docutils literal notranslate"><span class="pre">x</span></code> for the kernel and update related internal states.</p>
+<p>This method sets the input data and optionally recalculates the polynomial regressor and kernel matrices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Input data points to be set.</p></li>
+<li><p><strong>set_polynomial_regressor</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Whether to recalculate the polynomial regressor after setting the data.
+Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.set_y">
+<span class="sig-name descname"><span class="pre">set_y</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.set_y" title="Link to this definition"></a></dt>
+<dd><p>Set the target data <code class="docutils literal notranslate"><span class="pre">y</span></code> for the kernel. If no target data is provided, <code class="docutils literal notranslate"><span class="pre">y</span></code> is set equal to <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+<p>If interpolation/extrapolation is used, the following formula is applied:</p>
+<p><div class="math notranslate nohighlight">
+\[
+f_{\theta}(.) = K(., Y)\theta, \quad \theta = K(X, Y)^{-1} f(X).
+\]</div>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Target data points. If None, <code class="docutils literal notranslate"><span class="pre">y</span></code> is set equal to <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.get_y">
+<span class="sig-name descname"><span class="pre">get_y</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.get_y" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the target data <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The target data or the input data <code class="docutils literal notranslate"><span class="pre">x</span></code> if <code class="docutils literal notranslate"><span class="pre">y</span></code> is not set.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.get_fx">
+<span class="sig-name descname"><span class="pre">get_fx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.get_fx" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the function values <code class="docutils literal notranslate"><span class="pre">fx</span></code> for the input data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The function values or <code class="docutils literal notranslate"><span class="pre">None</span></code> if not set.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.set_fx">
+<span class="sig-name descname"><span class="pre">set_fx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_polynomial_regressor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.set_fx" title="Link to this definition"></a></dt>
+<dd><p>Set the function values <code class="docutils literal notranslate"><span class="pre">fx</span></code> for the input data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fx</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Function values corresponding to the input data.</p></li>
+<li><p><strong>set_polynomial_regressor</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Whether to recalculate the polynomial regressor after setting the function values.
+Defaults to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.set_theta">
+<span class="sig-name descname"><span class="pre">set_theta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.set_theta" title="Link to this definition"></a></dt>
+<dd><p>Set the coefficient <code class="docutils literal notranslate"><span class="pre">theta</span></code> for the kernel regression.</p>
+<p>The coefficient is computed by the formula:</p>
+<div class="math notranslate nohighlight">
+\[\theta = K(X, Y)^{-1} f(X)\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>theta</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Coefficients for kernel regression.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.get_theta">
+<span class="sig-name descname"><span class="pre">get_theta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.get_theta" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the coefficient <code class="docutils literal notranslate"><span class="pre">theta</span></code> for kernel regression.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">fx</span></code> is not defined, the polynomial regressor is used to adjust the function values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The regression coefficient <code class="docutils literal notranslate"><span class="pre">theta</span></code>.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.get_Delta">
+<span class="sig-name descname"><span class="pre">get_Delta</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.get_Delta" title="Link to this definition"></a></dt>
+<dd><p>Compute and retrieve the discrete Laplace-Beltrami operator <code class="docutils literal notranslate"><span class="pre">Delta</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The Laplace-Beltrami operator.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.select">
+<span class="sig-name descname"><span class="pre">select</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm_</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'frobenius'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#codpy.kernel.Kernel.select" title="Link to this definition"></a></dt>
+<dd><p>Select a subset of points using a greedy Nystrom approximation technique.</p>
+<p>The selection is based on norms such as the Frobenius norm or a classifier norm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Input data points.</p></li>
+<li><p><strong>N</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of points to select.</p></li>
+<li><p><strong>fx</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Function values corresponding to the input data <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p></li>
+<li><p><strong>all</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, optional) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, all points are selected. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>norm</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, optional) – Norm used for selection. Can be <cite>“frobenius”</cite> or <cite>“classifier”</cite>.
+The classifier norm is adapted to <code class="docutils literal notranslate"><span class="pre">fx</span></code> representing probabilities in a given label class:
+<div class="math notranslate nohighlight">
+\[
+\|f - f_{k, \theta}(.)\|
+\]</div>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Indices of the selected points.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><cite>“classifier”</cite> norm is a norm adapted to <code class="docutils literal notranslate"><span class="pre">fx</span></code> representing probabilities to be in a given label class: <span class="math notranslate nohighlight">\(||f - f_{k,\theta}(.)||\)</span>
+where
+<div class="math notranslate nohighlight">
+\[\|A - B\| = \left\|\frac{A}{\sum A} - \frac{B}{\sum B}\right\|_{\ell^2}, \quad A \in \mathbb{R}^{N,D}, \in \mathbb{R}^{N,D}\]</div>
+</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.set">
+<span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.set" title="Link to this definition"></a></dt>
+<dd><p>Set the input data <code class="docutils literal notranslate"><span class="pre">x</span></code>, function values <code class="docutils literal notranslate"><span class="pre">fx</span></code>, and target data <code class="docutils literal notranslate"><span class="pre">y</span></code> for the kernel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Input data points.</p></li>
+<li><p><strong>fx</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Function values corresponding to the input data <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Target data points. If None, <code class="docutils literal notranslate"><span class="pre">y</span></code> is set equal to <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.map">
+<span class="sig-name descname"><span class="pre">map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sub</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.map" title="Link to this definition"></a></dt>
+<dd><p>Maps the input data points <code class="docutils literal notranslate"><span class="pre">x</span></code> to the target data points <code class="docutils literal notranslate"><span class="pre">y</span></code> using the kernel and optimal transport techniques.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Input data points (<span class="math notranslate nohighlight">\(N\)</span>, <span class="math notranslate nohighlight">\(D_{source}\)</span>).</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Target data points (<span class="math notranslate nohighlight">\(M\)</span>, <span class="math notranslate nohighlight">\(D_{target}\)</span>).</p></li>
+<li><p><strong>distance</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, optional) – Distance metric to use in mapping. Defaults to <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>sub</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Whether to apply a sub-permutation. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>  <span class="c1"># Input data with shape (N, D_source)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>  <span class="c1"># Target data with shape (M, D_target)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">kernel</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This method computes a permutation that maps <span class="math notranslate nohighlight">\(x\)</span> to <span class="math notranslate nohighlight">\(y\)</span> using the Linear Sum Assignment Problem (LSAP) or a descent method.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>If the dimensionalities of <span class="math notranslate nohighlight">\(x\)</span> and <span class="math notranslate nohighlight">\(y\)</span> are the same (<span class="math notranslate nohighlight">\(D_{source} = D_{target}\)</span>), the classical LSAP algorithm is used.</p></li>
+<li><p>If the dimensionalities differ (<span class="math notranslate nohighlight">\(D_{source} \neq D_{target}\)</span>), a descent-based method is used to encode the data into a lower-dimensional latent space  before finding the optimal permutation, following principles of discrete optimal transport.</p></li>
+<li><p>This permutation can be used to transform the input data <span class="math notranslate nohighlight">\(x\)</span> to approximate the target data <span class="math notranslate nohighlight">\(y\)</span>.</p></li>
+</ul>
+</div></blockquote>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.update_set">
+<span class="sig-name descname"><span class="pre">update_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.update_set" title="Link to this definition"></a></dt>
+<dd><p>Update the training set by limiting the data to a maximum pool size.</p>
+<p>This method trims the input data <code class="docutils literal notranslate"><span class="pre">z</span></code> and corresponding function values <code class="docutils literal notranslate"><span class="pre">fz</span></code>
+to the size defined by the <code class="docutils literal notranslate"><span class="pre">max_pool</span></code> parameter.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Input data points to update.</p></li>
+<li><p><strong>fz</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Function values corresponding to the input data <code class="docutils literal notranslate"><span class="pre">z</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The trimmed input data points and corresponding function values, limited by <code class="docutils literal notranslate"><span class="pre">max_pool</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fz</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.update" title="Link to this definition"></a></dt>
+<dd><p>Fit the regressor to new data points <code class="docutils literal notranslate"><span class="pre">(z,</span> <span class="pre">fz)</span></code> while maintaining the existing kernel structure.</p>
+<p>This method allows fitting a kernel-based regressor that is originally defined on the set <code class="docutils literal notranslate"><span class="pre">x</span></code> but
+is updated to match new input values <code class="docutils literal notranslate"><span class="pre">z</span></code> and their corresponding function values <code class="docutils literal notranslate"><span class="pre">fz</span></code>.</p>
+<p>The regression is defined by the formula:</p>
+<p><div class="math notranslate nohighlight">
+\[
+f_{k, \theta}(z) \approx K(z, X)\theta = f(z)
+\]</div>
+</p>
+<p>Where the coefficient <cite>theta</cite> is computed as:</p>
+<p><div class="math notranslate nohighlight">
+\[
+\theta = K(z, X)^{-1}f(z)
+\]</div>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – New input data points to update the regressor.</p></li>
+<li><p><strong>fz</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Function values corresponding to the new data points <cite>z</cite>.</p></li>
+<li><p><strong>eps</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, optional) – Regularization parameter used in the least squares solution. Defaults to <cite>self.reg</cite> if not provided.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Updates the internal state of the regressor with new <cite>z</cite> and <cite>fz</cite> values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.add">
+<span class="sig-name descname"><span class="pre">add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fy</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.add" title="Link to this definition"></a></dt>
+<dd><p>Augments the training set by adding new data points and their corresponding function values.</p>
+<p>This method optimizes the computation for training set augmentation by efficiently updating
+the kernel matrix and applying a block-inversion algorithm, which reduces the overall complexity
+compared to recalculating the full kernel matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – New data points to be added to the training set.</p></li>
+<li><p><strong>fy</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Function values corresponding to the new data points <cite>y</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>This method updates the internal state of the class, modifying the training set with the new data points and their function values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The kernel matrix <span class="math notranslate nohighlight">\(K([X,Y], [X,Y])\)</span> is of size <span class="math notranslate nohighlight">\(\mathbb{R}^{(N_X+N_Y) \times (N_X+N_Y)}\)</span>,
+and directly computing its inverse has a complexity of <span class="math notranslate nohighlight">\((N_X + N_Y)^3\)</span>.</p>
+<p>By using the block-inversion method, the complexity can be reduced to <span class="math notranslate nohighlight">\(N_X^3 + N_Y^3\)</span>, significantly improving performance.</p>
+<p>The function <span class="math notranslate nohighlight">\(f_{k,\theta}(.)\)</span> is then computed as:</p>
+<p><div class="math notranslate nohighlight">
+\[
+f_{k,\theta}(.) = K(., [X,Y])\theta, \quad \theta = K([X,Y], [X,Y])^{-1} \begin{bmatrix} f(X) \; f(Y) \end{bmatrix}
+\]</div>
+</p>
+<p>Here, <span class="math notranslate nohighlight">\([.]\)</span> denotes standard matrix concatenation, where <span class="math notranslate nohighlight">\(f(X)\)</span> and <span class="math notranslate nohighlight">\(f(Y)\)</span> are the function values for the original and new data points, respectively.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.kernel_distance">
+<span class="sig-name descname"><span class="pre">kernel_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.kernel_distance" title="Link to this definition"></a></dt>
+<dd><p>Compute an MMD (Maximum Mean Discrepancy) based distance matrix between the input data <code class="docutils literal notranslate"><span class="pre">x</span></code> and the new data <code class="docutils literal notranslate"><span class="pre">z</span></code>.</p>
+<p>The distance is computed as:</p>
+<p><div class="math notranslate nohighlight">
+\[
+D(X,Z) = \Big(d_k(x^i,z^j) \Big)_{i,j},\quad d_k(x,y)= k(x,x) + k(z,z)-2k(x,z)
+\]</div>
+</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – New input data points.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The computed MMD-based distance matrix.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.get_kernel">
+<span class="sig-name descname"><span class="pre">get_kernel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">callable</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.get_kernel" title="Link to this definition"></a></dt>
+<dd><p>Retrieve the current kernel function for the input data.</p>
+<p>This method retrieves a positive semi-definite (PSD) kernel function,
+represented as: <span class="math notranslate nohighlight">\(k(S(x), S(y))\)</span>, where <span class="math notranslate nohighlight">\(S\)</span> is a predefined mapping.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The kernel function used by the current model.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.set_kernel_ptr">
+<span class="sig-name descname"><span class="pre">set_kernel_ptr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.set_kernel_ptr" title="Link to this definition"></a></dt>
+<dd><p>Set the Codpy interface to use the current kernel function.</p>
+<p>This method updates the Codpy kernel interface with the current kernel
+function, sets the polynomial order to zero, and applies the regularization
+parameter defined in the object.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.rescale">
+<span class="sig-name descname"><span class="pre">rescale</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.rescale" title="Link to this definition"></a></dt>
+<dd><p>Rescale the input data using the current mapping.</p>
+<p>This method rescales the input data by applying the map function associated
+with the current kernel. It also retrieves and updates the internal kernel
+function based on the rescaled data.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">x</span></code> is set, the rescaling is applied to <code class="docutils literal notranslate"><span class="pre">x</span></code> with a maximum number of
+points defined by <code class="docutils literal notranslate"><span class="pre">max_nystrom</span></code>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.kernel.Kernel.__call__">
+<span class="sig-prename descclassname"><span class="pre">Kernel.</span></span><span class="sig-name descname"><span class="pre">__call__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#codpy.kernel.Kernel.__call__" title="Link to this definition"></a></dt>
+<dd><p>Predict the output using the kernel for input data <code class="docutils literal notranslate"><span class="pre">z</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Input data points for prediction.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The predicted values based on the kernel and function values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">z_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">prediction</span> <span class="o">=</span> <span class="n">kernel</span><span class="p">(</span><span class="n">z_data</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function is similar to <code class="docutils literal notranslate"><span class="pre">predict</span></code> in libraries like scikit-learn or XGBoost.</p>
+<ul class="simple">
+<li><p>If <code class="docutils literal notranslate"><span class="pre">fx</span></code> is defined, the prediction is given by the formula <span class="math notranslate nohighlight">\(f_{k, \theta}(z)\)</span>.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">fx</span></code> is not defined, the function returns the projection operator:</p></li>
+</ul>
+<p><div class="math notranslate nohighlight">
+\[P_{k,\theta}(z) = K(Z, K) K(X, X)^{-1}\]</div>
+</p>
+</div>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="install.html" class="btn btn-neutral float-left" title="Installation Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="core.html" class="btn btn-neutral float-right" title="Kernels and maps" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Jean-Marc MERCIER, Shohruh MIRYUSUPOV.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
