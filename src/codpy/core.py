@@ -17,14 +17,6 @@ class _codpy_param_getter:
         return _codpy_param_getter.get_params(**kwargs)["set_kernel"]
 
 
-def set_verbose(verbose=True):
-    cd.verbose(verbose)
-
-
-def set_num_threads(n) -> None:
-    cd.set_num_threads(n)
-
-
 class op:
     def projection(x, y, z, fx, reg=[], **kwargs):
         """
@@ -331,204 +323,208 @@ class op:
             get_matrix(x), get_matrix(x), get_matrix(z), get_matrix(fx)
         )
 
-
-def distance_labelling(
-    x, y, label=None, distance=None, maxmin: str = "min", axis: int = 1, **kwargs
-) -> np.ndarray:
+class misc:
     """
-    Computes and labels distances using a kernel-induced distance matrix.
-
-    This function calculates the distance matrix between two sets of data points (x and y) using
-    a specified kernel function. It then labels these distances based on either the softmax or softmin
-    indices, depending on the 'max' parameter in kwargs.
-
-    Args:
-        x (np.array): The first set of data points.
-        y (np.array): The second set of data points.
-        axis (int, optional): The axis along which to compute the distances. Default is 1.
-        max (bool, optional): Determines the type of labelling:
-            - If True, uses softmax labelling.
-            - If False (default), uses softmin labelling.
-            :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-
-    Returns:
-        np.array: An array of labelled distances between the data points in x and y.
+    Miscellaneous kernel functions or classes.
     """
-    # print('######','distance_labelling','######')
-    D = op.Dnm(x, y, distance, **kwargs)
-    if maxmin == "min":
-        indices = softminindices(D, axis=axis)
-    else:
-        indices = softmaxindices(D, axis=axis)
-    if label is not None:
-        return label[indices]
-    else:
-        return indices
-
-
-def discrepancy(
-    x: np.array, z: np.array, y: np.array = None, disc_type="raw", **kwargs
-):
-    if "discrepancy:xmax" in kwargs:
-        x = random_select_interface(
-            xmaxlabel="discrepancy:xmax",
-            seedlabel="discrepancy:seed",
-            **{**kwargs, **{"x": x}},
-        )
-    if "discrepancy:ymax" in kwargs:
-        y = random_select_interface(
-            xmaxlabel="discrepancy:ymax",
-            seedlabel="discrepancy:seed",
-            **{**kwargs, **{"x": y}},
-        )
-    if "discrepancy:zmax" in kwargs:
-        z = random_select_interface(
-            xmaxlabel="discrepancy:zmax",
-            seedlabel="discrepancy:seed",
-            **{**kwargs, **{"x": z}},
-        )
-    if len(y):
-        debug = cd.tools.discrepancy_error(x, y, disc_type)
-        if len(z):
-            debug += cd.tools.discrepancy_error(y, z, disc_type)
-        return np.sqrt(debug)
-    else:
-        return np.sqrt(cd.tools.discrepancy_error(x, z, disc_type))
-
-
-class discrepancy_functional:
-    """
-    A kernel-induced discrepancy between two distributions.
-
-    Discrepancy is a non-parametric method to test the equality of two distributions. It's computed in a
-    Reproducing Kernel Hilbert Space (RKHS) using a specified kernel function.
-
-    Attributes:
-    Nx (int): The number of samples in the first distribution 'x'.
-    x (array-like): The first distribution for which MMD is to be computed.
-    Kxx (float): The kernel-induced distance computed within 'x'.
-
-    Args:
-        x (array-like): The first input distribution.
-        y (array-like, optional): The second input distribution. If not provided, it defaults to an empty list.
-        **kwargs: Additional keyword arguments for the kernel function.
-
-    Methods:
-        eval(ys, **kwargs): Computes the MMD between the distribution 'ys' and the initial distribution 'x'.
-
-    Example:
-        Define two distributions
-
-        >>> x = np.array([...])
-        >>> y = np.array([...])
-
-        Initialize discrepancy functional for 'x'
-
-        >>> discrepancy = discrepancy_functional(x)
-
-        Compute MMD between 'x' and 'y'
-
-        >>> discrepancy_value = discrepancy.eval(y)
-    """
-
-    def __init__(
-        self,
-        x,
-        fx,
-        kernel_fun="tensornorm",
-        map="unitcube",
-        polynomial_order=2,
-        regularization: float = 1e-8,
-        reg: np.ndarray = [],
-        rescale=False,
-        **kwargs,
-    ):
+    
+    def distance_labelling(
+        x, y, label=None, distance=None, maxmin: str = "min", axis: int = 1, **kwargs
+    ) -> np.ndarray:
         """
+        Computes and labels distances using a kernel-induced distance matrix.
+
+        This function calculates the distance matrix between two sets of data points (x and y) using
+        a specified kernel function. It then labels these distances based on either the softmax or softmin
+        indices, depending on the 'max' parameter in kwargs.
+
         Args:
+            x (np.array): The first set of data points.
+            y (np.array): The second set of data points.
+            axis (int, optional): The axis along which to compute the distances. Default is 1.
+            max (bool, optional): Determines the type of labelling:
+                - If True, uses softmax labelling.
+                - If False (default), uses softmin labelling.
+                :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
 
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
+        Returns:
+            np.array: An array of labelled distances between the data points in x and y.
         """
-        self.Nx = len(x)
-        self.x = x.copy()
+        # print('######','distance_labelling','######')
+        D = op.Dnm(x, y, distance, **kwargs)
+        if maxmin == "min":
+            indices = softminindices(D, axis=axis)
+        else:
+            indices = softmaxindices(D, axis=axis)
+        if label is not None:
+            return label[indices]
+        else:
+            return indices
 
-        self.Kxx = op.Knm(
-            x,
+
+    def discrepancy(
+        x: np.array, z: np.array, y: np.array = None, disc_type="raw", **kwargs
+    ):
+        if "discrepancy:xmax" in kwargs:
+            x = random_select_interface(
+                xmaxlabel="discrepancy:xmax",
+                seedlabel="discrepancy:seed",
+                **{**kwargs, **{"x": x}},
+            )
+        if "discrepancy:ymax" in kwargs:
+            y = random_select_interface(
+                xmaxlabel="discrepancy:ymax",
+                seedlabel="discrepancy:seed",
+                **{**kwargs, **{"x": y}},
+            )
+        if "discrepancy:zmax" in kwargs:
+            z = random_select_interface(
+                xmaxlabel="discrepancy:zmax",
+                seedlabel="discrepancy:seed",
+                **{**kwargs, **{"x": z}},
+            )
+        if len(y):
+            debug = cd.tools.discrepancy_error(x, y, disc_type)
+            if len(z):
+                debug += cd.tools.discrepancy_error(y, z, disc_type)
+            return np.sqrt(debug)
+        else:
+            return np.sqrt(cd.tools.discrepancy_error(x, z, disc_type))
+
+
+    class discrepancy_functional:
+        """
+        A kernel-induced discrepancy between two distributions.
+
+        Discrepancy is a non-parametric method to test the equality of two distributions. It's computed in a
+        Reproducing Kernel Hilbert Space (RKHS) using a specified kernel function.
+
+        Attributes:
+        Nx (int): The number of samples in the first distribution 'x'.
+        x (array-like): The first distribution for which MMD is to be computed.
+        Kxx (float): The kernel-induced distance computed within 'x'.
+
+        Args:
+            x (array-like): The first input distribution.
+            y (array-like, optional): The second input distribution. If not provided, it defaults to an empty list.
+            **kwargs: Additional keyword arguments for the kernel function.
+
+        Methods:
+            eval(ys, **kwargs): Computes the MMD between the distribution 'ys' and the initial distribution 'x'.
+
+        Example:
+            Define two distributions
+
+            >>> x = np.array([...])
+            >>> y = np.array([...])
+
+            Initialize discrepancy functional for 'x'
+
+            >>> discrepancy = discrepancy_functional(x)
+
+            Compute MMD between 'x' and 'y'
+
+            >>> discrepancy_value = discrepancy.eval(y)
+        """
+
+        def __init__(
+            self,
             x,
             fx,
-            Kinv=None,
-            kernel_fun=kernel_fun,
-            map=map,
-            polynomial_order=polynomial_order,
-            regularization=regularization,
-            reg=reg,
-            rescale=rescale,
+            kernel_fun="tensornorm",
+            map="unitcube",
+            polynomial_order=2,
+            regularization: float = 1e-8,
+            reg: np.ndarray = [],
+            rescale=False,
             **kwargs,
-        )
-        self.Kxx = np.sum(self.Kxx) / (self.Nx * self.Nx)
-        pass
+        ):
+            """
+            Args:
 
-    def eval(
-        self,
-        ys,
-        fx,
-        Kinv=None,
-        kernel_fun="tensornorm",
-        map="unitcube",
-        polynomial_order=2,
-        regularization=1e-8,
-        reg=[],
-        rescale=False,
-        **kwargs,
-    ):
-        """
-        Args:
+            :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
+            :type kernel_fun: :class:`str`, optional
+            :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
+            :type map: :class:`str`, optional
+            :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
+            :type polynomial_order: :class:`float`, optional
+            :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
+            :type regularization: :class:`numpy.ndarray`, optional
+            :param rescale: Whether to rescale the data.
+            :type rescale: :class:`bool`, optional
+            :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
+            :type rescale_params: :class:`dict`, optional
+            :param kwargs: Arbitrary keyword arguments.
+            :type kwargs: dict
+            """
+            self.Nx = len(x)
+            self.x = x.copy()
 
-        :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
-        :type kernel_fun: :class:`str`, optional
-        :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-        :type map: :class:`str`, optional
-        :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-        :type polynomial_order: :class:`float`, optional
-        :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-        :type regularization: :class:`numpy.ndarray`, optional
-        :param rescale: Whether to rescale the data.
-        :type rescale: :class:`bool`, optional
-        :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-        :type rescale_params: :class:`dict`, optional
-        :param kwargs: Arbitrary keyword arguments.
-        :type kwargs: dict
-        """
-        N = len(ys)
-        Kxy = op.Knm(
-            x=ys,
-            y=self.x,
-            fx=fx,
+            self.Kxx = op.Knm(
+                x,
+                x,
+                fx,
+                Kinv=None,
+                kernel_fun=kernel_fun,
+                map=map,
+                polynomial_order=polynomial_order,
+                regularization=regularization,
+                reg=reg,
+                rescale=rescale,
+                **kwargs,
+            )
+            self.Kxx = np.sum(self.Kxx) / (self.Nx * self.Nx)
+            pass
+
+        def eval(
+            self,
+            ys,
+            fx,
             Kinv=None,
-            kernel_fun=kernel_fun,
-            map=map,
-            polynomial_order=polynomial_order,
-            regularization=regularization,
-            reg=reg,
-            rescale=rescale,
+            kernel_fun="tensornorm",
+            map="unitcube",
+            polynomial_order=2,
+            regularization=1e-8,
+            reg=[],
+            rescale=False,
             **kwargs,
-        ) / (self.Nx)
-        out = np.zeros([N])
-        for n in range(N):
-            out[n] = 1.0 + self.Kxx - 2.0 * np.sum(Kxy[n])
-        return out
+        ):
+            """
+            Args:
+
+            :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
+            :type kernel_fun: :class:`str`, optional
+            :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
+            :type map: :class:`str`, optional
+            :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
+            :type polynomial_order: :class:`float`, optional
+            :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
+            :type regularization: :class:`numpy.ndarray`, optional
+            :param rescale: Whether to rescale the data.
+            :type rescale: :class:`bool`, optional
+            :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
+            :type rescale_params: :class:`dict`, optional
+            :param kwargs: Arbitrary keyword arguments.
+            :type kwargs: dict
+            """
+            N = len(ys)
+            Kxy = op.Knm(
+                x=ys,
+                y=self.x,
+                fx=fx,
+                Kinv=None,
+                kernel_fun=kernel_fun,
+                map=map,
+                polynomial_order=polynomial_order,
+                regularization=regularization,
+                reg=reg,
+                rescale=rescale,
+                **kwargs,
+            ) / (self.Nx)
+            out = np.zeros([N])
+            for n in range(N):
+                out[n] = 1.0 + self.Kxx - 2.0 * np.sum(Kxy[n])
+            return out
 
 
 class diffops:
@@ -783,6 +779,40 @@ class diffops:
 
 
 class factories:
+    """
+    A class to manipulate built-in codpy factories.
+    
+    Note: two kinds of factories are exhibited
+        - Kernel factories through :func:`factories.get_kernel_factory()`, defining real-valued function $k(x,y)$ from a positive-definite kernel.
+        - Maps factories through :func:`factories.get_map_factory()`, defining maps $x\mapsto S(x)$, used to fit the data to a kernel using $k\circ S$.
+    Users can overload these factories to add their own kernels and map, see :meth:`kernel_overloading.my_kernel_overloading`
+    """
+    def check_map_strings(strings):
+        """
+        Simply check that the string, or list of strings, are keys for the dictionary :func:`factories.get_map_factory_keys()`
+
+        Args:
+            strings : (:class:`str` or :class:`list`).
+        """
+        if isinstance(strings, list):
+            [kernel_interface.check_map_strings(s) for s in strings]
+        else:
+            ok = strings in factories.get_map_factory_keys()
+            if not ok:
+                raise NameError("unknown map:" + strings)
+
+
+    def check_kernel_strings(strings):
+        """
+        Simply check that the string, or list of strings, are keys in the dictionary :func:`factories.get_kernel_factory_keys()`
+
+        Args:
+            strings : (:class:`str` or :class:`list`).
+        """
+        ok = strings in factories.get_kernel_factory_keys()
+        if not ok:
+            raise NameError("unknown kernel:" + strings)
+
     def get_kernel_factory():
         return cd.factories.get_kernels_factory()
     def get_kernel_factory_keys():
@@ -794,7 +824,31 @@ class factories:
         return cd.factories.maps_factory_keys()
 
 class kernel_interface:
-    def rescale(x=[], y=[], z=[], max=None, seed=42, **kwargs):
+    """
+    Miscellaneous instructions to instruct the C++ interface.
+    """
+    def set_verbose(verbose=True):
+        """
+        Produce a diagnosis file "output.xml" to debug, profile or audit the C++ core.
+        """
+        cd.verbose(verbose)
+
+
+    def set_num_threads(n) -> None:
+        """
+        Limit the number of threads used by the C++ core.
+        """
+        cd.set_num_threads(n)
+
+    def rescale( x, y=[], z=[], max=None, seed=42, **kwargs):
+        """
+        Intruct the kernel map to fit its parameters in order to match the variables $x,y,z$.
+
+        Args:
+            x,y,z (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Input data points to fit.
+            max : (:class:`int`). Random select max datapoints. Used to limit the input size for performances. 
+            seed : (:class:`int`). The seed used to random selection. See (:class:`max`)
+        """
         if max is not None:
             x, y, z = (
                 random_select(x=x, xmax=max, seed=seed),
@@ -805,15 +859,34 @@ class kernel_interface:
         cd.kernel_interface.rescale(x, y, z)
 
     def get_kernel_ptr():
+        """
+        Return a smart pointer to the current kernel used by codpy.
+        """
         return cd.get_kernel_ptr()
 
     def set_kernel_ptr(kernel_ptr):
+        """
+        Set codpy with a kernel.
+        """
         cd.set_kernel_ptr(kernel_ptr)
 
     def set_polynomial_order(order):
+        """
+        Allow to set an integer, used for polynomial regression with codpy's internal kernels.
+
+        Args:
+            order : (:class:`int`). The order for polynomial regression :
+                - 0 means regression on a constant (one regression)
+                - 1 means constant and linear regression (one + $D$ regression).
+                - 2 means constant, linear regression and quadratic regression (one + $D$ + $D^2$ regression)..
+        """
+
         cd.kernel_interface.set_polynomial_order(order)
 
     def set_regularization(regularization):
+        """
+        Set a float value for Tykhonov regularization in kernel ridge inversion.
+        """
         cd.kernel_interface.set_regularization(regularization)
 
     def pipe_kernel_ptr(kernel_ptr):
@@ -835,8 +908,54 @@ class kernel_interface:
         if rescale:
             kernel_interface.rescale(x, y, z, **kwargs)
 
+    def set_kernel(kernel_key, reg=1e-8, check_=True,extras={}):
+        """
+        An utility to instruct codpy to set a kernel. The list of available kernels is given by :func:`factories.get_map_factory_keys()`
+
+        Args:
+
+            kernel_key : (:class:`str`). Must be in  :func:`factories.get_map_factory_keys()`
+            reg : (:class:`float`). Set a regularization parameters. See :func:`kernel_interface.set_regularization`
+            check_ : (:class:`bool`). Check if the key is in :func:`factories.get_map_factory_keys()`
+            extras : (:class:`dic(str,str)`). A list of parameters to set the kernel.
+        """
+        if check_:
+            factories.check_kernel_strings(kernel_key)
+        kernel_ptr = factories.get_kernel_factory()[kernel_key](extras)
+        kernel_ptr.set_kernel_ptr(kernel_ptr)
+        cd.kernel_interface.set_regularization(reg)
+
+
+    def set_map(strings, check_=True, kwargs={}):
+        """
+        An utility to set an internal codpy map for kernels. The list of available maps is given by :func:`factories.get_map_factory_keys()`
+        
+        Args:
+
+            strings : (:class:`str` or :class:`list`). A list of maps :
+            
+                - if  :class:`str`: instanciate and set to codpy the map.
+                - if  :class:`list`: instanciate and set to codpy the first map, then 'pipe' (means compose) the others maps.
+        """
+        if check_:
+            if kernel_interface.get_kernel_ptr() == None:
+                raise AssertionError("set a kernel first, see set_kernel")
+            check_map_strings(strings)
+        if isinstance(strings, list):
+            ss = strings.copy()
+            cd.kernel_interface.set_map(ss.pop(0), kwargs)
+            [_pipe__map_setters.pipe(s) for s in ss]
+        else:
+            cd.kernel_interface.set_map(strings, kwargs)
+
+
 
 class map_setters:
+    """
+    A collection of classes / function to manipulate internal codpy maps. 
+    Internal codpy maps can be listed using :func:`factories.get_map_factory_keys`
+    """
+
     class set:
         def __init__(self, strings):
             self.strings = strings
@@ -1027,8 +1146,6 @@ class map_setters:
 
     def map_helper(map_setter, **kwargs):
         """
-        Helper function to create a custom map setting function.
-
         This function creates a partial function for a specified map setter with provided arguments.
 
         Args:
@@ -1036,42 +1153,6 @@ class map_setters:
         - **kwargs: Arbitrary keyword arguments for the map setter function.
         """
         return partial(map_setter, kwargs)
-
-
-def check_map_strings(strings):
-    if isinstance(strings, list):
-        [check_map_strings(s) for s in strings]
-    else:
-        ok = strings in factories.get_map_factory_keys()
-        if not ok:
-            raise NameError("unknown map:" + strings)
-
-
-def set_map(strings, check_=True, kwargs={}):
-    if check_:
-        if kernel_interface.get_kernel_ptr() == None:
-            raise AssertionError("set a kernel first, see set_kernel")
-        check_map_strings(strings)
-    if isinstance(strings, list):
-        ss = strings.copy()
-        cd.kernel_interface.set_map(ss.pop(0), kwargs)
-        [_pipe__map_setters.pipe(s) for s in ss]
-    else:
-        cd.kernel_interface.set_map(strings, kwargs)
-
-
-def checkkernel_strings(strings):
-    ok = strings in factories.get_kernel_factory_keys()
-    if not ok:
-        raise NameError("unknown kernel:" + strings)
-
-
-def set_kernel(kernel_key, reg=1e-8, check_=True,extras={}):
-    if check_:
-        checkkernel_strings(kernel_key)
-    kernel_ptr = factories.get_kernel_factory()[kernel_key](extras)
-    kernel_ptr.set_kernel_ptr(kernel_ptr)
-    cd.kernel_interface.set_regularization(reg)
 
 
 class kernel_setters:

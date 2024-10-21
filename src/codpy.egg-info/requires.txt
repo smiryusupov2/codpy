@@ -1,9 +1,0 @@
-codpydll==0.1.4
-pandas==1.5.0
-mkl
-scikit-learn
-scipy
-numpy==1.24.3
-xarray==2022.9.0
-matplotlib
-statsmodels

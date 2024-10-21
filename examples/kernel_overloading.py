@@ -4,6 +4,9 @@ import numpy as np
 
 
 class my_kernel(core.cd.kernel):
+    """
+    An example of overloading codpy kernel with a user-defined expression.
+    """
     def __init__(self,**kwargs) : 
 
         core.cd.kernel.__init__(self)
@@ -21,9 +24,10 @@ class my_kernel(core.cd.kernel):
         return y*self.bandwidth_
 
 
-
-if __name__ == "__main__":
-    core.set_verbose()
+def my_kernel_overloading():
+    """
+    An example of overloading codpy kernel with a user-defined expression.
+    """
     x,y = np.random.randn(3, 2),np.random.randn(3, 2)
     my_kernel_ = my_kernel.create()
     print (my_kernel_.k(x[0],y[0]))
@@ -42,4 +46,6 @@ if __name__ == "__main__":
     core.set_kernel("my_kernel",extras = {"bandwidth":"3."})
     print(core.op.Knm(x,y))
 
+if __name__ == "__main__":
+    my_kernel_overloading()
     pass

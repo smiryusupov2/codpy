@@ -14,12 +14,31 @@ from codpy.permutation import lsap
 
 class Kernel:
     """
-    A kernel class to perform various kernel-based operations, such as mapping, transformations.
-    """
+    A kernel class to manipulate datas for various kernel-based operations, such as interpolations or extrapolations of functions, or mapping between distributions.
+        Note:
+            This class is similar to libraries as scikit-learn or XGBoost, with the following correspondances.
+
+            - Datas are loaded into memory in the contructor :func:`__init__`, or via :func:`set` 
+            - For matching distributions, use :func:`map`, 
+            - The `predict` function is made directly through :func:`__call__`
+            
+            It implements the following methods :
+
+            - In the context of functions interpolation / extrapolation
+                $$f_{k,\\theta}(\cdot) = K(\cdot, Y) K(X, Y)^{-1} f(X)$$.            
+
+            - For matching distributions
+                $$f_{k,\\theta}(\cdot) = K(\cdot, Y) K(X, Y)^{-1} f(X\circ \sigma)$$, where $\sigma$ is a permutation.            
+            
+            - Fitting is done just-in-time (at first prediction), and means computing the parameters $\\theta = K(X, Y)^{-1} f(X)$, together with $\sigma$ for distributions. The function :func:`get_theta()` performs those computations and corresponds to fit in others frameworks.
+
+            
+    """ 
 
     def __init__(
         self,
         x=None,
+        y=None,
         fx=None,
         max_pool: int = 1000,
         max_nystrom: int = 1000,
@@ -30,8 +49,10 @@ class Kernel:
         **kwargs: dict,
     ) -> None:
         """
-        Initializes the Kernel class with default or user-defined parameters and sets up the kernel function.
+        Initializes the Kernel class with default or user-defined parameters.
 
+        :param x: A bi-dimensional numpy array. 
+        :param fx: A bi-dimensional numpy array. If `x` or `fx` is not `None`, then call :func:`set`
         :param max_pool: Maximum pool size for the kernel operations. Defaults to 1000.
         :type max_pool: :class:`int`, optional
         :param max_nystrom: Maximum number of Nystrom samples. Defaults to 1000.
@@ -59,7 +80,7 @@ class Kernel:
             self.set_kernel = self.default_kernel_functor()
 
         if x is not None or fx is not None:
-            self.set(x=x, fx=fx, **kwargs)
+            self.set(x=x, y=y,fx=fx, **kwargs)
 
     def default_kernel_functor(self) -> callable:
         """
@@ -866,7 +887,7 @@ class Kernel:
         The distance is computed as:
 
         $$
-        D(X,Z) = K(X,X) + K(Z,Z) - 2K(X,Z)
+        D(X,Z) = \Big(d_k(x^i,z^j) \Big)_{i,j},\quad d_k(x,y)= k(x,x) + k(z,z)-2k(x,z)
         $$
 
         :param z: New input data points.

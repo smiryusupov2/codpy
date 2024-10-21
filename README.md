@@ -12,24 +12,6 @@ This version of the library is multi-core CPU architectures, and is tested on
 
  * windows / amd64 platforms  
 
-## Directory structure
-
-Once installed (see below), navigate to ```<path\to\python39>\Lib\site-packages\codpy```. The directory structure should be
-
-* ```codpy```
-    *   ```pred``` : Wrappers to a number of prediction machines : kernels, neural networks, and more.  
-    *   ```data``` : Wrappers to data set handling  
-    *   ```proj``` : some examples of applications  
-        *   BTC_predictor.py    : an example of time serie prediction.  
-        *   clustering.py       : benchmarks of clustering methods.  
-        *   housing_prices.py   : benchmarks for the venerable Boston house price data set.  
-        *   mnist_codpy.py      : benchmarks for the MNIST data set.  
-        *   radon.py            : an application for medical imagery.  
-        *   reordering.py       : illustration of optimal transport tools.  
-    *  README.md        : this document  
-    *  __init__.py      : codpy loader  
-    *  include.py       : called by __init__  
-
 # Installation 
 
 Note: this installation process has been tested on
