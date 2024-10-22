@@ -25,11 +25,17 @@ See our `introduction to codpy <https://arxiv.org/pdf/2402.07084>`_ for more det
    kernel
    core
 
+Gallery of Examples
+===================
+
+Below is a collection of example scripts demonstrating the usage of Codpy. Click on any example to view details.
+
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Examples:
-   
-   examples
+
+   gallery_examples/index
+
 
 Indices and tables
 ==================

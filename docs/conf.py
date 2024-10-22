@@ -12,13 +12,17 @@ import sys
 current_dir = os.path.abspath(os.path.dirname(__file__))
 
 parent_path = os.path.dirname(__file__)
-if parent_path not in sys.path: sys.path.append(parent_path)
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 parent_path = os.path.dirname(parent_path)
-if parent_path not in sys.path: sys.path.append(parent_path)
-codpy_path = os.path.join(parent_path,"src","codpy")
-if codpy_path not in sys.path: sys.path.append(codpy_path)
-examples_path = os.path.join(parent_path,"examples")
-if examples_path not in sys.path: sys.path.append(examples_path)
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+codpy_path = os.path.join(parent_path, "src", "codpy")
+if codpy_path not in sys.path:
+    sys.path.append(codpy_path)
+examples_path = os.path.join(parent_path, "examples")
+if examples_path not in sys.path:
+    sys.path.append(examples_path)
 
 project = "CodPy"
 copyright = "2024, Jean-Marc MERCIER, Shohruh MIRYUSUPOV"
@@ -34,6 +38,8 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx_togglebutton",
     "sphinx_math_dollar",
+    "sphinx_gallery.gen_gallery",
+    "sphinx.ext.viewcode",
 ]
 
 
@@ -67,12 +73,16 @@ autodoc_default_options = {
 }
 
 sphinx_gallery_conf = {
-    "examples_dirs": "examples",  # Directory where .py scripts are stored
-    "gallery_dirs": "gallery_examples",  # Directory to save generated HTML and notebooks
+    "examples_dirs": ["examples"],  # Directory where .py scripts are stored
+    "gallery_dirs": [
+        "gallery_examples"
+    ],  # Directory to save generated HTML and notebooks
     "filename_pattern": r".*\.py",  # Process all Python files
     "backreferences_dir": "gen_modules/backreferences",
     "within_subsection_order": "ExampleTitleSortKey",
     "download_all_examples": False,
     "remove_config_comments": True,
     "notebook_images": True,  # Include images in generated notebooks
+    "capture_repr": ("_repr_html_", "__repr__"),  # Capture output as HTML if possible
+    "image_scrapers": ("matplotlib",),
 }
