@@ -21,10 +21,11 @@ import random
 # We use a custom hot encoder for performances reasons.
 from codpy.data_processing import hot_encoder
 # Standard codpy kernel class.
-from codpy.kernel import Kernel
+from codpy.kernel import Kernel,KernelClassifier
+import codpy.core as core
 # A multi scale kernel method.
-from codpy.multiscale_kernel import *
 from sklearn.metrics import confusion_matrix
+from codpy.clustering import *
 
 os.environ["OPENBLAS_NUM_THREADS"] = "32"
 os.environ["OMP_NUM_THREADS"] = "32"
@@ -129,20 +130,4 @@ show_confusion_matrix(z, fz, predictor,cm=False)
 print("Discrepancy(x,y):", predictor.discrepancy(predictor.get_y()))
 
 
-# %% [markdown]
-# Select a multi scale kernel method where the centers are given by a k-mean algorithm.
-N_partition=5
-predictor = MultiScaleKernelClassifier(x=x,fx=fx,N=N_partition)
-print("Reproductibility test:")
-show_confusion_matrix(x, fx, predictor,cm=False)
-print("Performance test:")
-show_confusion_matrix(z, fz, predictor,cm=False)
-
-
-# %% [markdown]
-# Select a multi scale kernel where the centers are given by a greedy search algorithm.
-predictor = MultiScaleKernelClassifier(x=x,fx=fx,N=N_partition,method=GreedySearch)
-print("Reproductibility test:")
-show_confusion_matrix(x, fx, predictor,cm=False)
-print("Performance test:")
-show_confusion_matrix(z, fz, predictor,cm=False)
+# %%

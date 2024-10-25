@@ -535,20 +535,6 @@ class Kernel:
         if self.Delta is None:
             self.Delta = diffops.nablaT_nabla(self.y, self.x)
         return self.Delta
-    def greedy_search(self,N,tol=0.,n_batch=1, norm_="frobenius",**kwargs):
-            self.set_kernel_ptr()
-            theta, indices = alg.HybridGreedyNystroem(
-                x=self.get_x(),
-                fx=self.get_fx(),
-                N=N,
-                tol=tol,
-                error_type=norm_,
-                n_batch=n_batch,
-                **kwargs,
-            )
-            return theta,indices
-
-
     def greedy_select(self, N,x=None, fx=None, all=False, norm_="frobenius", **kwargs):
         """
         Select a subset of points using a greedy Nystrom approximation technique :
@@ -621,7 +607,7 @@ class Kernel:
                 **kwargs,
             )
         else: 
-            indices = list(alg.greedy_algorithm(self.get_x(),N,**kwargs))
+            indices = list(alg.greedy_algorithm(x=self.get_x(),N=N,**kwargs))
             #
         self.indices = indices
         if all is True:

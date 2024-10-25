@@ -5,31 +5,8 @@ import numpy as np
 import pandas as pd
 from scipy.special import softmax
 from codpy.permutation import map_invertion
-from sklearn.cluster import KMeans,MiniBatchKMeans
+from codpy.clustering import GreedySearch,MiniBatchkmeans
 
-
-class GreedySearch(Kernel):
-    def __init__(self,x, N, **kwargs):
-        super().__init__(x=x,**kwargs)
-        self.indices = self.greedy_select(N,x,**kwargs,all=True).indices
-        self.cluster_centers_ = self.get_x()[self.indices]
-        self.labels_ = self(self.get_x())
-    def __call__(self,z, **kwargs):
-        labels = core.op.Dnm(z, self.cluster_centers_).argmin(axis=1)
-        return labels
-
- 
-class MiniBatchkmeans(MiniBatchKMeans):
-    def __init__(self,x, N, max_iter = 300, random_state = 42,batch_size = 8192,verbose = False,**kwargs):
-        super().__init__(n_clusters=N,
-            init="k-means++",
-            batch_size = batch_size,
-            verbose = verbose,
-            max_iter=max_iter,
-            random_state=random_state)
-        self.fit(x)
-    def __call__(self,z, **kwargs):
-        return self.predict(z)
 
 class MultiScaleKernel(Kernel):
     params = {}
@@ -63,7 +40,7 @@ class MultiScaleKernel(Kernel):
 
 class MultiScaleKernelClassifier(MultiScaleKernel):
     """
-    A simple overload of the kernel :class:`Kernel` for proabability handling.
+    A simple overload of the kernel :class:`MultiScaleKernel` for proabability handling.
         Note:
             It overloads the prediction method as follows :
 
