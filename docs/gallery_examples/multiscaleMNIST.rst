@@ -167,12 +167,10 @@ Select a multi scale kernel method where the centers are given by a k-mean algor
 
  .. code-block:: none
 
-    C:\Informatique\python\lib\site-packages\sklearn\cluster\_kmeans.py:1848: UserWarning: MiniBatchKMeans is known to have a memory leak on Windows with MKL, when there are less chunks than available threads. You can prevent it by setting batch_size >= 8192 or by setting the environment variable OMP_NUM_THREADS=20
-      warnings.warn(
     Reproductibility test:
     score MNIST: 1.0
     Performance test:
-    score MNIST: 0.9635
+    score MNIST: 0.9604
 
 
 
@@ -201,7 +199,7 @@ Select a multi scale kernel where the centers are given by a greedy search algor
     Reproductibility test:
     score MNIST: 1.0
     Performance test:
-    score MNIST: 0.9635
+    score MNIST: 0.9604
 
 
 
@@ -209,7 +207,7 @@ Select a multi scale kernel where the centers are given by a greedy search algor
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 29.246 seconds)
+   **Total running time of the script:** (1 minutes 51.665 seconds)
 
 
 .. _sphx_glr_download_gallery_examples_multiscaleMNIST.py:

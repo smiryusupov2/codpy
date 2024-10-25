@@ -31,24 +31,28 @@ where
 
 This notebook illustrates various choices+ for the set $Y$
 
-.. GENERATED FROM PYTHON SOURCE LINES 15-33
+.. GENERATED FROM PYTHON SOURCE LINES 15-38
 
 .. code-block:: Python
 
 
-
     import os
-    import pandas as pd
-    import numpy as np
     import random
-    # We use a custom hot encoder for performances reasons.
-    from codpy.data_processing import hot_encoder
-    # Standard codpy kernel class.
-    from codpy.kernel import Kernel,KernelClassifier
-    import codpy.core as core
+
+    import numpy as np
+    import pandas as pd
+
     # A multi scale kernel method.
     from sklearn.metrics import confusion_matrix
-    from codpy.clustering import *
+
+    import codpy.core as core
+    from codpy.clustering import MiniBatchkmeans
+
+    # We use a custom hot encoder for performances reasons.
+    from codpy.data_processing import hot_encoder
+
+    # Standard codpy kernel class.
+    from codpy.kernel import KernelClassifier
 
     os.environ["OPENBLAS_NUM_THREADS"] = "32"
     os.environ["OMP_NUM_THREADS"] = "32"
@@ -60,19 +64,20 @@ This notebook illustrates various choices+ for the set $Y$
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 34-43
+
+.. GENERATED FROM PYTHON SOURCE LINES 39-48
 
 We pick-up MNIST data using tensorflow (tf). pip install tf on your installation prior running this notebook !
 
-Note : 
+Note :
 
            - The MNIST corresponds to features $X\in \mathbb{R}^{60000,784}$. Each image, represented as $28\times 28$ black and white pixel is a feature described as a vector in dimension $D=784$.
 
-           - We hot encode the MNIST classes : $f(X) \in \mathbb{R}^{60000,10}$ is defined as 
+           - We hot encode the MNIST classes : $f(X) \in \mathbb{R}^{60000,10}$ is defined as
                        $$f(x) = (\delta_i(c(x)), \quad i=1,\ldots,10,$$
               where $c(x)$ is the indice of the label of the class, and $\delta_i(j) = \{i==j\}$.
 
-.. GENERATED FROM PYTHON SOURCE LINES 43-66
+.. GENERATED FROM PYTHON SOURCE LINES 48-71
 
 .. code-block:: Python
 
@@ -106,13 +111,14 @@ Note :
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 67-68
+.. GENERATED FROM PYTHON SOURCE LINES 72-73
 
 We perform basic tests on MNIST results : confusion matrix and scores.
 
-.. GENERATED FROM PYTHON SOURCE LINES 68-80
+.. GENERATED FROM PYTHON SOURCE LINES 73-86
 
 .. code-block:: Python
+
 
 
     def show_confusion_matrix(z, fz, predictor=None, cm=True):
@@ -133,11 +139,11 @@ We perform basic tests on MNIST results : confusion matrix and scores.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 81-82
+.. GENERATED FROM PYTHON SOURCE LINES 87-88
 
 Run codpy silently on/off.
 
-.. GENERATED FROM PYTHON SOURCE LINES 82-84
+.. GENERATED FROM PYTHON SOURCE LINES 88-90
 
 .. code-block:: Python
 
@@ -150,18 +156,18 @@ Run codpy silently on/off.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 85-88
+.. GENERATED FROM PYTHON SOURCE LINES 91-94
 
 Set variables and pick MNIST data for the test.
 N_MNIST_pics is used to pick a smaller set than the original one.
 The training set is `x,fx`, the test set is `z,fz`.
 
-.. GENERATED FROM PYTHON SOURCE LINES 88-92
+.. GENERATED FROM PYTHON SOURCE LINES 94-98
 
 .. code-block:: Python
 
-    N_clusters=100
-    N_MNIST_pics=5000
+    N_clusters = 100
+    N_MNIST_pics = 5000
     x, fx, z, fz = get_MNIST_data(N_MNIST_pics)
 
 
@@ -171,19 +177,19 @@ The training set is `x,fx`, the test set is `z,fz`.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 93-94
+.. GENERATED FROM PYTHON SOURCE LINES 99-100
 
-First pick $Y$ at random. Output confusion matrix for two sets : the training set $X$ and the test set $Z$ 
+First pick $Y$ at random. Output confusion matrix for two sets : the training set $X$ and the test set $Z$
 
-.. GENERATED FROM PYTHON SOURCE LINES 94-103
+.. GENERATED FROM PYTHON SOURCE LINES 100-109
 
 .. code-block:: Python
 
-    indices = np.random.choice(range(x.shape[0]),size=N_clusters)
-    y,fy = x[indices],fx[indices]
-    predictor = KernelClassifier(x=x, y=y,fx=fx)
+    indices = np.random.choice(range(x.shape[0]), size=N_clusters)
+    y, fy = x[indices], fx[indices]
+    predictor = KernelClassifier(x=x, y=y, fx=fx)
     print("Output with the training set - reproductibility test:")
-    show_confusion_matrix(x, fx, predictor,cm=False)
+    show_confusion_matrix(x, fx, predictor, cm=False)
     print("Output with the test set :")
     show_confusion_matrix(z, fz, predictor)
     print("Discrepancy(x,y):", predictor.discrepancy(y))
@@ -197,38 +203,40 @@ First pick $Y$ at random. Output confusion matrix for two sets : the training se
  .. code-block:: none
 
     Output with the training set - reproductibility test:
-    score MNIST: 0.8892
+    score MNIST: 0.8732
     Output with the test set :
     confusion matrix:
-    [[ 952    0    1    0    0    7   11    1    8    0]
-     [   0 1113    1    3    1    1    5    0   11    0]
-     [  15   14  864   26   25    0   25   28   32    3]
-     [   4    2   21  905    2   14    9   20   23   10]
-     [   1    9    2    0  837    1   27    3    7   95]
-     [  17    5    6   68   14  706   30   17   18   11]
-     [  15    6    2    0    8   17  908    1    1    0]
-     [   4   29   20    3   23    1    2  907   10   29]
-     [  13    7   11   37   12   20   18   13  831   12]
-     [  16   12   12   15   44    7   11   24    9  859]]
-    score MNIST: 0.8882
-    Discrepancy(x,y): 0.006256564711011714
+    [[ 958    0    0    0    0    5    8    1    8    0]
+     [   0 1088    7    3    1    2    4    1   29    0]
+     [  15   18  879   26   19    0   11   26   37    1]
+     [  11    2   39  864    1   23    8   17   34   11]
+     [   1    9    6    1  847    4   16    1   11   86]
+     [  24    9    8   55   18  707   20   16   28    7]
+     [  20    5    9    0   19   20  875    1    9    0]
+     [   4   28   22    4   20    0    2  910    6   32]
+     [   5    7   11   66   10   21   18    9  812   15]
+     [  16    9    6   12   94    7    1   22   11  831]]
+    score MNIST: 0.8771
+    Discrepancy(x,y): 0.006751273339628827
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 104-105
+.. GENERATED FROM PYTHON SOURCE LINES 110-111
 
 Select $Y$ having a lowest discrepancy with a greedy algorithm.
 
-.. GENERATED FROM PYTHON SOURCE LINES 105-112
+.. GENERATED FROM PYTHON SOURCE LINES 111-120
 
 .. code-block:: Python
 
-    predictor = KernelClassifier(x=x,fx=fx).greedy_select(N=N_clusters,all=True,start_indices={indices[0]})
+    predictor = KernelClassifier(x=x, fx=fx).greedy_select(
+        N=N_clusters, all=True, start_indices={indices[0]}
+    )
     print("Reproductibility test:")
-    show_confusion_matrix(x, fx, predictor,cm=False)
+    show_confusion_matrix(x, fx, predictor, cm=False)
     print("Performance test:")
-    show_confusion_matrix(z, fz, predictor,cm=False)
+    show_confusion_matrix(z, fz, predictor, cm=False)
     print("Discrepancy(x,y):", predictor.discrepancy(predictor.get_y()))
 
 
@@ -240,27 +248,27 @@ Select $Y$ having a lowest discrepancy with a greedy algorithm.
  .. code-block:: none
 
     Reproductibility test:
-    score MNIST: 0.87
+    score MNIST: 0.8782
     Performance test:
-    score MNIST: 0.8653
-    Discrepancy(x,y): 0.005726346772445601
+    score MNIST: 0.8827
+    Discrepancy(x,y): 0.005728688575252161
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 113-114
+.. GENERATED FROM PYTHON SOURCE LINES 121-122
 
 Select $Y$ adapted to $f(x)$ using a greedy algorithm.
 
-.. GENERATED FROM PYTHON SOURCE LINES 114-122
+.. GENERATED FROM PYTHON SOURCE LINES 122-130
 
 .. code-block:: Python
 
-    predictor = KernelClassifier(x=x,fx=fx).greedy_select(N=N_clusters,fx=fx,all=True)
+    predictor = KernelClassifier(x=x, fx=fx).greedy_select(N=N_clusters, fx=fx, all=True)
     print("Reproductibility test:")
-    show_confusion_matrix(x, fx, predictor,cm=False)
+    show_confusion_matrix(x, fx, predictor, cm=False)
     print("Performance test:")
-    show_confusion_matrix(z, fz, predictor,cm=False)
+    show_confusion_matrix(z, fz, predictor, cm=False)
     print("Discrepancy(x,y):", predictor.discrepancy(predictor.get_y()))
 
 
@@ -273,31 +281,29 @@ Select $Y$ adapted to $f(x)$ using a greedy algorithm.
  .. code-block:: none
 
     Reproductibility test:
-    score MNIST: 0.8958
+    score MNIST: 0.8976
     Performance test:
-    score MNIST: 0.8836
-    Discrepancy(x,y): 0.008965316825990999
+    score MNIST: 0.891
+    Discrepancy(x,y): 0.008942885551873503
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 123-124
+.. GENERATED FROM PYTHON SOURCE LINES 131-132
 
 Select $Y$ using a k-means algorithm.
 
-.. GENERATED FROM PYTHON SOURCE LINES 124-133
+.. GENERATED FROM PYTHON SOURCE LINES 132-139
 
 .. code-block:: Python
 
-    y = MiniBatchkmeans(x,N=N_clusters).cluster_centers_
-    predictor = KernelClassifier(x=x,y=y,fx=fx)
+    y = MiniBatchkmeans(x, N=N_clusters).cluster_centers_
+    predictor = KernelClassifier(x=x, y=y, fx=fx)
     print("Reproductibility test:")
-    show_confusion_matrix(x, fx, predictor,cm=False)
+    show_confusion_matrix(x, fx, predictor, cm=False)
     print("Performance test:")
-    show_confusion_matrix(z, fz, predictor,cm=False)
+    show_confusion_matrix(z, fz, predictor, cm=False)
     print("Discrepancy(x,y):", predictor.discrepancy(predictor.get_y()))
-
-
 
 
 
@@ -306,13 +312,11 @@ Select $Y$ using a k-means algorithm.
 
  .. code-block:: none
 
-    C:\Informatique\python\lib\site-packages\sklearn\cluster\_kmeans.py:1848: UserWarning: MiniBatchKMeans is known to have a memory leak on Windows with MKL, when there are less chunks than available threads. You can prevent it by setting batch_size >= 8192 or by setting the environment variable OMP_NUM_THREADS=20
-      warnings.warn(
     Reproductibility test:
-    score MNIST: 0.9234
+    score MNIST: 0.9156
     Performance test:
-    score MNIST: 0.9133
-    Discrepancy(x,y): 0.05923800086968101
+    score MNIST: 0.9181
+    Discrepancy(x,y): 0.05833591511492753
 
 
 
@@ -320,7 +324,7 @@ Select $Y$ using a k-means algorithm.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 8.987 seconds)
+   **Total running time of the script:** (0 minutes 28.764 seconds)
 
 
 .. _sphx_glr_download_gallery_examples_MNIST.py:

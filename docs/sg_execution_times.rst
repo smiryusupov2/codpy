@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:29.246** total execution time for 3 files **from all galleries**:
+**02:21.064** total execution time for 3 files **from all galleries**:
 
 .. container::
 
@@ -33,11 +33,11 @@ Computation times
      - Time
      - Mem (MB)
    * - :ref:`sphx_glr_gallery_examples_multiscaleMNIST.py` (``examples\multiscaleMNIST.py``)
-     - 00:29.246
+     - 01:51.665
      - 0.0
    * - :ref:`sphx_glr_gallery_examples_MNIST.py` (``examples\MNIST.py``)
-     - 00:00.000
+     - 00:28.764
      - 0.0
    * - :ref:`sphx_glr_gallery_examples_kernel_overloading.py` (``examples\kernel_overloading.py``)
-     - 00:00.000
+     - 00:00.636
      - 0.0

@@ -122,17 +122,22 @@ It illustrates the following interpolation / extrapolation method</p>
 </dl>
 <p>This notebook illustrates various choices+ for the set <span class="math notranslate nohighlight">\(Y\)</span></p>
 <div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">random</span>
-<span class="c1"># We use a custom hot encoder for performances reasons.</span>
-<span class="kn">from</span> <span class="nn">codpy.data_processing</span> <span class="kn">import</span> <span class="n">hot_encoder</span>
-<span class="c1"># Standard codpy kernel class.</span>
-<span class="kn">from</span> <span class="nn">codpy.kernel</span> <span class="kn">import</span> <span class="n">Kernel</span><span class="p">,</span><span class="n">KernelClassifier</span>
-<span class="kn">import</span> <span class="nn">codpy.core</span> <span class="k">as</span> <span class="nn">core</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
 <span class="c1"># A multi scale kernel method.</span>
 <span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span>
-<span class="kn">from</span> <span class="nn">codpy.clustering</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="kn">import</span> <span class="nn">codpy.core</span> <span class="k">as</span> <span class="nn">core</span>
+<span class="kn">from</span> <span class="nn">codpy.clustering</span> <span class="kn">import</span> <span class="n">MiniBatchkmeans</span>
+
+<span class="c1"># We use a custom hot encoder for performances reasons.</span>
+<span class="kn">from</span> <span class="nn">codpy.data_processing</span> <span class="kn">import</span> <span class="n">hot_encoder</span>
+
+<span class="c1"># Standard codpy kernel class.</span>
+<span class="kn">from</span> <span class="nn">codpy.kernel</span> <span class="kn">import</span> <span class="n">KernelClassifier</span>
 
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OPENBLAS_NUM_THREADS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;32&quot;</span>
 <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;OMP_NUM_THREADS&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;32&quot;</span>
@@ -197,92 +202,92 @@ It illustrates the following interpolation / extrapolation method</p>
 <p>Set variables and pick MNIST data for the test.
 N_MNIST_pics is used to pick a smaller set than the original one.
 The training set is <cite>x,fx</cite>, the test set is <cite>z,fz</cite>.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">N_clusters</span><span class="o">=</span><span class="mi">100</span>
-<span class="n">N_MNIST_pics</span><span class="o">=</span><span class="mi">5000</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">N_clusters</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">N_MNIST_pics</span> <span class="o">=</span> <span class="mi">5000</span>
 <span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="n">fz</span> <span class="o">=</span> <span class="n">get_MNIST_data</span><span class="p">(</span><span class="n">N_MNIST_pics</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>First pick <span class="math notranslate nohighlight">\(Y\)</span> at random. Output confusion matrix for two sets : the training set <span class="math notranslate nohighlight">\(X\)</span> and the test set <span class="math notranslate nohighlight">\(Z\)</span></p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span><span class="n">size</span><span class="o">=</span><span class="n">N_clusters</span><span class="p">)</span>
-<span class="n">y</span><span class="p">,</span><span class="n">fy</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">indices</span><span class="p">],</span><span class="n">fx</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
-<span class="n">predictor</span> <span class="o">=</span> <span class="n">KernelClassifier</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span><span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">size</span><span class="o">=</span><span class="n">N_clusters</span><span class="p">)</span>
+<span class="n">y</span><span class="p">,</span> <span class="n">fy</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">indices</span><span class="p">],</span> <span class="n">fx</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">KernelClassifier</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Output with the training set - reproductibility test:&quot;</span><span class="p">)</span>
-<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span><span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span> <span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Output with the test set :&quot;</span><span class="p">)</span>
 <span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">fz</span><span class="p">,</span> <span class="n">predictor</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Discrepancy(x,y):&quot;</span><span class="p">,</span> <span class="n">predictor</span><span class="o">.</span><span class="n">discrepancy</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Output with the training set - reproductibility test:
-score MNIST: 0.8892
+score MNIST: 0.8732
 Output with the test set :
 confusion matrix:
-[[ 952    0    1    0    0    7   11    1    8    0]
- [   0 1113    1    3    1    1    5    0   11    0]
- [  15   14  864   26   25    0   25   28   32    3]
- [   4    2   21  905    2   14    9   20   23   10]
- [   1    9    2    0  837    1   27    3    7   95]
- [  17    5    6   68   14  706   30   17   18   11]
- [  15    6    2    0    8   17  908    1    1    0]
- [   4   29   20    3   23    1    2  907   10   29]
- [  13    7   11   37   12   20   18   13  831   12]
- [  16   12   12   15   44    7   11   24    9  859]]
-score MNIST: 0.8882
-Discrepancy(x,y): 0.006256564711011714
+[[ 958    0    0    0    0    5    8    1    8    0]
+ [   0 1088    7    3    1    2    4    1   29    0]
+ [  15   18  879   26   19    0   11   26   37    1]
+ [  11    2   39  864    1   23    8   17   34   11]
+ [   1    9    6    1  847    4   16    1   11   86]
+ [  24    9    8   55   18  707   20   16   28    7]
+ [  20    5    9    0   19   20  875    1    9    0]
+ [   4   28   22    4   20    0    2  910    6   32]
+ [   5    7   11   66   10   21   18    9  812   15]
+ [  16    9    6   12   94    7    1   22   11  831]]
+score MNIST: 0.8771
+Discrepancy(x,y): 0.006751273339628827
 </pre></div>
 </div>
 <p>Select <span class="math notranslate nohighlight">\(Y\)</span> having a lowest discrepancy with a greedy algorithm.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">predictor</span> <span class="o">=</span> <span class="n">KernelClassifier</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span><span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">)</span><span class="o">.</span><span class="n">greedy_select</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">N_clusters</span><span class="p">,</span><span class="nb">all</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">start_indices</span><span class="o">=</span><span class="p">{</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]})</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">predictor</span> <span class="o">=</span> <span class="n">KernelClassifier</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">)</span><span class="o">.</span><span class="n">greedy_select</span><span class="p">(</span>
+    <span class="n">N</span><span class="o">=</span><span class="n">N_clusters</span><span class="p">,</span> <span class="nb">all</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">start_indices</span><span class="o">=</span><span class="p">{</span><span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+<span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reproductibility test:&quot;</span><span class="p">)</span>
-<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span><span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span> <span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Performance test:&quot;</span><span class="p">)</span>
-<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">fz</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span><span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">fz</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span> <span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Discrepancy(x,y):&quot;</span><span class="p">,</span> <span class="n">predictor</span><span class="o">.</span><span class="n">discrepancy</span><span class="p">(</span><span class="n">predictor</span><span class="o">.</span><span class="n">get_y</span><span class="p">()))</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Reproductibility test:
-score MNIST: 0.87
+score MNIST: 0.8782
 Performance test:
-score MNIST: 0.8653
-Discrepancy(x,y): 0.005726346772445601
+score MNIST: 0.8827
+Discrepancy(x,y): 0.005728688575252161
 </pre></div>
 </div>
 <p>Select <span class="math notranslate nohighlight">\(Y\)</span> adapted to <span class="math notranslate nohighlight">\(f(x)\)</span> using a greedy algorithm.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">predictor</span> <span class="o">=</span> <span class="n">KernelClassifier</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span><span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">)</span><span class="o">.</span><span class="n">greedy_select</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">N_clusters</span><span class="p">,</span><span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">,</span><span class="nb">all</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">predictor</span> <span class="o">=</span> <span class="n">KernelClassifier</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">)</span><span class="o">.</span><span class="n">greedy_select</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">N_clusters</span><span class="p">,</span> <span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">,</span> <span class="nb">all</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reproductibility test:&quot;</span><span class="p">)</span>
-<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span><span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span> <span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Performance test:&quot;</span><span class="p">)</span>
-<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">fz</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span><span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">fz</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span> <span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Discrepancy(x,y):&quot;</span><span class="p">,</span> <span class="n">predictor</span><span class="o">.</span><span class="n">discrepancy</span><span class="p">(</span><span class="n">predictor</span><span class="o">.</span><span class="n">get_y</span><span class="p">()))</span>
 </pre></div>
 </div>
 <div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Reproductibility test:
-score MNIST: 0.8958
+score MNIST: 0.8976
 Performance test:
-score MNIST: 0.8836
-Discrepancy(x,y): 0.008965316825990999
+score MNIST: 0.891
+Discrepancy(x,y): 0.008942885551873503
 </pre></div>
 </div>
 <p>Select <span class="math notranslate nohighlight">\(Y\)</span> using a k-means algorithm.</p>
-<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">y</span> <span class="o">=</span> <span class="n">MiniBatchkmeans</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">N</span><span class="o">=</span><span class="n">N_clusters</span><span class="p">)</span><span class="o">.</span><span class="n">cluster_centers_</span>
-<span class="n">predictor</span> <span class="o">=</span> <span class="n">KernelClassifier</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span><span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">)</span>
+<div class="highlight-Python notranslate"><div class="highlight"><pre><span></span><span class="n">y</span> <span class="o">=</span> <span class="n">MiniBatchkmeans</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="n">N_clusters</span><span class="p">)</span><span class="o">.</span><span class="n">cluster_centers_</span>
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">KernelClassifier</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Reproductibility test:&quot;</span><span class="p">)</span>
-<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span><span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span> <span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Performance test:&quot;</span><span class="p">)</span>
-<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">fz</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span><span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">show_confusion_matrix</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">fz</span><span class="p">,</span> <span class="n">predictor</span><span class="p">,</span> <span class="n">cm</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Discrepancy(x,y):&quot;</span><span class="p">,</span> <span class="n">predictor</span><span class="o">.</span><span class="n">discrepancy</span><span class="p">(</span><span class="n">predictor</span><span class="o">.</span><span class="n">get_y</span><span class="p">()))</span>
 </pre></div>
 </div>
-<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>C:\Informatique\python\lib\site-packages\sklearn\cluster\_kmeans.py:1848: UserWarning: MiniBatchKMeans is known to have a memory leak on Windows with MKL, when there are less chunks than available threads. You can prevent it by setting batch_size &gt;= 8192 or by setting the environment variable OMP_NUM_THREADS=20
-  warnings.warn(
-Reproductibility test:
-score MNIST: 0.9234
+<div class="sphx-glr-script-out highlight-none notranslate"><div class="highlight"><pre><span></span>Reproductibility test:
+score MNIST: 0.9156
 Performance test:
-score MNIST: 0.9133
-Discrepancy(x,y): 0.05923800086968101
+score MNIST: 0.9181
+Discrepancy(x,y): 0.05833591511492753
 </pre></div>
 </div>
-<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 8.987 seconds)</p>
+<p class="sphx-glr-timing"><strong>Total running time of the script:</strong> (0 minutes 28.764 seconds)</p>
 <div class="sphx-glr-footer sphx-glr-footer-example docutils container" id="sphx-glr-download-gallery-examples-mnist-py">
 <div class="sphx-glr-download sphx-glr-download-jupyter docutils container">
 <p><a class="reference download internal" download="" href="../_downloads/6d5970051235ff7199da6f39f0e8dd82/MNIST.ipynb"><code class="xref download docutils literal notranslate"><span class="pre">Download</span> <span class="pre">Jupyter</span> <span class="pre">notebook:</span> <span class="pre">MNIST.ipynb</span></code></a></p>

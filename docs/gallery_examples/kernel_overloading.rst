@@ -95,7 +95,7 @@ Create a kernel object and display the result.
 
  .. code-block:: none
 
-    Result 1: 3.189904653784086
+    Result 1: 1.061301935547621
 
 
 
@@ -122,7 +122,7 @@ my_kernel2 and my_kernel_ptr2 are the same object.
 
  .. code-block:: none
 
-    Result 2: 12.759618615136343
+    Result 2: 4.245207742190484
 
 
 
@@ -146,9 +146,9 @@ Compute the Gram matrix with my_kernel2 and display it.
 
  .. code-block:: none
 
-    Gram Matrix: [[12.75961862  7.68755307  7.43318098]
-     [ 5.30028835  0.73710879  7.50393172]
-     [ 0.52912307  2.34671586  4.37847219]]
+    Gram Matrix: [[ 4.24520774 12.6903989   0.26575161]
+     [ 1.55932528 18.17264219  6.9421239 ]
+     [ 5.10843915 16.41678959 11.85845957]]
 
 
 
@@ -173,9 +173,9 @@ You can switch kernel as follow.
 
  .. code-block:: none
 
-    [[3.18990465 1.92188827 1.85829524]
-     [1.32507209 0.1842772  1.87598293]
-     [0.13228077 0.58667896 1.09461805]]
+    [[1.06130194 3.17259972 0.0664379 ]
+     [0.38983132 4.54316055 1.73553097]
+     [1.27710979 4.1041974  2.96461489]]
 
 
 
@@ -183,7 +183,7 @@ You can switch kernel as follow.
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.299 seconds)
+   **Total running time of the script:** (0 minutes 0.636 seconds)
 
 
 .. _sphx_glr_download_gallery_examples_kernel_overloading.py:
