@@ -1,0 +1,1261 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>codpy.kernel &mdash; CodPy 0.1.11 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=13237357" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=1e825a29"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>let toggleHintShow = 'Click to show';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="../../_static/togglebutton.js?v=4a39c7ea"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CodPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Library Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../install.html">Installation Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../kernel.html">Kernel class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../core.html">Core functionalities</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../gallery_examples/index.html">Examples Gallery</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CodPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">codpy.kernel</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for codpy.kernel</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">codpydll</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">sklearn</span> <span class="kn">import</span> <span class="n">linear_model</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">PolynomialFeatures</span>
+<span class="kn">from</span> <span class="nn">scipy.special</span> <span class="kn">import</span> <span class="n">softmax</span>
+
+<span class="kn">import</span> <span class="nn">codpy.core</span> <span class="k">as</span> <span class="nn">core</span>
+<span class="kn">from</span> <span class="nn">codpy.algs</span> <span class="kn">import</span> <span class="n">alg</span>
+<span class="kn">from</span> <span class="nn">codpy.core</span> <span class="kn">import</span> <span class="n">diffops</span>
+<span class="kn">from</span> <span class="nn">codpy.lalg</span> <span class="kn">import</span> <span class="n">lalg</span> <span class="k">as</span> <span class="n">lalg</span>
+<span class="kn">from</span> <span class="nn">codpy.permutation</span> <span class="kn">import</span> <span class="n">lsap</span>
+
+
+<div class="viewcode-block" id="Kernel">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel">[docs]</a>
+<span class="k">class</span> <span class="nc">Kernel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class to manipulate datas for various kernel-based operations, such as interpolations or extrapolations of functions, or mapping between distributions.</span>
+<span class="sd">        Note:</span>
+<span class="sd">            This class is similar to libraries as scikit-learn or XGBoost, in the sense that they use a fit / predict pattern, with the following correspondances and differences.</span>
+
+<span class="sd">            - Datas are loaded into memory in the contructor :func:`__init__`, or via :func:`set` </span>
+<span class="sd">            - For matching distributions, use :func:`map`, </span>
+<span class="sd">            - The `predict` function is made directly through :func:`__call__`</span>
+<span class="sd">            </span>
+<span class="sd">            It implements the following methods :</span>
+
+<span class="sd">            - In the context of functions interpolation / extrapolation</span>
+
+<span class="sd">                $$f_{k,\\theta}(\cdot) = K(\cdot, Y) \\theta, \quad \\theta = K(X, Y)^{-1} f(X),$$</span>
+
+<span class="sd">                - $K(X, Y)$ is the Gram matrix, see :func:`Knm`</span>
+<span class="sd">                - $K(X, Y)^{-1} = (K(Y, X)K(X, Y) + \epsilon R(Y,Y))^{-1}K(Y,X)$ is computed as a least-square method with optional regularization terms, , see :func:`get_knm_inv`.</span>
+
+<span class="sd">            - For matching distributions</span>
+<span class="sd">                $$f_{k,\\theta}(\cdot) = K(\cdot, Y) K(X, Y)^{-1} f(X\circ \sigma)$$, where $\sigma$ is a permutation.            </span>
+<span class="sd">            </span>
+<span class="sd">            - Fitting is done just-in-time (at first prediction), and means computing the parameters $\\theta = K(X, Y)^{-1} f(X)$, together with $\sigma$ for distributions. The function :func:`get_theta()` performs those computations and corresponds to fit in others frameworks.</span>
+<span class="sd">            </span>
+<span class="sd">    &quot;&quot;&quot;</span> 
+
+<div class="viewcode-block" id="Kernel.__init__">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.__init__">[docs]</a>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">fx</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_pool</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
+        <span class="n">max_nystrom</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
+        <span class="n">reg</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-9</span><span class="p">,</span>
+        <span class="n">order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">set_kernel</span><span class="p">:</span> <span class="nb">callable</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the Kernel class with default or user-defined parameters.</span>
+
+<span class="sd">        :param x: A bi-dimensional numpy array. </span>
+<span class="sd">        :param fx: A bi-dimensional numpy array. If `x` or `fx` is not `None`, then call :func:`set`</span>
+<span class="sd">        :param max_pool: Maximum pool size for the kernel operations. Defaults to 1000.</span>
+<span class="sd">        :type max_pool: :class:`int`, optional</span>
+<span class="sd">        :param max_nystrom: Maximum number of Nystrom samples. Defaults to 1000.</span>
+<span class="sd">        :type max_nystrom: :class:`int`, optional</span>
+<span class="sd">        :param reg: Regularization parameter for kernel operations. Defaults to 1e-9.</span>
+<span class="sd">        :type reg: :class:`float`, optional</span>
+<span class="sd">        :param order: Polynomial order for polynomial kernel functions. Defaults to ``None``.</span>
+<span class="sd">        :type order: :class:`int`, optional</span>
+<span class="sd">        :param dim: Dimensionality of the input data. Defaults to 1.</span>
+<span class="sd">        :type dim: :class:`int`, optional</span>
+<span class="sd">        :param set_kernel: A custom kernel function initializer. If not provided, a default kernel is used.</span>
+<span class="sd">        :type set_kernel: :class:`callable`, optional</span>
+<span class="sd">        :param kwargs: Additional keyword arguments for further customization.</span>
+<span class="sd">        :type kwargs: :class:`dict`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="o">=</span> <span class="n">order</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reg</span> <span class="o">=</span> <span class="n">reg</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_pool</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_pool</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_nystrom</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">max_nystrom</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">set_kernel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_kernel</span> <span class="o">=</span> <span class="n">set_kernel</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_kernel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_kernel_functor</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">fx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span><span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Kernel.default_kernel_functor">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.default_kernel_functor">[docs]</a>
+    <span class="k">def</span> <span class="nf">default_kernel_functor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">callable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize and return a default kernel function.</span>
+
+<span class="sd">        This method provides a default kernel initialization. We picked up a quite simple but robust kernel functor</span>
+
+<span class="sd">            &gt;&gt;&gt; core.kernel_setter(&quot;maternnorm&quot;, &quot;standardmean&quot;, 0, 1e-9)</span>
+<span class="sd">        </span>
+<span class="sd">        defining the `maternnorm` kernel with the `standardmean` map. It sets a polynomial order of 0 and a regularization value of 1e-9.</span>
+
+<span class="sd">        :returns: The initialized default kernel function using :func:`core.kernel_setter`.</span>
+<span class="sd">        :rtype: :class:`callable`</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; default_kernel = kernel.default_kernel_functor()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">core</span><span class="o">.</span><span class="n">kernel_setter</span><span class="p">(</span><span class="s2">&quot;maternnorm&quot;</span><span class="p">,</span> <span class="s2">&quot;standardmean&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Kernel.set_custom_kernel">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.set_custom_kernel">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_custom_kernel</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">kernel_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">map_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">poly_order</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">reg</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bandwidth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Provide a downlink to internal codpy kernel with flexible parameters.</span>
+
+<span class="sd">        :param kernel_name: Name of the kernel function to use (e.g., ``&#39;gaussian&#39;``).</span>
+<span class="sd">        :type kernel_name: :class:`str`</span>
+<span class="sd">        :param map_name: Name of the mapping function (e.g., ``&#39;standardmin&#39;``).</span>
+<span class="sd">        :type map_name: :class:`str`</span>
+<span class="sd">        :param poly_order: The polynomial order if using a polynomial kernel. Defaults to 0.</span>
+<span class="sd">        :type poly_order: :class:`int`, optional</span>
+<span class="sd">        :param reg: Regularization parameter. If not provided, uses the instance&#39;s `reg` value.</span>
+<span class="sd">        :type reg: :class:`float`, optional</span>
+<span class="sd">        :param bandwidth: Bandwidth for kernel functions that require it. Defaults to 1.0.</span>
+<span class="sd">        :type bandwidth: :class:`float`, optional</span>
+
+<span class="sd">        :returns: ``None``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">reg</span> <span class="o">=</span> <span class="n">reg</span> <span class="k">if</span> <span class="n">reg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg</span>
+        <span class="n">kernel_function</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">kernel_setter</span><span class="p">(</span>
+            <span class="n">kernel_name</span><span class="p">,</span> <span class="n">map_name</span><span class="p">,</span> <span class="n">poly_order</span><span class="p">,</span> <span class="n">reg</span><span class="p">,</span> <span class="n">bandwidth</span>
+        <span class="p">)</span>
+        <span class="c1">## tester!!!!!!!!!!!!!!!!!!!</span>
+        <span class="bp">self</span> <span class="o">=</span> <span class="n">Kernel</span><span class="p">(</span><span class="n">set_kernel</span><span class="o">=</span><span class="n">kernel_function</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Kernel.get_order">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.get_order">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_order</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the polynomial order for the kernel.</span>
+
+<span class="sd">        :returns: The polynomial order if available, otherwise ``None``.</span>
+<span class="sd">        :rtype: :class:`int` or :class:`None`</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; order = kernel.get_order()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;order&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_set_polynomial_regressor</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fx</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set up the polynomial regressor for the input data ``x`` and function values ``fx``.</span>
+
+<span class="sd">        This method fits a polynomial regression model based on the current polynomial order.</span>
+<span class="sd">        If the order is not defined, or if either ``x`` or ``fx`` is not provided, the polynomial</span>
+<span class="sd">        variables, kernel, and values are set to ``None``.</span>
+
+<span class="sd">        :param x: Input data points.</span>
+<span class="sd">        :type x: :class:`numpy.ndarray`, optional</span>
+<span class="sd">        :param fx: Function values corresponding to the input data ``x``.</span>
+<span class="sd">        :type fx: :class:`numpy.ndarray`, optional</span>
+<span class="sd">        :param kwargs: Additional keyword arguments for flexibility (not used directly).</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            - The polynomial order is retrieved using :meth:`get_order`.</span>
+<span class="sd">            - If the polynomial order, ``x``, or ``fx`` are not provided, the internal polynomial attributes</span>
+<span class="sd">            (``polyvariables``, ``polynomial_kernel``, and ``polynomial_values``) are reset to ``None``.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; kernel._set_polynomial_regressor(x_data, fx_data)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">fx</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_order</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">polyvariables</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">polynomial_kernel</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">polynomial_values</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">order</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_order</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">polyvariables</span> <span class="o">=</span> <span class="n">PolynomialFeatures</span><span class="p">(</span><span class="n">order</span><span class="p">)</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">polynomial_kernel</span> <span class="o">=</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LinearRegression</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">polyvariables</span><span class="p">,</span> <span class="n">fx</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">polynomial_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">polynomial_kernel</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">polyvariables</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_theta</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Kernel.get_polynomial_values">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.get_polynomial_values">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_polynomial_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the predicted polynomial values based on the current input data.</span>
+
+<span class="sd">        This method returns the values obtained from the polynomial regression model.</span>
+<span class="sd">        If the polynomial values are not yet computed, it calls :meth:`_set_polynomial_regressor`</span>
+<span class="sd">        to set up the polynomial regressor using the current input data ``x`` and function values ``fx``.</span>
+
+<span class="sd">        :param kwargs: Additional keyword arguments for flexibility (not used directly).</span>
+
+<span class="sd">        :returns: The predicted polynomial values or ``None`` if the polynomial order is not set.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray` or :class:`None`</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; poly_values = kernel.get_polynomial_values()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_order</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;polynomial_values&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">polynomial_values</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_polynomial_regressor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fx</span><span class="p">())</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">polynomial_values</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_polyvariables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the polynomial variables transformed from the input data.</span>
+
+<span class="sd">        This method returns the polynomial features (variables) created based on the polynomial order.</span>
+<span class="sd">        If the polynomial variables are not yet set, it calls :meth:`_set_polynomial_regressor` to</span>
+<span class="sd">        fit the polynomial features using the current input data ``x`` and function values ``fx``.</span>
+
+<span class="sd">        :param kwargs: Additional keyword arguments for flexibility (not used directly).</span>
+
+<span class="sd">        :returns: The polynomial variables transformed from the input data or ``None`` if the polynomial order is not set.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray` or :class:`None`</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; poly_vars = kernel._get_polyvariables()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_order</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;polyvariables&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">polyvariables</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_polynomial_regressor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fx</span><span class="p">())</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">polyvariables</span>
+
+    <span class="k">def</span> <span class="nf">_get_polynomial_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LinearRegression</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the polynomial kernel (regression model) used for fitting the polynomial features.</span>
+
+<span class="sd">        This method returns the polynomial kernel (linear regression model) fitted on the input data.</span>
+<span class="sd">        If the polynomial kernel is not yet set, it calls :meth:`_set_polynomial_regressor` to</span>
+<span class="sd">        fit the polynomial regression model using the current input data ``x`` and function values ``fx``.</span>
+
+<span class="sd">        :param kwargs: Additional keyword arguments for flexibility (not used directly).</span>
+
+<span class="sd">        :returns: The polynomial kernel (linear regression model) or ``None`` if the polynomial order is not set.</span>
+<span class="sd">        :rtype: :class:`linear_model.LinearRegression` or :class:`None`</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; poly_kernel = kernel._get_polynomial_kernel()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_order</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;polynomial_kernel&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">polynomial_kernel</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_polynomial_regressor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fx</span><span class="p">())</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">polynomial_kernel</span>
+
+<div class="viewcode-block" id="Kernel.get_polynomial_regressor">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.get_polynomial_regressor">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_polynomial_regressor</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fx</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set up the polynomial regressor based on the input data and the polynomial order.</span>
+
+<span class="sd">        :param z: New input data points for the regressor.</span>
+<span class="sd">        :type z: :class:`numpy.ndarray`</span>
+<span class="sd">        :param x: Input data points.</span>
+<span class="sd">        :type x: :class:`numpy.ndarray`, optional</span>
+<span class="sd">        :param fx: Function values corresponding to the input data.</span>
+<span class="sd">        :type fx: :class:`numpy.ndarray`, optional</span>
+
+<span class="sd">        :returns: The predicted polynomial values or `None` if unavailable.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray` or :class:`None`</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; z_data = np.random.rand(100, 10)</span>
+<span class="sd">            &gt;&gt;&gt; pred = kernel.get_polynomial_regressor(z_data)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_order</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">polyvariables</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_polyvariables</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">polyvariables</span> <span class="o">=</span> <span class="n">PolynomialFeatures</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">)</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">polynomial_kernel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_polynomial_kernel</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">polynomial_kernel</span> <span class="o">=</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LinearRegression</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">polyvariables</span><span class="p">,</span> <span class="n">fx</span><span class="p">)</span>
+        <span class="n">z_polyvariables</span> <span class="o">=</span> <span class="n">PolynomialFeatures</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">order</span><span class="p">)</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">polynomial_kernel</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">polynomial_kernel</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">z_polyvariables</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="Kernel.Knm">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.Knm">[docs]</a>
+    <span class="k">def</span> <span class="nf">Knm</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fy</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="p">[],</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the kernel matrix $K(X, Y)=k(x^i, y^j)_{i,j}$, where the kernel function $k$ is defined at class initialization, see :attr:`self.set_kernel`.</span>
+
+<span class="sd">        :param x: Input data points :math:`(N, D)`, where :math:`N` is the number of points and :math:`D` is the dimensionality.</span>
+<span class="sd">        :type x: :class:`numpy.ndarray`</span>
+<span class="sd">        :param y: Secondary data points :math:`(M, D)`, where :math:`M` is the number of points and :math:`D` is the dimensionality.</span>
+<span class="sd">        :type y: :class:`numpy.ndarray`</span>
+<span class="sd">        :param fy: Optional matrix values for optimization purposes. If not None, perform and return the multiplication $K(X, Y)f_y$.</span>
+<span class="sd">        :type fy: :class:`numpy.ndarray`, optional</span>
+
+<span class="sd">        :returns: The computed kernel matrix :math:`K` of size :math:`(N, M)`.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray`</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; x_data = np.array([...])</span>
+<span class="sd">            &gt;&gt;&gt; y_data = np.array([...])</span>
+<span class="sd">            &gt;&gt;&gt; kernel_matrix = Kernel(x=x_data,y=y_data).Knm()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_kernel_ptr</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">core</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">Knm</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">fy</span><span class="o">=</span><span class="n">fy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Kernel.get_knm_inv">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.get_knm_inv">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_knm_inv</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">epsilon_delta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the inverse of the kernel matrix :math:`K^{-1}(x, y)` using least squares computations.</span>
+
+<span class="sd">        :param epsilon: Regularization parameter for the inverse computation. Defaults to None.</span>
+<span class="sd">        :type epsilon: :class:`float`, optional</span>
+<span class="sd">        :param epsilon_delta: Delta values for adjusting regularization. Defaults to None.</span>
+<span class="sd">        :type epsilon_delta: :class:`numpy.ndarray`, optional</span>
+
+<span class="sd">        :returns: The inverse kernel matrix or the product with function values if provided.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray`</span>
+
+<span class="sd">        Note:</span>
+
+<span class="sd">            - If the regularization parameter (``reg``) is empty:</span>
+<span class="sd">                - If ``fx`` is empty: Returns a ``NumPy`` array of size $(N, M)$, representing the least square inverse of $K(x, y)$.</span>
+<span class="sd">                - If ``fx`` is provided: Returns the product of $K^{-1}(x, y)$ and $f(x)$. This allows performance and memory optimizations.</span>
+<span class="sd">            - If the regularization parameter (``reg``) is provided:</span>
+<span class="sd">                - If ``fx`` is empty: Returns a ``NumPy`` array of size $(N, M)$, computed as $(K(y, x) K(x, y) + \epsilon)^{-1} K(y, x)$</span>
+<span class="sd">                - If ``fx`` is provided: Returns the product of :math:`K^{-1}(x, y)` and :math:`f(x)`.</span>
+
+<span class="sd">        Example:</span>
+
+<span class="sd">            &gt;&gt;&gt; x_data = np.random.rand(100, 10)</span>
+<span class="sd">            &gt;&gt;&gt; y_data = np.random.rand(80, 10)</span>
+<span class="sd">            &gt;&gt;&gt; fx_data = np.random.rand(80, 5)</span>
+<span class="sd">            &gt;&gt;&gt; inv_kernel = kernel.get_knm_inv(x=x_data, y=y_data, fx=fx_data)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;knm_inv&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">knm_inv</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">knm_inv</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">epsilon</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;epsilon&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg</span><span class="p">)</span>
+            <span class="n">epsilon_delta</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;epsilon_delta&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">epsilon_delta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">epsilon_delta</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">epsilon_delta</span> <span class="o">=</span> <span class="n">epsilon_delta</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_Delta</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_knm_inv</span><span class="p">(</span>
+                <span class="n">core</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">Knm_inv</span><span class="p">(</span>
+                    <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">(),</span>
+                    <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_y</span><span class="p">(),</span>
+                    <span class="n">epsilon</span><span class="o">=</span><span class="n">epsilon</span><span class="p">,</span>
+                    <span class="n">reg_matrix</span><span class="o">=</span><span class="n">epsilon_delta</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">knm_inv</span></div>
+
+
+<div class="viewcode-block" id="Kernel.get_knm">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.get_knm">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_knm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve or compute the Gram matrix $K(x, y)$ for the kernel.</span>
+
+<span class="sd">        :returns: The Gram matrix $K(x,y)$.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;knm&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">knm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_knm</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">Knm</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">knm</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_set_knm_inv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">knm_inv</span> <span class="o">=</span> <span class="n">k</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_theta</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_knm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">knm</span> <span class="o">=</span> <span class="n">k</span>
+
+<div class="viewcode-block" id="Kernel.get_x">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.get_x">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_x</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the input data ``x``.</span>
+
+<span class="sd">        :returns: The input data or ``None`` if not set.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray` or :class:`None`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span></div>
+
+
+<div class="viewcode-block" id="Kernel.set_x">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.set_x">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_x</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">set_polynomial_regressor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the input data ``x`` for the kernel and update related internal states.</span>
+
+<span class="sd">        This method sets the input data and optionally recalculates the polynomial regressor and kernel matrices.</span>
+
+<span class="sd">        :param x: Input data points to be set.</span>
+<span class="sd">        :type x: :class:`numpy.ndarray`</span>
+<span class="sd">        :param set_polynomial_regressor: Whether to recalculate the polynomial regressor after setting the data.</span>
+<span class="sd">                                        Defaults to ``True``.</span>
+<span class="sd">        :type set_polynomial_regressor: :class:`bool`, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_y</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">set_polynomial_regressor</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_polynomial_regressor</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_knm_inv</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_knm</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Kernel.set_y">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.set_y">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the target data ``y`` for the kernel. If no target data is provided, ``y`` is set equal to ``x``.</span>
+
+<span class="sd">        If interpolation/extrapolation is used, the following formula is applied:</span>
+
+<span class="sd">        $$</span>
+<span class="sd">        f_{\\theta}(.) = K(., Y)\\theta, \\quad \\theta = K(X, Y)^{-1} f(X).</span>
+<span class="sd">        $$</span>
+
+<span class="sd">        :param y: Target data points. If None, ``y`` is set equal to ``x``.</span>
+<span class="sd">        :type y: :class:`numpy.ndarray`, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_knm_inv</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_knm</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Kernel.get_y">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.get_y">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_y</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the target data ``y``.</span>
+
+<span class="sd">        :returns: The target data or the input data ``x`` if ``y`` is not set.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_y</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span></div>
+
+
+<div class="viewcode-block" id="Kernel.get_fx">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.get_fx">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_fx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the function values ``fx`` for the input data.</span>
+
+<span class="sd">        :returns: The function values or ``None`` if not set.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray` or :class:`None`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;fx&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fx</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fx</span></div>
+
+
+<div class="viewcode-block" id="Kernel.set_fx">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.set_fx">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_fx</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">fx</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">set_polynomial_regressor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the function values ``fx`` for the input data.</span>
+
+<span class="sd">        :param fx: Function values corresponding to the input data.</span>
+<span class="sd">        :type fx: :class:`numpy.ndarray`</span>
+<span class="sd">        :param set_polynomial_regressor: Whether to recalculate the polynomial regressor after setting the function values.</span>
+<span class="sd">                                        Defaults to ``True``.</span>
+<span class="sd">        :type set_polynomial_regressor: :class:`bool`, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">fx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fx</span> <span class="o">=</span> <span class="n">fx</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fx</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">set_polynomial_regressor</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_set_polynomial_regressor</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_theta</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Kernel.set_theta">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.set_theta">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">theta</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the coefficient ``theta`` for the kernel regression.</span>
+
+<span class="sd">        The coefficient is computed by the formula:</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            \\theta = K(X, Y)^{-1} f(X)</span>
+
+<span class="sd">        :param theta: Coefficients for kernel regression.</span>
+<span class="sd">        :type theta: :class:`numpy.ndarray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span>
+        <span class="k">if</span> <span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span></div>
+
+        <span class="c1"># self.fx = None</span>
+        <span class="c1"># self.fx =  lalg.prod(self.get_knm(),self.theta)</span>
+        <span class="c1"># if self.get_order() is not None :</span>
+        <span class="c1">#     self.fx += self.get_polynomial_regressor(z=self.get_x())</span>
+
+<div class="viewcode-block" id="Kernel.get_theta">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.get_theta">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_theta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the coefficient ``theta`` for kernel regression.</span>
+
+<span class="sd">        If ``fx`` is not defined, the polynomial regressor is used to adjust the function values.</span>
+
+<span class="sd">        :returns: The regression coefficient ``theta``.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;theta&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># If a polynomial order is defined and the function values `fx` are available,</span>
+            <span class="c1"># compute the residual `fx` by subtracting the polynomial regressor&#39;s contribution.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_order</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fx</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">fx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fx</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_polynomial_regressor</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1">##</span>
+                <span class="n">fx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fx</span><span class="p">()</span>
+            <span class="c1"># If `fx` is still `None`, it means there&#39;s no data to compute `theta` from, so set `theta` to `None`.</span>
+            <span class="k">if</span> <span class="n">fx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Compute the regression coefficient `theta` using the kernel matrix inverse and the function values.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="n">lalg</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_knm_inv</span><span class="p">(),</span> <span class="n">fx</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta</span></div>
+
+
+<div class="viewcode-block" id="Kernel.get_Delta">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.get_Delta">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_Delta</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute and retrieve the discrete Laplace-Beltrami operator ``Delta``.</span>
+
+<span class="sd">        :returns: The Laplace-Beltrami operator.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Delta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Delta</span> <span class="o">=</span> <span class="n">diffops</span><span class="o">.</span><span class="n">nablaT_nabla</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Delta</span></div>
+
+<div class="viewcode-block" id="Kernel.greedy_search">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.greedy_search">[docs]</a>
+    <span class="k">def</span> <span class="nf">greedy_search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">tol</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span><span class="n">n_batch</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">norm_</span><span class="o">=</span><span class="s2">&quot;frobenius&quot;</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_kernel_ptr</span><span class="p">()</span>
+            <span class="n">theta</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">alg</span><span class="o">.</span><span class="n">HybridGreedyNystroem</span><span class="p">(</span>
+                <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">(),</span>
+                <span class="n">fx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_fx</span><span class="p">(),</span>
+                <span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span>
+                <span class="n">tol</span><span class="o">=</span><span class="n">tol</span><span class="p">,</span>
+                <span class="n">error_type</span><span class="o">=</span><span class="n">norm_</span><span class="p">,</span>
+                <span class="n">n_batch</span><span class="o">=</span><span class="n">n_batch</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">theta</span><span class="p">,</span><span class="n">indices</span></div>
+
+
+
+<div class="viewcode-block" id="Kernel.greedy_select">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.greedy_select">[docs]</a>
+    <span class="k">def</span> <span class="nf">greedy_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span><span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fx</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">all</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">norm_</span><span class="o">=</span><span class="s2">&quot;frobenius&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Select a subset of points using a greedy Nystrom approximation technique :</span>
+
+<span class="sd">        $$Y^{n+1} = Y^{n} \cup \\arg \sup_{x \in X} d(Y^n,x),$$</span>
+<span class="sd">        to quickly approximate the clustering problem $Y = \\arg \inf_{Y \subset X} d(Y,X),$ where we suppose the following structure</span>
+<span class="sd">        $d(Y,X) = \sum_i d(Y,x^i)$.</span>
+
+
+<span class="sd">        The selection is typically based on norms such as the discrepancy errors for distributions, Frobenius or classifier type distances.</span>
+
+<span class="sd">        :param x: Input data points.</span>
+<span class="sd">        :type x: :class:`numpy.ndarray`</span>
+<span class="sd">        :param N: The number of points to select.</span>
+<span class="sd">        :type N: :class:`int`</span>
+<span class="sd">        :param fx: Function values corresponding to ``x``.</span>
+
+<span class="sd">            - if fx is None, </span>
+<span class="sd">                $$d(Y,X) = \\frac{1}{N_X} \\sum_{n=1}^{N_x}  k(x^n,\cdot) - \\frac{2}{N_Y} \\sum_{m=1}^{N_Y} k(\cdot,y^m)$$</span>
+<span class="sd">                This choice corresponds to minimizing the discrepancy error, see :func:`core.op.discrepancy_error()`.</span>
+<span class="sd">            - if fx is not None, $d(X,Y) = \|f(X)-f_{k,\\theta}(X)\|$</span>
+<span class="sd">                In which case, we are interested in adaptive mesh or control variate technics.</span>
+
+<span class="sd">        :type fx: :class:`numpy.ndarray`, optional</span>
+<span class="sd">        :param all: If ``True``, all points are selected. Defaults to ``False``.</span>
+<span class="sd">        :type all: :class:`bool`, optional</span>
+<span class="sd">        :param norm_: a string to identify the norm used for selection. Can be &quot;frobenius&quot; or &quot;classifier&quot;.</span>
+
+<span class="sd">            - if &quot;frobenius&quot;, $d(X,Y) = \|f(X)-f_{k,\\theta}(X)\|_{\ell2}^2$</span>
+<span class="sd">            - if &quot;classifier&quot;, $d(X,Y) = \|\softmax(f(X))-\softmax(f_{k,\\theta}(X))\|_{\ell_2}^2$ to account for probabilities representation.</span>
+<span class="sd">            - user-defined functions coming soon.</span>
+
+<span class="sd">        :type norm_: :class:`str`, optional</span>
+<span class="sd">        :param start_indices: an array of indices to set $Y^0$, otherwise the first is chosen randomly.</span>
+<span class="sd">        :type start_indices: :class:`list`, optional</span>
+
+<span class="sd">        :returns: Indices of the selected points.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray`</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Set N to the max_nystrom if it is not specified</span>
+        <span class="k">if</span> <span class="n">N</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">N</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_nystrom</span>
+
+        <span class="c1"># Set input data and function values (fx) in the internal state of the object</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">set_x</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">fx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_fx</span><span class="p">(</span><span class="n">fx</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">()</span>
+
+        <span class="c1"># If function values (fx) are provided, apply polynomial regression to `x`</span>
+        <span class="k">if</span> <span class="n">fx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_polynomial_values</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># If polynomial values are available, compute polynomial regression error</span>
+                <span class="n">polynomial_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_polynomial_regressor</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">())</span>
+                <span class="c1"># Subtract polynomial values from `fx` to get the residual error</span>
+                <span class="n">fx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fx</span> <span class="o">-</span> <span class="n">polynomial_values</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">fx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fx</span>
+            <span class="c1"># Apply hybrid greedy Nystrom with error between ||f .-f_{k,\theta}||_A and  wrt a given norm</span>
+            <span class="c1"># udefined by user</span>
+            <span class="c1"># to compute Y</span>
+            <span class="n">theta</span><span class="p">,</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">alg</span><span class="o">.</span><span class="n">HybridGreedyNystroem</span><span class="p">(</span>
+                <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">(),</span>
+                <span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">,</span>
+                <span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span>
+                <span class="n">tol</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                <span class="n">error_type</span><span class="o">=</span><span class="n">norm_</span><span class="p">,</span>
+                <span class="n">n_batch</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">alg</span><span class="o">.</span><span class="n">greedy_algorithm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">(),</span><span class="n">N</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+            <span class="c1">#</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">indices</span> <span class="o">=</span> <span class="n">indices</span>
+        <span class="k">if</span> <span class="nb">all</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="c1"># if there is a flag all, then</span>
+            <span class="c1"># f_\theta(.) = K(.,Y)K(X,Y)^{-1}f(X)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+            <span class="c1"># self.rescale()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># else X = Y is set:</span>
+            <span class="c1">#  f_\theta(.) = K(.,Y)K(Y,Y)^{-1}f(Y)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">kernel_interface</span><span class="o">.</span><span class="n">get_kernel_ptr</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fx</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fx</span><span class="p">[</span><span class="n">indices</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="c1"># self.theta = theta</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+    
+<div class="viewcode-block" id="Kernel.set">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.set">[docs]</a>
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fx</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the input data ``x``, function values ``fx``, and target data ``y`` for the kernel.</span>
+
+<span class="sd">        :param x: Input data points.</span>
+<span class="sd">        :type x: :class:`numpy.ndarray`</span>
+<span class="sd">        :param fx: Function values corresponding to the input data ``x``.</span>
+<span class="sd">        :type fx: :class:`numpy.ndarray`, optional</span>
+<span class="sd">        :param y: Target data points. If None, ``y`` is set equal to ``x``.</span>
+<span class="sd">        :type y: :class:`numpy.ndarray`, optional</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_x</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">copy</span><span class="p">()))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_y</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_fx</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_kernel</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Please input x at least once&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">fx</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;fx of size &quot;</span>
+                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fx</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                    <span class="o">+</span> <span class="s2">&quot;must have the same size as x&quot;</span>
+                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_fx</span><span class="p">(</span><span class="n">core</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">(</span><span class="n">fx</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_x</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_fx</span><span class="p">(</span><span class="n">fx</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_y</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">()</span>
+            <span class="k">pass</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="Kernel.map">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.map">[docs]</a>
+    <span class="k">def</span> <span class="nf">map</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">distance</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">sub</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Maps the input data points ``x`` to the target data points ``y`` using the kernel and optimal transport techniques.</span>
+
+<span class="sd">        :param x: Input data points ($N$, $D_{source}$).</span>
+<span class="sd">        :type x: :class:`numpy.ndarray`</span>
+<span class="sd">        :param y: Target data points ($M$, $D_{target}$).</span>
+<span class="sd">        :type y: :class:`numpy.ndarray`</span>
+<span class="sd">        :param distance: Distance metric to use in mapping. Defaults to ``None``.</span>
+<span class="sd">        :type distance: :class:`str`, optional</span>
+<span class="sd">        :param sub: Whether to apply a sub-permutation. Defaults to False.</span>
+<span class="sd">        :type sub: :class:`bool`, optional</span>
+
+<span class="sd">        :returns: ``None``</span>
+
+<span class="sd">        Example:</span>
+
+<span class="sd">            &gt;&gt;&gt; x_data = np.array([...])  # Input data with shape (N, D_source)</span>
+<span class="sd">            &gt;&gt;&gt; y_data = np.array([...])  # Target data with shape (M, D_target)</span>
+<span class="sd">            &gt;&gt;&gt; kernel.map(x_data, y_data)</span>
+
+<span class="sd">        Note:</span>
+
+<span class="sd">           This method computes a permutation that maps $x$ to $y$ using the Linear Sum Assignment Problem (LSAP) or a descent method.</span>
+
+<span class="sd">            - If the dimensionalities of $x$ and $y$ are the same (:math:`D_{source} = D_{target}`), the classical LSAP algorithm is used.</span>
+<span class="sd">            - If the dimensionalities differ (:math:`D_{source} \neq D_{target}`), a descent-based method is used to encode the data into a lower-dimensional latent space  before finding the optimal permutation, following principles of discrete optimal transport.</span>
+<span class="sd">            - This permutation can be used to transform the input data $x$ to approximate the target data $y$.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Set the internal state with input data points `x` and function values `y`</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_x</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">set_fx</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="c1"># Rescale the input data `x` using the current kernel configuration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rescale</span><span class="p">()</span>
+
+        <span class="c1"># Check if the dimensionality of `x` and `y` is the same</span>
+        <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="c1"># If the dimensionalities differ, use an encoder to map data into latent space</span>
+            <span class="c1"># and find the optimal permutation (descent-based method)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">permutation</span> <span class="o">=</span> <span class="n">cd</span><span class="o">.</span><span class="n">alg</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fx</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If the dimensionalities are the same, use the LSAP algorithm to compute the permutation</span>
+            <span class="n">D</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">Dnm</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">distance</span><span class="o">=</span><span class="n">distance</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">permutation</span> <span class="o">=</span> <span class="n">lsap</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="nb">bool</span><span class="p">(</span><span class="n">sub</span><span class="p">))</span>  <span class="c1"># Solve LSAP to find permutation</span>
+        <span class="c1"># Update `x` based on the computed permutation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_x</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">()[</span><span class="bp">self</span><span class="o">.</span><span class="n">permutation</span><span class="p">])</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the number of input data points ``x``.</span>
+
+<span class="sd">        :returns: The number of data points in ``x`` or 0 if ``x`` is not set.</span>
+<span class="sd">        :rtype: :class:`int`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Kernel.update_set">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.update_set">[docs]</a>
+    <span class="k">def</span> <span class="nf">update_set</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fz</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Update the training set by limiting the data to a maximum pool size.</span>
+
+<span class="sd">        This method trims the input data ``z`` and corresponding function values ``fz``</span>
+<span class="sd">        to the size defined by the ``max_pool`` parameter.</span>
+
+<span class="sd">        :param z: Input data points to update.</span>
+<span class="sd">        :type z: :class:`numpy.ndarray`</span>
+<span class="sd">        :param fz: Function values corresponding to the input data ``z``.</span>
+<span class="sd">        :type fz: :class:`numpy.ndarray`</span>
+
+<span class="sd">        :returns: The trimmed input data points and corresponding function values, limited by ``max_pool``.</span>
+<span class="sd">        :rtype: Tuple[:class:`numpy.ndarray`, :class:`numpy.ndarray`]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">z</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">max_pool</span> <span class="p">:],</span> <span class="n">fz</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">max_pool</span> <span class="p">:]</span></div>
+
+
+<div class="viewcode-block" id="Kernel.update">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.update">[docs]</a>
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">fz</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fit the regressor to new data points ``(z, fz)`` while maintaining the existing kernel structure.</span>
+
+<span class="sd">        This method allows fitting a kernel-based regressor that is originally defined on the set ``x`` but</span>
+<span class="sd">        is updated to match new input values ``z`` and their corresponding function values ``fz``.</span>
+
+<span class="sd">        The regression is defined by the formula:</span>
+
+<span class="sd">        $$</span>
+<span class="sd">        f_{k, \\theta}(z) \\approx K(z, X)\\theta = f(z)</span>
+<span class="sd">        $$</span>
+
+<span class="sd">        Where the coefficient `\\theta` is computed as:</span>
+
+<span class="sd">        $$</span>
+<span class="sd">        \\theta = K(z, X)^{-1}f(z)</span>
+<span class="sd">        $$</span>
+
+<span class="sd">        :param z: New input data points to update the regressor.</span>
+<span class="sd">        :type z: :class:`numpy.ndarray`</span>
+<span class="sd">        :param fz: Function values corresponding to the new data points `z`.</span>
+<span class="sd">        :type fz: :class:`numpy.ndarray`</span>
+<span class="sd">        :param eps: Regularization parameter used in the least squares solution. Defaults to `self.reg` if not provided.</span>
+<span class="sd">        :type eps: :class:`float`, optional</span>
+
+<span class="sd">        :returns: Updates the internal state of the regressor with new `z` and `fz` values.</span>
+<span class="sd">        :rtype: ``None``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_kernel_ptr</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">z</span><span class="p">]</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Compute the kernel matrix `K(z, X)` where `X` is the current input dataset</span>
+        <span class="n">Knm</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">Knm</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_y</span><span class="p">())</span>
+
+        <span class="c1"># If a polynomial order is defined, remove the polynomial regression component from `fz`</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Compute the residual by subtracting the polynomial regressor&#39;s prediction from `fz`</span>
+            <span class="n">fzz</span> <span class="o">=</span> <span class="n">fz</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_polynomial_regressor</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fzz</span> <span class="o">=</span> <span class="n">fz</span>
+        <span class="c1"># err = self(z)-fz</span>
+        <span class="c1"># err= (err**2).sum()</span>
+
+        <span class="c1"># At this point, we are trying to solve the following least squares problem:</span>
+        <span class="c1">#</span>
+        <span class="c1"># $$ \theta = \text{argmin} \| K(z, X)\theta - f(z) \|^2 + \text{reg} \|\theta\|^2 $$</span>
+        <span class="c1">#</span>
+        <span class="c1"># `eps` (regularization) controls the trade-off between fitting the data and controlling the magnitude of `theta`.</span>
+
+        <span class="k">if</span> <span class="n">eps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Use the default regularization value if none is provided</span>
+            <span class="n">eps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reg</span>
+        <span class="c1"># if self.theta is not None: fzz += eps*lalg.prod(Knm,self.theta)</span>
+        <span class="c1"># Solve the least-squares problem with regularization:</span>
+        <span class="c1"># $$ \theta = \left( K(z, X)^\top K(z, X) + \text{eps} \cdot I \right)^{-1} K(z, X)^\top fzz $$</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_theta</span><span class="p">(</span><span class="n">lalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">Knm</span><span class="p">,</span> <span class="n">fzz</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="n">eps</span><span class="p">))</span>
+        <span class="c1"># err = self(z)-fz</span>
+        <span class="c1"># err= (err**2).sum()</span>
+
+        <span class="c1"># If polynomial regression is involved, update the kernel&#39;s internal function approximation</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Update `fx` by adding the contribution of the polynomial regressor</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fx</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_polynomial_regressor</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="Kernel.add">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.add">[docs]</a>
+    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">fy</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Augments the training set by adding new data points and their corresponding function values.</span>
+
+<span class="sd">        This method optimizes the computation for training set augmentation by efficiently updating</span>
+<span class="sd">        the kernel matrix and applying a block-inversion algorithm, which reduces the overall complexity</span>
+<span class="sd">        compared to recalculating the full kernel matrix.</span>
+
+<span class="sd">        :param y: New data points to be added to the training set.</span>
+<span class="sd">        :type y: :class:`numpy.ndarray`</span>
+<span class="sd">        :param fy: Function values corresponding to the new data points `y`.</span>
+<span class="sd">        :type fy: :class:`numpy.ndarray`</span>
+
+<span class="sd">        :returns: This method updates the internal state of the class, modifying the training set with the new data points and their function values.</span>
+<span class="sd">        :rtype: ``None``</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            The kernel matrix $K([X,Y], [X,Y])$ is of size $\\mathbb{R}^{(N_X+N_Y) \\times (N_X+N_Y)}$,</span>
+<span class="sd">            and directly computing its inverse has a complexity of $(N_X + N_Y)^3$.</span>
+
+<span class="sd">            By using the block-inversion method, the complexity can be reduced to $N_X^3 + N_Y^3$, significantly improving performance.</span>
+
+<span class="sd">            The function $f_{k,\\theta}(.)$ is then computed as:</span>
+
+<span class="sd">            $$</span>
+<span class="sd">            f_{k,\\theta}(.) = K(., [X,Y])\\theta, \\quad \\theta = K([X,Y], [X,Y])^{-1} \\begin{bmatrix} f(X) \\; f(Y) \\end{bmatrix}</span>
+<span class="sd">            $$</span>
+
+<span class="sd">            Here, $[.]$ denotes standard matrix concatenation, where $f(X)$ and $f(Y)$ are the function values for the original and new data points, respectively.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">fx</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">copy</span><span class="p">()),</span> <span class="n">core</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">(</span><span class="n">fy</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+        <span class="c1"># if self.x is not None and x is not None: x=np.concatenate([self.x,x.copy()])[-self.max_pool:]</span>
+        <span class="c1"># if self.fx is not None and fx is not None: fx=np.concatenate([self.fx,fx.copy()])[-self.max_pool:]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">fx</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># the method add computes an updated Gram matrix using the already</span>
+        <span class="c1"># pre-computed Gram matrix K(x,x).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Knm</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Knm_inv</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">alg</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_knm</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_knm_inv</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">(),</span> <span class="n">x</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_x</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fx</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_fx</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">fx</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_fx</span><span class="p">()],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_fx</span><span class="p">(</span><span class="n">fx</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_polynomial_regressor</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="Kernel.kernel_distance">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.kernel_distance">[docs]</a>
+    <span class="k">def</span> <span class="nf">kernel_distance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute a MMD-like (Maximum Mean Discrepancy) based distance matrix between the input data ``x`` and the new data ``z``.</span>
+
+<span class="sd">        The distance is computed as:</span>
+
+<span class="sd">        $$</span>
+<span class="sd">        D(X,Z) = \Big(d_k(x^i,z^j) \Big)_{i,j},\quad d_k(x,y)= k(x,x) + k(z,z)-2k(x,z)</span>
+<span class="sd">        $$</span>
+
+<span class="sd">        :param z: New input data points.</span>
+<span class="sd">        :type z: :class:`numpy.ndarray`</span>
+
+<span class="sd">        :returns: The computed MMD-based distance matrix.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">core</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">Dnm</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="Kernel.discrepancy">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.discrepancy">[docs]</a>
+    <span class="k">def</span> <span class="nf">discrepancy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the MMD (Maximum Mean Discrepancy) between the kernel features $x$ and $z$.</span>
+
+<span class="sd">        :param z: New input data points.</span>
+<span class="sd">        :type z: :class:`numpy.ndarray`</span>
+
+<span class="sd">        :returns: The computed MMD-based distance matrix.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">core</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">discrepancy_error</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">(),</span> <span class="n">z</span><span class="o">=</span><span class="n">z</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Kernel.get_kernel">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.get_kernel">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_kernel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">callable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve the current kernel function for the input data.</span>
+
+<span class="sd">        This method retrieves a positive semi-definite (PSD) kernel function,</span>
+<span class="sd">        represented as: $k(S(x), S(y))$, where $S$ is a predefined mapping.</span>
+
+<span class="sd">        :returns: The kernel function used by the current model.</span>
+<span class="sd">        :rtype: callable</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;kernel&quot;</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_kernel</span><span class="p">()</span>
+            <span class="c1"># self.order= None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">kernel_interface</span><span class="o">.</span><span class="n">get_kernel_ptr</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span></div>
+
+
+<div class="viewcode-block" id="Kernel.set_kernel_ptr">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.set_kernel_ptr">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_kernel_ptr</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the Codpy interface to use the current kernel function.</span>
+
+<span class="sd">        This method updates the Codpy kernel interface with the current kernel</span>
+<span class="sd">        function, sets the polynomial order to zero, and applies the regularization</span>
+<span class="sd">        parameter defined in the object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">core</span><span class="o">.</span><span class="n">kernel_interface</span><span class="o">.</span><span class="n">set_kernel_ptr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_kernel</span><span class="p">())</span>
+        <span class="n">core</span><span class="o">.</span><span class="n">kernel_interface</span><span class="o">.</span><span class="n">set_polynomial_order</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">core</span><span class="o">.</span><span class="n">kernel_interface</span><span class="o">.</span><span class="n">set_regularization</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Kernel.rescale">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.rescale">[docs]</a>
+    <span class="k">def</span> <span class="nf">rescale</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Rescale the input data using the current mapping.</span>
+
+<span class="sd">        This method rescales the input data by applying the map function associated</span>
+<span class="sd">        with the current kernel. It also retrieves and updates the internal kernel</span>
+<span class="sd">        function based on the rescaled data.</span>
+
+<span class="sd">        If ``x`` is set, the rescaling is applied to ``x`` with a maximum number of</span>
+<span class="sd">        points defined by ``max_nystrom``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># instructs to set kernel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_kernel_ptr</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># instructs to set the map parameter</span>
+            <span class="c1"># applied to the data</span>
+            <span class="n">core</span><span class="o">.</span><span class="n">kernel_interface</span><span class="o">.</span><span class="n">rescale</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_x</span><span class="p">(),</span> <span class="nb">max</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_nystrom</span><span class="p">)</span>
+            <span class="c1"># retrives the kernel</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">kernel</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">kernel_interface</span><span class="o">.</span><span class="n">get_kernel_ptr</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Kernel.__call__">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.Kernel.__call__">[docs]</a>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Predict the output using the kernel for input data ``z``.</span>
+
+<span class="sd">        :param z: Input data points for prediction.</span>
+<span class="sd">        :type z: :class:`numpy.ndarray`</span>
+
+<span class="sd">        :returns: The predicted values based on the kernel and function values.</span>
+<span class="sd">        :rtype: :class:`numpy.ndarray`</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; z_data = np.array([...])</span>
+<span class="sd">            &gt;&gt;&gt; prediction = kernel(z_data)</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            This function is similar to ``predict`` in libraries like scikit-learn or XGBoost.</span>
+
+<span class="sd">            - If ``fx`` is defined, the prediction is given by the formula $f_{k, \\theta}(z)$.</span>
+<span class="sd">            - If ``fx`` is not defined, the function returns the projection operator:</span>
+
+<span class="sd">            $$P_{k,\\theta}(z) = K(Z, K) K(X, X)^{-1}$$</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+
+        <span class="c1"># Don&#39;t forget to set the kernel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_kernel_ptr</span><span class="p">()</span>
+
+        <span class="n">fy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_theta</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">fy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_knm_inv</span><span class="p">()</span>
+
+        <span class="n">Knm</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">op</span><span class="o">.</span><span class="n">Knm</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">z</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_y</span><span class="p">(),</span> <span class="n">fy</span><span class="o">=</span><span class="n">fy</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">order</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">polynomial_regressor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_polynomial_regressor</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+            <span class="n">Knm</span> <span class="o">+=</span> <span class="n">polynomial_regressor</span>
+
+        <span class="k">return</span> <span class="n">Knm</span></div>
+</div>
+
+    
+<div class="viewcode-block" id="clip_probs">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.clip_probs">[docs]</a>
+<span class="k">def</span> <span class="nf">clip_probs</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span><span class="nb">min</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="nb">max</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">min</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span> <span class="nb">min</span> <span class="o">=</span> <span class="mf">1e-9</span>
+    <span class="k">if</span> <span class="nb">max</span> <span class="o">==</span> <span class="kc">None</span><span class="p">:</span> <span class="nb">max</span> <span class="o">=</span> <span class="mi">1</span><span class="o">-</span> <span class="mf">1e-9</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">probs</span> <span class="o">&lt;</span> <span class="nb">min</span><span class="p">,</span><span class="nb">min</span><span class="p">,</span><span class="n">probs</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">out</span> <span class="o">&gt;</span> <span class="nb">max</span><span class="p">,</span><span class="nb">max</span><span class="p">,</span><span class="n">out</span><span class="p">)</span>
+    <span class="n">out</span> <span class="o">/=</span> <span class="n">core</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="KernelClassifier">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.KernelClassifier">[docs]</a>
+<span class="k">class</span> <span class="nc">KernelClassifier</span><span class="p">(</span><span class="n">Kernel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A simple overload of the kernel :class:`Kernel` for proabability handling.</span>
+<span class="sd">        Note:</span>
+<span class="sd">            It overloads the prediction method as follows :</span>
+
+<span class="sd">                $$\text{softmax} (\log(f)_{k,\\theta})(\cdot)$$</span>
+<span class="sd">    &quot;&quot;&quot;</span> 
+<div class="viewcode-block" id="KernelClassifier.set_fx">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.KernelClassifier.set_fx">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_fx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fx</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">set_polynomial_regressor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>  <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">fx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> <span class="n">fx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">clip_probs</span><span class="p">(</span><span class="n">fx</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">set_fx</span><span class="p">(</span><span class="n">fx</span><span class="p">,</span><span class="n">set_polynomial_regressor</span><span class="o">=</span><span class="n">set_polynomial_regressor</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">z</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">z</span> <span class="o">=</span> <span class="n">core</span><span class="o">.</span><span class="n">get_matrix</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span> <span class="p">:</span> <span class="k">return</span> <span class="kc">None</span>
+            <span class="c1"># return softmax(np.full((z.shape[0],self.actions_dim),np.log(.5)),axis=1)</span>
+        <span class="n">Knm</span><span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="n">z</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">softmax</span><span class="p">(</span><span class="n">Knm</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="KernelClassifier.greedy_select">
+<a class="viewcode-back" href="../../kernel.html#codpy.kernel.KernelClassifier.greedy_select">[docs]</a>
+    <span class="k">def</span> <span class="nf">greedy_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span><span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fx</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="nb">all</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">norm_</span><span class="o">=</span><span class="s2">&quot;classifier&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">greedy_select</span><span class="p">(</span><span class="n">N</span><span class="o">=</span><span class="n">N</span><span class="p">,</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span><span class="n">fx</span><span class="o">=</span><span class="n">fx</span><span class="p">,</span> <span class="nb">all</span><span class="o">=</span><span class="nb">all</span><span class="p">,</span> <span class="n">norm_</span><span class="o">=</span><span class="n">norm_</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+</div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Jean-Marc MERCIER, Shohruh MIRYUSUPOV.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
