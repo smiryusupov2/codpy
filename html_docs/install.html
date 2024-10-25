@@ -1,0 +1,204 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation Guide &mdash; CodPy 0.1.11 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=7ab3649f" />
+      <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=1e825a29"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>let toggleHintShow = 'Click to show';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Kernel class" href="kernel.html" />
+    <link rel="prev" title="Welcome to Codpy’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CodPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Library Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dev-installation">Dev installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-procedure">Installation procedure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#basic-checking">Basic checking</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">Kernel class</a></li>
+<li class="toctree-l1"><a class="reference internal" href="core.html">Kernels and maps</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="gallery_examples/index.html">Examples Gallery</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CodPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/install.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation-guide">
+<h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Link to this heading"></a></h1>
+<dl class="simple">
+<dt>Note: this installation process has been tested on</dt><dd><ul class="simple">
+<li><p>windows / amd64 platform</p></li>
+</ul>
+</dd>
+</dl>
+<p>To install CodPy, you can use pip:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>codpy
+</pre></div>
+</div>
+<p>Alternatively, if you are installing from source:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/codpy2020/codpy
+<span class="nb">cd</span><span class="w"> </span>codpy
+pip<span class="w"> </span>install<span class="w"> </span>.
+</pre></div>
+</div>
+<section id="requirements">
+<h2>Requirements<a class="headerlink" href="#requirements" title="Link to this heading"></a></h2>
+<p>Make sure to have these installed before proceeding.</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://www.python.org/ftp/python/3.9.7/python-3.9.7-amd64.exe">python3.9.XX</a>: a valid python python 3.9 installation.</p></li>
+</ul>
+<p><em>NOTE</em> : Python installations differ from one machine to another. The python root folder is denoted “&lt;path/to/python39&gt;” in the rest of this document. The software <a class="reference external" href="https://www.voidtools.com/">Everything</a>, or other finding files tools can be useful locating the file python.exe on windows machine…</p>
+</section>
+<section id="dev-installation">
+<h2>Dev installation<a class="headerlink" href="#dev-installation" title="Link to this heading"></a></h2>
+<p>For information, we list the softwares that we are using for our dev configuration :</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://desktop.github.com">GitHub Desktop</a></p></li>
+<li><p><a href="#id2"><span class="problematic" id="id3">`R&lt;https://www.r-project.org&gt;`_</span></a>: use any CRAN mirror for download</p></li>
+<li><p><a class="reference external" href="https://rstudio.com">RStudio</a>: see the download link, then choose the free version</p></li>
+<li><p><a class="reference external" href="https://miktex.org">MiKTEX</a>: see the download tab</p></li>
+<li><p><a class="reference external" href="https://www.voidtools.com/downloads/">Everything</a></p></li>
+<li><p><a class="reference external" href="https://code.visualstudio.com">Visual Studio Code</a></p></li>
+</ul>
+<p>Those installations should be fine using the latest (64 bits) version and the default settings for each software .</p>
+<p><em>Note</em> Once R and RStudio are installed, open the latter.
+In the console, enter “<em>install.packages(“rmarkdown”)</em>” to install <a class="reference external" href="https://rmarkdown.rstudio.com/index.html">RMarkdown</a>.</p>
+</section>
+<section id="installation-procedure">
+<h2>Installation procedure<a class="headerlink" href="#installation-procedure" title="Link to this heading"></a></h2>
+<p>We suppose that there is a valid python installation on the host machine. The reader can
+* either use its main python environment <code class="docutils literal notranslate"><span class="pre">&lt;path/to/python39&gt;</span></code>
+* or create a virtual python environment <code class="docutils literal notranslate"><span class="pre">&lt;path/to/venv&gt;</span></code>, generally an advisable practice:</p>
+<p>First open a command shell <code class="docutils literal notranslate"><span class="pre">cmd</span></code>,  create a virtual environment and activate it using the commands</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.<span class="se">\v</span>env
+.<span class="se">\v</span>env<span class="se">\S</span>cripts<span class="se">\a</span>ctivate
+</pre></div>
+</div>
+<p><em>NOTE</em> : In the rest of the installation procedure, we consider a virtual environment &lt;path/to/venv&gt;. One can replace with &lt;path/to/python39&gt; if a main environment installation is desired, for dev purposes for instance.</p>
+<p>Open a command shell <code class="docutils literal notranslate"><span class="pre">`cmd`</span></code>, and pip install codpy</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">codpy</span><span class="o">==</span><span class="m">0</span>.XX.XX
+</pre></div>
+</div>
+<p>or from a local repository</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>&lt;path/to/codpyrepo&gt;/dist/codpy-XXXX.whl
+</pre></div>
+</div>
+<p>The installation procedure might take some minutes depending on your internet connection.</p>
+</section>
+<section id="basic-checking">
+<h2>Basic checking<a class="headerlink" href="#basic-checking" title="Link to this heading"></a></h2>
+<p>open a python shell and import codpy</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python
+import<span class="w"> </span>codpy
+</pre></div>
+</div>
+<p>It should run silently.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to Codpy’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="kernel.html" class="btn btn-neutral float-right" title="Kernel class" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Jean-Marc MERCIER, Shohruh MIRYUSUPOV.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

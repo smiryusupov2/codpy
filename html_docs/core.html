@@ -1,0 +1,1438 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Core functionalities &mdash; CodPy 0.1.11 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=7ab3649f" />
+      <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery.css?v=d2d258e8" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-binder.css?v=f4aeca0c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-dataframe.css?v=2082cf3c" />
+      <link rel="stylesheet" type="text/css" href="_static/sg_gallery-rendered-html.css?v=1277b6f3" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=1e825a29"></script>
+      <script src="_static/doctools.js?v=9a2dae69"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script>let toggleHintShow = 'Click to show';</script>
+      <script>let toggleHintHide = 'Click to hide';</script>
+      <script>let toggleOpenOnPrint = 'true';</script>
+      <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+      <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "displayMath": [["$$", "$$"], ["\\[", "\\]"]]}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples Gallery" href="gallery_examples/index.html" />
+    <link rel="prev" title="Kernel class" href="kernel.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CodPy
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Library Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="kernel.html">Kernel class</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Core functionalities</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.core.op"><code class="docutils literal notranslate"><span class="pre">op</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.op.projection"><code class="docutils literal notranslate"><span class="pre">op.projection()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.op.extrapolation"><code class="docutils literal notranslate"><span class="pre">op.extrapolation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.op.interpolation"><code class="docutils literal notranslate"><span class="pre">op.interpolation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.op.gradient_denoiser"><code class="docutils literal notranslate"><span class="pre">op.gradient_denoiser()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.op.norm"><code class="docutils literal notranslate"><span class="pre">op.norm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.op.coefficients"><code class="docutils literal notranslate"><span class="pre">op.coefficients()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.op.Knm"><code class="docutils literal notranslate"><span class="pre">op.Knm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.op.Knm_inv"><code class="docutils literal notranslate"><span class="pre">op.Knm_inv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.op.Dnm"><code class="docutils literal notranslate"><span class="pre">op.Dnm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.op.discrepancy_error"><code class="docutils literal notranslate"><span class="pre">op.discrepancy_error()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.op.norm_projection"><code class="docutils literal notranslate"><span class="pre">op.norm_projection()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.core.misc"><code class="docutils literal notranslate"><span class="pre">misc</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.misc.distance_labelling"><code class="docutils literal notranslate"><span class="pre">misc.distance_labelling()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.misc.discrepancy"><code class="docutils literal notranslate"><span class="pre">misc.discrepancy()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.misc.discrepancy_functional"><code class="docutils literal notranslate"><span class="pre">misc.discrepancy_functional</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#codpy.core.misc.discrepancy_functional.eval"><code class="docutils literal notranslate"><span class="pre">misc.discrepancy_functional.eval()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#codpy.core.misc.discrepancy_functional.__init__"><code class="docutils literal notranslate"><span class="pre">misc.discrepancy_functional.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">misc.discrepancy_functional.eval()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.core.diffops"><code class="docutils literal notranslate"><span class="pre">diffops</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.diffops.nabla_Knm"><code class="docutils literal notranslate"><span class="pre">diffops.nabla_Knm()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.diffops.nabla"><code class="docutils literal notranslate"><span class="pre">diffops.nabla()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.diffops.nabla_inv"><code class="docutils literal notranslate"><span class="pre">diffops.nabla_inv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.diffops.nablaT"><code class="docutils literal notranslate"><span class="pre">diffops.nablaT()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.diffops.nablaT_inv"><code class="docutils literal notranslate"><span class="pre">diffops.nablaT_inv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.diffops.nablaT_nabla"><code class="docutils literal notranslate"><span class="pre">diffops.nablaT_nabla()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.diffops.nablaT_nabla_inv"><code class="docutils literal notranslate"><span class="pre">diffops.nablaT_nabla_inv()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.diffops.Leray_T"><code class="docutils literal notranslate"><span class="pre">diffops.Leray_T()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.diffops.Leray"><code class="docutils literal notranslate"><span class="pre">diffops.Leray()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.diffops.hessian"><code class="docutils literal notranslate"><span class="pre">diffops.hessian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.core.factories"><code class="docutils literal notranslate"><span class="pre">factories</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.factories.check_map_strings"><code class="docutils literal notranslate"><span class="pre">factories.check_map_strings()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.factories.check_kernel_strings"><code class="docutils literal notranslate"><span class="pre">factories.check_kernel_strings()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.factories.get_kernel_factory"><code class="docutils literal notranslate"><span class="pre">factories.get_kernel_factory()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.factories.get_kernel_factory_keys"><code class="docutils literal notranslate"><span class="pre">factories.get_kernel_factory_keys()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.factories.get_map_factory"><code class="docutils literal notranslate"><span class="pre">factories.get_map_factory()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.factories.get_map_factory_keys"><code class="docutils literal notranslate"><span class="pre">factories.get_map_factory_keys()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.core.kernel_interface"><code class="docutils literal notranslate"><span class="pre">kernel_interface</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.set_verbose"><code class="docutils literal notranslate"><span class="pre">kernel_interface.set_verbose()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.set_num_threads"><code class="docutils literal notranslate"><span class="pre">kernel_interface.set_num_threads()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.rescale"><code class="docutils literal notranslate"><span class="pre">kernel_interface.rescale()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.get_kernel_ptr"><code class="docutils literal notranslate"><span class="pre">kernel_interface.get_kernel_ptr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.set_kernel_ptr"><code class="docutils literal notranslate"><span class="pre">kernel_interface.set_kernel_ptr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.set_polynomial_order"><code class="docutils literal notranslate"><span class="pre">kernel_interface.set_polynomial_order()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.set_regularization"><code class="docutils literal notranslate"><span class="pre">kernel_interface.set_regularization()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.pipe_kernel_ptr"><code class="docutils literal notranslate"><span class="pre">kernel_interface.pipe_kernel_ptr()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.pipe_kernel_fun"><code class="docutils literal notranslate"><span class="pre">kernel_interface.pipe_kernel_fun()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.init"><code class="docutils literal notranslate"><span class="pre">kernel_interface.init()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.set_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_interface.set_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_interface.set_map"><code class="docutils literal notranslate"><span class="pre">kernel_interface.set_map()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.core.map_setters"><code class="docutils literal notranslate"><span class="pre">map_setters</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set"><code class="docutils literal notranslate"><span class="pre">map_setters.set</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#codpy.core.map_setters.set.__init__"><code class="docutils literal notranslate"><span class="pre">map_setters.set.__init__()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_linear_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_linear_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_affine_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_affine_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_log_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_log_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_exp_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_exp_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_scale_std_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_scale_std_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_erf_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_erf_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_erfinv_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_erfinv_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_scale_factor_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_scale_factor_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_scale_factor_helper"><code class="docutils literal notranslate"><span class="pre">map_setters.set_scale_factor_helper()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_unitcube_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_unitcube_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_grid_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_grid_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_mean_distance_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_mean_distance_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_min_distance_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_min_distance_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_standard_mean_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_standard_mean_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_standard_min_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_standard_min_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_unitcube_min_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_unitcube_min_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_unitcube_erfinv_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_unitcube_erfinv_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.set_unitcube_mean_map"><code class="docutils literal notranslate"><span class="pre">map_setters.set_unitcube_mean_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.map_setters.map_helper"><code class="docutils literal notranslate"><span class="pre">map_setters.map_helper()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.core.kernel_setters"><code class="docutils literal notranslate"><span class="pre">kernel_setters</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.kernel_helper"><code class="docutils literal notranslate"><span class="pre">kernel_setters.kernel_helper()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_linear_regressor_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_linear_regressor_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_absnormkernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_absnormkernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_tensornorm_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_tensornorm_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_gaussian_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_gaussian_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_matern_tensor_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_matern_tensor_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.default_multiquadricnormkernel_map"><code class="docutils literal notranslate"><span class="pre">kernel_setters.default_multiquadricnormkernel_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_multiquadricnorm_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_multiquadricnorm_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.default_multiquadrictensorkernel_map"><code class="docutils literal notranslate"><span class="pre">kernel_setters.default_multiquadrictensorkernel_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_multiquadrictensor_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_multiquadrictensor_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.default_sincardtensorkernel_map"><code class="docutils literal notranslate"><span class="pre">kernel_setters.default_sincardtensorkernel_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_sincardtensor_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_sincardtensor_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.default_sincardsquaretensorkernel_map"><code class="docutils literal notranslate"><span class="pre">kernel_setters.default_sincardsquaretensorkernel_map()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_sincardsquaretensor_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_sincardsquaretensor_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_dotproduct_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_dotproduct_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_gaussianper_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_gaussianper_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_matern_norm_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_matern_norm_kernel()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#codpy.core.kernel_setters.set_scalar_product_kernel"><code class="docutils literal notranslate"><span class="pre">kernel_setters.set_scalar_product_kernel()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#codpy.core.kernel_setter"><code class="docutils literal notranslate"><span class="pre">kernel_setter()</span></code></a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Examples:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="gallery_examples/index.html">Examples Gallery</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CodPy</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Core functionalities</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/core.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="core-functionalities">
+<h1>Core functionalities<a class="headerlink" href="#core-functionalities" title="Link to this heading"></a></h1>
+<dl class="py class" id="module-codpy.core">
+<dt class="sig sig-object py" id="codpy.core.op">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">codpy.core.</span></span><span class="sig-name descname"><span class="pre">op</span></span><a class="reference internal" href="_modules/codpy/core.html#op"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.op.projection">
+<span class="sig-name descname"><span class="pre">projection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#op.projection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op.projection" title="Link to this definition"></a></dt>
+<dd><p>Performs projection in kernel regression for efficient computation, targeting a lower sampling space.
+.. note:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>The performance of the function depends on two ingredients:
+
+* ``kernel`` function
+* ``map``
+</pre></div>
+</div>
+<p class="rubric">Example</p>
+<p>With NumPy arrays</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">xtrain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xtest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx_train</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx_test</span> <span class="o">=</span> <span class="n">z</span> <span class="o">*</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx_test_pred</span> <span class="o">=</span> <span class="n">projection</span><span class="p">(</span><span class="n">xtrain</span><span class="p">,</span> <span class="n">xtrain</span><span class="p">,</span> <span class="n">xtest</span><span class="p">,</span> <span class="n">fx_train</span><span class="p">,</span>
+<span class="go">kernel_fun = &quot;tensornorm&quot;, map = &quot;unitcube&quot;,</span>
+<span class="go">       polynomial_order=2)</span>
+</pre></div>
+</div>
+<p>With pandas DataFrames</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_train_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_train_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">z_test_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx_train_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">projected_responses</span> <span class="o">=</span> <span class="n">projection</span><span class="p">(</span><span class="n">x_train_df</span><span class="p">,</span> <span class="n">y_train_df</span><span class="p">,</span> <span class="n">z_test_df</span><span class="p">,</span> <span class="n">fx_train_df</span><span class="p">,</span> <span class="n">kernel_fun</span> <span class="o">=</span> <span class="s2">&quot;tensornorm&quot;</span><span class="p">,</span> <span class="nb">map</span> <span class="o">=</span> <span class="s2">&quot;unitcube&quot;</span><span class="p">,</span>
+<span class="go">       polynomial_order=2)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.op.extrapolation">
+<span class="sig-name descname"><span class="pre">extrapolation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#op.extrapolation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op.extrapolation" title="Link to this definition"></a></dt>
+<dd><p>Performs extrapolation in the context of kernel regression.</p>
+<p>This method leverages the kernel regression framework to extrapolate values between data points.
+.. note:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>The performance of the function depends on two ingredients:
+
+* ``kernel`` function
+* ``map``
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.op.interpolation">
+<span class="sig-name descname"><span class="pre">interpolation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#op.interpolation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op.interpolation" title="Link to this definition"></a></dt>
+<dd><p>Performs interpolation in the context of kernel regression.</p>
+<p>This method leverages the kernel regression framework to interpolate values between data points.
+.. note:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>The performance of the function depends on two ingredients:
+
+* ``kernel`` function
+* ``map``
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.op.gradient_denoiser">
+<span class="sig-name descname"><span class="pre">gradient_denoiser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-09</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#op.gradient_denoiser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op.gradient_denoiser" title="Link to this definition"></a></dt>
+<dd><p>A function for performing least squares regression penalized by the norm of the gradient,
+induced by a positive definite (PD) kernel.</p>
+<p>This functioon initializes with various parameters and sets up a regression framework
+that includes regularization based on the gradient’s magnitude. It is designed to
+work with gradient norms induced by a PD kernel.
+:returns: The denoised output for the input data.</p>
+<p>Example:</p>
+<p>Initialize the denoiser with input data ‘x’ and optional parameters</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">xtrain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">xtest</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx_train</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx_test</span> <span class="o">=</span> <span class="n">z</span> <span class="o">*</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<p># Perform denoising on the input data or new data points ‘z’
+op.denoiser(xtrain, xtest, fx_train, kernel_fun = “maternnorm”, map = “standardmean”)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.op.norm">
+<span class="sig-name descname"><span class="pre">norm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#op.norm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op.norm" title="Link to this definition"></a></dt>
+<dd><p>Calculate the kernel-induced norm based on the provided matrices.</p>
+<p>This function computes a norm projection using the kernel initialization parameters.
+It supports flexible argument input through keyword arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>list</em><em>, </em><em>optional</em>) – The first matrix. Defaults to an empty list.</p></li>
+<li><p><strong>y</strong> (<em>list</em><em>, </em><em>optional</em>) – The second matrix. Defaults to a list containing <cite>x</cite>.</p></li>
+<li><p><strong>z</strong> (<em>list</em><em>, </em><em>optional</em>) – The third matrix. Defaults to an empty list.</p></li>
+<li><p><strong>fx</strong> (<em>list</em><em>, </em><em>optional</em>) – The fourth matrix. Defaults to an empty list.</p></li>
+</ul>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The performance of the function depends on two ingredients:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel</span></code> function</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">map</span></code></p></li>
+</ul>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.op.coefficients">
+<span class="sig-name descname"><span class="pre">coefficients</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/codpy/core.html#op.coefficients"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op.coefficients" title="Link to this definition"></a></dt>
+<dd><p>Computes the regressors or coefficients for kernelized regression, using a specified PD kernel.</p>
+<p>This method initializes the kernel function with the given parameters and then
+computes the regression coefficients based on the input datasets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.array</em>) – The input data points for which the regression coefficients are computed.</p></li>
+<li><p><strong>y</strong> (<em>np.array</em>) – Internal parameter, can be y = x.</p></li>
+<li><p><strong>fx</strong> (<em>np.array</em><em>, </em><em>optional</em>) – Responses associated with ‘x’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The computed regression coefficients or regressors that model the
+relationship between the input data ‘x’ and the target ‘y’.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+<p>Available Kernels:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'gaussian'</span></code>: Gaussian kernel for smooth, continuous functions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'tensornorm'</span></code>: Tensor norm kernel suitable for multidimensional data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'absnorm'</span></code>: Absolute norm kernel for robust performance in varied datasets.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'matern'</span></code>: Matérn kernel useful in spatial statistics.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'multiquadricnorm'</span></code>: Multi-quadric norm kernel for flexible shape adaptation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'multiquadrictensor'</span></code>: Multi-quadric tensor kernel, a tensor-based variant offering flexible shape adaptation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'sincardtensor'</span></code>: Sinc cardinal tensor kernel, suitable for periodic and oscillatory data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'sincardsquaretensor'</span></code>: Sinc cardinal square tensor kernel, enhancing the sinc cardinal tensor kernel for certain data types.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'dotproduct'</span></code>: Dot product kernel, useful for linear classifications and regressions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'gaussianper'</span></code>: Gaussian periodic kernel, ideal for modeling periodic functions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'maternnorm'</span></code>: Matérn norm kernel, a variation of the Matérn kernel for normalized spaces.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'scalarproduct'</span></code>: Scalar product kernel, a simple yet effective kernel for dot products.</p></li>
+</ul>
+</div></blockquote>
+<p>Available Maps:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'linear'</span></code>: Linear map for straightforward transformations.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'affine'</span></code>: Affine map for linear transformations with translation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'log'</span></code>: Logarithmic map for non-linear scaling.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'exp'</span></code>: Exponential map for rapidly increasing scales.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'scalestd'</span></code>: Standard scaling map that normalizes data by removing the mean and scaling to unit variance.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'erf'</span></code>: Error function map, useful for data normalization with a non-linear scale.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'erfinv'</span></code>: Inverse error function map, providing the inverse transformation of the error function.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'scalefactor'</span></code>: Scaling factor map that applies a uniform scaling defined by a bandwidth or scale factor.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'bandwidth'</span></code>: Helper for setting the scale factor map with a specified bandwidth, typically used in kernel methods.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'grid'</span></code>: Grid map that projects data onto a grid, useful for discretizing continuous variables or spatial data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'unitcube'</span></code>: Unit cube map that scales data to fit within a unit cube, ensuring all features are within the range [0,1].</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'meandistance'</span></code>: Mean distance map that scales data based on the mean distance between data points.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'mindistance'</span></code>: Minimum distance map that scales data based on the minimum distance between data points.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'standardmin'</span></code>: Standard minimum map pipeline combining minimum distance scaling with other transformations.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'standardmean'</span></code>: Standard mean map pipeline combining mean distance scaling with other transformations.</p></li>
+</ul>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.op.Knm">
+<span class="sig-name descname"><span class="pre">Knm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/codpy/core.html#op.Knm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op.Knm" title="Link to this definition"></a></dt>
+<dd><p>Computes the kernel matrix induced by a positive definite (pd) kernel.</p>
+<p>This method calculates the kernel matrix k(x_i,y_j) using the input kernel function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Input data points for the gradient computation. np.array of size N , D.</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Secondary data points used in the kernel computation. np.array of size M , D.</p></li>
+<li><p><strong>fx</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – optional-Function values or responses at the data points in <cite>x</cite>. np.array of size M , Df.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>matrix np.array of size (NxM) The computed kernel matrix, representing the kernel-induced distances or similarities between the data points in ‘x’ and ‘y’.
+- prod(Knm(x,y),fx) else. This allow performance and memory optimizations.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p>if fx is empty</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.op.Knm_inv">
+<span class="sig-name descname"><span class="pre">Knm_inv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-09</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reg_matrix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#op.Knm_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op.Knm_inv" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Input data points for the gradient computation. np.array of size N , D.</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Secondary data points used in the kernel computation. np.array of size M , D.</p></li>
+<li><p><strong>fx</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – optional-Function values or responses at the data points in <cite>x</cite>. np.array of size M , Df.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><dl class="simple">
+<dt>if fx is empty: matrix np.array of size (NxM), that is the least square inverse of Knm(x,y).</dt><dd><ul>
+<li><p>prod(Knm_inv(x,y),fx) else. This allow performance and memory optimizations. The output corresponds then to the coefficient of fx in the kernel induced basis.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>else:</dt><dd><ul>
+<li><p>if fx is empty: matrix np.array of size (NxM), that corresponds to the least square computation (Knm(y,x)Knm(x,y)+reg)^{-1}Knm(y,x).</p></li>
+<li><p>prod(Knm_inv(x,y),fx) else. This allow performance and memory optimizations. The output corresponds then to the coefficient of fx in the kernel induced basis.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p>if reg is empty</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.op.Dnm">
+<span class="sig-name descname"><span class="pre">Dnm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/codpy/core.html#op.Dnm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op.Dnm" title="Link to this definition"></a></dt>
+<dd><p>Computes a distance matrix induced by a positive definite (pd) kernel.</p>
+<p>This function calculates the distance matrix between sets of data points
+x and y based on a specified pd kernel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.array</em>) – The first set of data points.</p></li>
+<li><p><strong>y</strong> (<em>np.array</em>) – The second set of data points. If not provided, defaults to x.</p></li>
+<li><p><strong>distance</strong> (<em>function</em><em>, </em><em>optional</em>) – a name of distance function.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A distance matrix representing the distances between each pair of points in x and y as induced by the pd kernel.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.op.discrepancy_error">
+<span class="sig-name descname"><span class="pre">discrepancy_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'raw'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#op.discrepancy_error"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op.discrepancy_error" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.op.norm_projection">
+<span class="sig-name descname"><span class="pre">norm_projection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#op.norm_projection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.op.norm_projection" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="codpy.core.misc">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">codpy.core.</span></span><span class="sig-name descname"><span class="pre">misc</span></span><a class="reference internal" href="_modules/codpy/core.html#misc"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.misc" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Miscellaneous kernel functions or classes.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.misc.distance_labelling">
+<span class="sig-name descname"><span class="pre">distance_labelling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxmin</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'min'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/codpy/core.html#misc.distance_labelling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.misc.distance_labelling" title="Link to this definition"></a></dt>
+<dd><p>Computes and labels distances using a kernel-induced distance matrix.</p>
+<p>This function calculates the distance matrix between two sets of data points (x and y) using
+a specified kernel function. It then labels these distances based on either the softmax or softmin
+indices, depending on the ‘max’ parameter in kwargs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>np.array</em>) – The first set of data points.</p></li>
+<li><p><strong>y</strong> (<em>np.array</em>) – The second set of data points.</p></li>
+<li><p><strong>axis</strong> (<em>int</em><em>, </em><em>optional</em>) – The axis along which to compute the distances. Default is 1.</p></li>
+<li><p><strong>max</strong> (<em>bool</em><em>, </em><em>optional</em>) – Determines the type of labelling:
+- If True, uses softmax labelling.
+- If False (default), uses softmin labelling.
+:param kernel_fun: The name of the kernel function to use. Options include <code class="docutils literal notranslate"><span class="pre">'gaussian'</span></code>, <code class="docutils literal notranslate"><span class="pre">'tensornorm'</span></code>, etc.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An array of labelled distances between the data points in x and y.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.misc.discrepancy">
+<span class="sig-name descname"><span class="pre">discrepancy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disc_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'raw'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#misc.discrepancy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.misc.discrepancy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="codpy.core.misc.discrepancy_functional">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">discrepancy_functional</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_fun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tensornorm'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'unitcube'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polynomial_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rescale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#misc.discrepancy_functional"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.misc.discrepancy_functional" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A kernel-induced discrepancy between two distributions.</p>
+<p>Discrepancy is a non-parametric method to test the equality of two distributions. It’s computed in a
+Reproducing Kernel Hilbert Space (RKHS) using a specified kernel function.</p>
+<p>Attributes:
+Nx (int): The number of samples in the first distribution ‘x’.
+x (array-like): The first distribution for which MMD is to be computed.
+Kxx (float): The kernel-induced distance computed within ‘x’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<em>array-like</em>) – The first input distribution.</p></li>
+<li><p><strong>y</strong> (<em>array-like</em><em>, </em><em>optional</em>) – The second input distribution. If not provided, it defaults to an empty list.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments for the kernel function.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.misc.discrepancy_functional.eval">
+<span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ys</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#misc.discrepancy_functional.eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.misc.discrepancy_functional.eval" title="Link to this definition"></a></dt>
+<dd><p>Computes the MMD between the distribution ‘ys’ and the initial distribution ‘x’.</p>
+</dd></dl>
+
+<p class="rubric">Example</p>
+<p>Define two distributions</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+</pre></div>
+</div>
+<p>Initialize discrepancy functional for ‘x’</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">discrepancy</span> <span class="o">=</span> <span class="n">discrepancy_functional</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Compute MMD between ‘x’ and ‘y’</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">discrepancy_value</span> <span class="o">=</span> <span class="n">discrepancy</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.misc.discrepancy_functional.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_fun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tensornorm'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'unitcube'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polynomial_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rescale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#misc.discrepancy_functional.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.misc.discrepancy_functional.__init__" title="Link to this definition"></a></dt>
+<dd><p>Args:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_fun</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, optional) – The name of the kernel function to use. Options include <code class="docutils literal notranslate"><span class="pre">'gaussian'</span></code>, <code class="docutils literal notranslate"><span class="pre">'tensornorm'</span></code>, etc.</p></li>
+<li><p><strong>map</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, optional) – The name of the mapping function to apply. Options include <code class="docutils literal notranslate"><span class="pre">'linear'</span></code>, <code class="docutils literal notranslate"><span class="pre">'affine'</span></code>, etc.</p></li>
+<li><p><strong>polynomial_order</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, optional) – The polynomial order for the kernel function. Defaults to <code class="docutils literal notranslate"><span class="pre">2</span></code>.</p></li>
+<li><p><strong>regularization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Regularization parameter for the kernel. Defaults to <code class="docutils literal notranslate"><span class="pre">1e-8</span></code>.</p></li>
+<li><p><strong>rescale</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Whether to rescale the data.</p></li>
+<li><p><strong>rescale_params</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, optional) – Parameters for data rescaling. Defaults to <code class="docutils literal notranslate"><span class="pre">{'max':</span> <span class="pre">1000,</span> <span class="pre">'seed':</span> <span class="pre">42}</span></code>.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – Arbitrary keyword arguments.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Kinv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_fun</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tensornorm'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'unitcube'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polynomial_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rescale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#misc.discrepancy_functional.eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd><p>Args:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_fun</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, optional) – The name of the kernel function to use. Options include <code class="docutils literal notranslate"><span class="pre">'gaussian'</span></code>, <code class="docutils literal notranslate"><span class="pre">'tensornorm'</span></code>, etc.</p></li>
+<li><p><strong>map</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, optional) – The name of the mapping function to apply. Options include <code class="docutils literal notranslate"><span class="pre">'linear'</span></code>, <code class="docutils literal notranslate"><span class="pre">'affine'</span></code>, etc.</p></li>
+<li><p><strong>polynomial_order</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, optional) – The polynomial order for the kernel function. Defaults to <code class="docutils literal notranslate"><span class="pre">2</span></code>.</p></li>
+<li><p><strong>regularization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – Regularization parameter for the kernel. Defaults to <code class="docutils literal notranslate"><span class="pre">1e-8</span></code>.</p></li>
+<li><p><strong>rescale</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>, optional) – Whether to rescale the data.</p></li>
+<li><p><strong>rescale_params</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, optional) – Parameters for data rescaling. Defaults to <code class="docutils literal notranslate"><span class="pre">{'max':</span> <span class="pre">1000,</span> <span class="pre">'seed':</span> <span class="pre">42}</span></code>.</p></li>
+<li><p><strong>kwargs</strong> (<em>dict</em>) – Arbitrary keyword arguments.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="codpy.core.diffops">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">codpy.core.</span></span><span class="sig-name descname"><span class="pre">diffops</span></span><a class="reference internal" href="_modules/codpy/core.html#diffops"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.diffops" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.diffops.nabla_Knm">
+<span class="sig-name descname"><span class="pre">nabla_Knm</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#diffops.nabla_Knm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.diffops.nabla_Knm" title="Link to this definition"></a></dt>
+<dd><p>Args:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.diffops.nabla">
+<span class="sig-name descname"><span class="pre">nabla</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#diffops.nabla"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.diffops.nabla" title="Link to this definition"></a></dt>
+<dd><p>Compute the kernel-induced gradient of a function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Input data points for the gradient computation.</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Secondary data points used in the kernel computation.</p></li>
+<li><p><strong>z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Tertiary data points used in the kernel computation.</p></li>
+<li><p><strong>fx</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Function values or responses at the data points in <cite>x</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The computed gradient of the function.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fz</span> <span class="o">=</span> <span class="n">z</span> <span class="o">*</span> <span class="mi">2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gradient</span> <span class="o">=</span> <span class="n">diffops</span><span class="o">.</span><span class="n">nabla</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">z</span><span class="p">,</span><span class="n">fx</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.diffops.nabla_inv">
+<span class="sig-name descname"><span class="pre">nabla_inv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#diffops.nabla_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.diffops.nabla_inv" title="Link to this definition"></a></dt>
+<dd><p>Compute the inverse of the kernel-induced gradient operation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Input data points.</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Secondary data points.</p></li>
+<li><p><strong>z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Tertiary data points.</p></li>
+<li><p><strong>fz</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, optional) – The vector field for the inverse gradient computation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The computed inverse gradient of the vector field.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">z_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vector_field</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">inv_gradient</span> <span class="o">=</span> <span class="n">nabla_inv</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">z_data</span><span class="p">,</span> <span class="n">fz</span><span class="o">=</span><span class="n">vector_field</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.diffops.nablaT">
+<span class="sig-name descname"><span class="pre">nablaT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fz</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#diffops.nablaT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.diffops.nablaT" title="Link to this definition"></a></dt>
+<dd><p>Compute the divergence of a vector field using a kernel-induced method.</p>
+<p>This function calculates the divergence (nabla transpose) of a vector field in the context of kernel methods.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>class</strong> (<em>fz</em>) – <cite>numpy.ndarray</cite>: The input data points where the divergence is calculated.</p></li>
+<li><p><strong>class</strong> – <cite>numpy.ndarray</cite>: Secondary data points used in the kernel computation.</p></li>
+<li><p><strong>class</strong> – <cite>numpy.ndarray</cite>: Tertiary data points used in the kernel computation.</p></li>
+<li><p><strong>class</strong> – <cite>numpy.ndarray</cite>: The vector field for which the divergence is computed. Defaults to an empty list.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><cite>numpy.ndarray</cite>: The computed divergence of the vector field at each point in <cite>x</cite>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>class</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>Example usage with NumPy arrays</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">z_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">vector_field</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">divergence</span> <span class="o">=</span> <span class="n">nablaT</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">z_data</span><span class="p">,</span> <span class="n">fz</span><span class="o">=</span><span class="n">vector_field</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.diffops.nablaT_inv">
+<span class="sig-name descname"><span class="pre">nablaT_inv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#diffops.nablaT_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.diffops.nablaT_inv" title="Link to this definition"></a></dt>
+<dd><p>Compute the inverse of the transposed gradient operation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Input data points.</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Secondary data points.</p></li>
+<li><p><strong>z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Tertiary data points.</p></li>
+<li><p><strong>fx</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Function values or responses at the data points.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The computed inverse of the transposed gradient.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">z_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">inv_transpose_gradient</span> <span class="o">=</span> <span class="n">nablaT_inv</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">z_data</span><span class="p">,</span> <span class="n">fx_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.diffops.nablaT_nabla">
+<span class="sig-name descname"><span class="pre">nablaT_nabla</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#diffops.nablaT_nabla"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.diffops.nablaT_nabla" title="Link to this definition"></a></dt>
+<dd><blockquote>
+<div><p>Compute the kernel-induced discrete Laplace operator.</p>
+<p>This function calculates the discrete Laplace operator using a kernel method. It computes this
+operator as the dot product of the transposed gradient vector and the gradient vector, which is
+consistent with a differential operator that resembles the Laplace operator in its behavior.</p>
+<dl>
+<dt>Args:</dt><dd><p>x (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>): Input data points for the Laplace operator computation.
+y (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>): Secondary data points used in the kernel computation.
+fx (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>): Function values or responses at the data points.</p>
+<p>class:<cite>numpy.ndarray</cite>: The computed discrete Laplace operator values for each point in <cite>x</cite>.</p>
+</dd>
+<dt>Note:</dt><dd><p>The discrete Laplace operator computed here is not consistent with the “true” Laplace operator,
+but instead aligns with another differential operator, described as (-</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>abla cdot (
+abla fmu)).</p>
+<blockquote>
+<div><dl>
+<dt>Example:</dt><dd><p>Example usage with NumPy arrays</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">laplace_operator</span> <span class="o">=</span> <span class="n">nablaT_nabla</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">fx_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.diffops.nablaT_nabla_inv">
+<span class="sig-name descname"><span class="pre">nablaT_nabla_inv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#diffops.nablaT_nabla_inv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.diffops.nablaT_nabla_inv" title="Link to this definition"></a></dt>
+<dd><p>Args:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.diffops.Leray_T">
+<span class="sig-name descname"><span class="pre">Leray_T</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#diffops.Leray_T"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.diffops.Leray_T" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.diffops.Leray">
+<span class="sig-name descname"><span class="pre">Leray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#diffops.Leray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.diffops.Leray" title="Link to this definition"></a></dt>
+<dd><p>Compute the Leray operator for a given set of input matrices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Input data points.</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Secondary data points.</p></li>
+<li><p><strong>fx</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Function values or responses at the data points.</p></li>
+<li><p><strong>**kwargs</strong> (<em>dict</em>) – Arbitrary keyword arguments.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The result of the Leray operator computation.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">leray_result</span> <span class="o">=</span> <span class="n">Leray</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">y_data</span><span class="p">,</span> <span class="n">fx_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.diffops.hessian">
+<span class="sig-name descname"><span class="pre">hessian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/codpy/core.html#diffops.hessian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.diffops.hessian" title="Link to this definition"></a></dt>
+<dd><p>Compute the kernel-induced Hessian matrix of a function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Input data points where the Hessian matrix is calculated.</p></li>
+<li><p><strong>z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Tertiary data points used in the kernel computation.</p></li>
+<li><p><strong>fx</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Function values or responses at the data points in <cite>x</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The computed Hessian matrix of the function.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code></p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The function computes the Hessian matrix for each input data point. If the ‘fx’ parameter is provided,
+the function computes a modified Hessian matrix using this additional information.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">z_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fx_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">...</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">hessian_matrix</span> <span class="o">=</span> <span class="n">hessian</span><span class="p">(</span><span class="n">x_data</span><span class="p">,</span> <span class="n">z_data</span><span class="p">,</span> <span class="n">fx_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="codpy.core.factories">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">codpy.core.</span></span><span class="sig-name descname"><span class="pre">factories</span></span><a class="reference internal" href="_modules/codpy/core.html#factories"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.factories" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class to manipulate built-in codpy factories.</p>
+<dl class="simple">
+<dt>Note: two kinds of factories are exhibited</dt><dd><ul class="simple">
+<li><p>Kernel factories through <a class="reference internal" href="#codpy.core.factories.get_kernel_factory" title="codpy.core.factories.get_kernel_factory"><code class="xref py py-func docutils literal notranslate"><span class="pre">factories.get_kernel_factory()</span></code></a>, defining real-valued function <span class="math notranslate nohighlight">\(k(x,y)\)</span> from a positive-definite kernel.</p></li>
+<li><p>Maps factories through <a class="reference internal" href="#codpy.core.factories.get_map_factory" title="codpy.core.factories.get_map_factory"><code class="xref py py-func docutils literal notranslate"><span class="pre">factories.get_map_factory()</span></code></a>, defining maps <span class="math notranslate nohighlight">\(x\mapsto S(x)\)</span>, used to fit the data to a kernel using <span class="math notranslate nohighlight">\(k\circ S\)</span>.</p></li>
+</ul>
+</dd>
+</dl>
+<p>Users can overload these factories to add their own kernels and map, see <code class="xref py py-meth docutils literal notranslate"><span class="pre">kernel_overloading.my_kernel_overloading()</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.factories.check_map_strings">
+<span class="sig-name descname"><span class="pre">check_map_strings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#factories.check_map_strings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.factories.check_map_strings" title="Link to this definition"></a></dt>
+<dd><p>Simply check that the string, or list of strings, are keys for the dictionary <a class="reference internal" href="#codpy.core.factories.get_map_factory_keys" title="codpy.core.factories.get_map_factory_keys"><code class="xref py py-func docutils literal notranslate"><span class="pre">factories.get_map_factory_keys()</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>strings</strong> – (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.factories.check_kernel_strings">
+<span class="sig-name descname"><span class="pre">check_kernel_strings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#factories.check_kernel_strings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.factories.check_kernel_strings" title="Link to this definition"></a></dt>
+<dd><p>Simply check that the string, or list of strings, are keys in the dictionary <a class="reference internal" href="#codpy.core.factories.get_kernel_factory_keys" title="codpy.core.factories.get_kernel_factory_keys"><code class="xref py py-func docutils literal notranslate"><span class="pre">factories.get_kernel_factory_keys()</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>strings</strong> – (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.factories.get_kernel_factory">
+<span class="sig-name descname"><span class="pre">get_kernel_factory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#factories.get_kernel_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.factories.get_kernel_factory" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.factories.get_kernel_factory_keys">
+<span class="sig-name descname"><span class="pre">get_kernel_factory_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#factories.get_kernel_factory_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.factories.get_kernel_factory_keys" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.factories.get_map_factory">
+<span class="sig-name descname"><span class="pre">get_map_factory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#factories.get_map_factory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.factories.get_map_factory" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.factories.get_map_factory_keys">
+<span class="sig-name descname"><span class="pre">get_map_factory_keys</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#factories.get_map_factory_keys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.factories.get_map_factory_keys" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">codpy.core.</span></span><span class="sig-name descname"><span class="pre">kernel_interface</span></span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Miscellaneous instructions to instruct the C++ interface.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.set_verbose">
+<span class="sig-name descname"><span class="pre">set_verbose</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.set_verbose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.set_verbose" title="Link to this definition"></a></dt>
+<dd><p>Produce a diagnosis file “output.xml” to debug, profile or audit the C++ core.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.set_num_threads">
+<span class="sig-name descname"><span class="pre">set_num_threads</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.set_num_threads"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.set_num_threads" title="Link to this definition"></a></dt>
+<dd><p>Limit the number of threads used by the C++ core.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.rescale">
+<span class="sig-name descname"><span class="pre">rescale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">42</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.rescale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.rescale" title="Link to this definition"></a></dt>
+<dd><p>Intruct the kernel map to fit its parameters in order to match the variables <span class="math notranslate nohighlight">\(x,y,z\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Input data points to fit.</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Input data points to fit.</p></li>
+<li><p><strong>z</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>) – Input data points to fit.</p></li>
+<li><p><strong>max</strong> – (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>). Random select max datapoints. Used to limit the input size for performances.</p></li>
+<li><p><strong>seed</strong> – (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>). The seed used to random selection. See (<code class="xref py py-class docutils literal notranslate"><span class="pre">max</span></code>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.get_kernel_ptr">
+<span class="sig-name descname"><span class="pre">get_kernel_ptr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.get_kernel_ptr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.get_kernel_ptr" title="Link to this definition"></a></dt>
+<dd><p>Return a smart pointer to the current kernel used by codpy.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.set_kernel_ptr">
+<span class="sig-name descname"><span class="pre">set_kernel_ptr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.set_kernel_ptr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.set_kernel_ptr" title="Link to this definition"></a></dt>
+<dd><p>Set codpy with a kernel.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.set_polynomial_order">
+<span class="sig-name descname"><span class="pre">set_polynomial_order</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.set_polynomial_order"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.set_polynomial_order" title="Link to this definition"></a></dt>
+<dd><p>Allow to set an integer, used for polynomial regression with codpy’s internal kernels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>order</strong> – (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>). The order for polynomial regression :
+- 0 means regression on a constant (one regression)
+- 1 means constant and linear regression (one + <span class="math notranslate nohighlight">\(D\)</span> regression).
+- 2 means constant, linear regression and quadratic regression (one + <span class="math notranslate nohighlight">\(D\)</span> + <span class="math notranslate nohighlight">\(D^2\)</span> regression)..</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.set_regularization">
+<span class="sig-name descname"><span class="pre">set_regularization</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.set_regularization"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.set_regularization" title="Link to this definition"></a></dt>
+<dd><p>Set a float value for Tykhonov regularization in kernel ridge inversion.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.pipe_kernel_ptr">
+<span class="sig-name descname"><span class="pre">pipe_kernel_ptr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.pipe_kernel_ptr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.pipe_kernel_ptr" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.pipe_kernel_fun">
+<span class="sig-name descname"><span class="pre">pipe_kernel_fun</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.pipe_kernel_fun"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.pipe_kernel_fun" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.init">
+<span class="sig-name descname"><span class="pre">init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.init"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.init" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.set_kernel">
+<span class="sig-name descname"><span class="pre">set_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extras</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.set_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.set_kernel" title="Link to this definition"></a></dt>
+<dd><p>An utility to instruct codpy to set a kernel. The list of available kernels is given by <a class="reference internal" href="#codpy.core.factories.get_map_factory_keys" title="codpy.core.factories.get_map_factory_keys"><code class="xref py py-func docutils literal notranslate"><span class="pre">factories.get_map_factory_keys()</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel_key</strong> – (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>). Must be in  <a class="reference internal" href="#codpy.core.factories.get_map_factory_keys" title="codpy.core.factories.get_map_factory_keys"><code class="xref py py-func docutils literal notranslate"><span class="pre">factories.get_map_factory_keys()</span></code></a></p></li>
+<li><p><strong>reg</strong> – (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>). Set a regularization parameters. See <a class="reference internal" href="#codpy.core.kernel_interface.set_regularization" title="codpy.core.kernel_interface.set_regularization"><code class="xref py py-func docutils literal notranslate"><span class="pre">kernel_interface.set_regularization()</span></code></a></p></li>
+<li><p><strong>check</strong> – (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>). Check if the key is in <a class="reference internal" href="#codpy.core.factories.get_map_factory_keys" title="codpy.core.factories.get_map_factory_keys"><code class="xref py py-func docutils literal notranslate"><span class="pre">factories.get_map_factory_keys()</span></code></a></p></li>
+<li><p><strong>extras</strong> – (<code class="xref py py-class docutils literal notranslate"><span class="pre">dic(str,str)</span></code>). A list of parameters to set the kernel.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_interface.set_map">
+<span class="sig-name descname"><span class="pre">set_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">check_</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_interface.set_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_interface.set_map" title="Link to this definition"></a></dt>
+<dd><p>An utility to set an internal codpy map for kernels. The list of available maps is given by <a class="reference internal" href="#codpy.core.factories.get_map_factory_keys" title="codpy.core.factories.get_map_factory_keys"><code class="xref py py-func docutils literal notranslate"><span class="pre">factories.get_map_factory_keys()</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>strings</strong> – <p>(<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>). A list of maps :</p>
+<ul class="simple">
+<li><p>if  <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>: instanciate and set to codpy the map.</p></li>
+<li><p>if  <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>: instanciate and set to codpy the first map, then ‘pipe’ (means compose) the others maps.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="codpy.core.map_setters">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">codpy.core.</span></span><span class="sig-name descname"><span class="pre">map_setters</span></span><a class="reference internal" href="_modules/codpy/core.html#map_setters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A collection of classes / function to manipulate internal codpy maps.
+Internal codpy maps can be listed using <a class="reference internal" href="#codpy.core.factories.get_map_factory_keys" title="codpy.core.factories.get_map_factory_keys"><code class="xref py py-func docutils literal notranslate"><span class="pre">factories.get_map_factory_keys()</span></code></a></p>
+<dl class="py class">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strings</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strings</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_linear_map">
+<span class="sig-name descname"><span class="pre">set_linear_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_linear_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_linear_map" title="Link to this definition"></a></dt>
+<dd><p>Set a linear map for the kernel.</p>
+<p>Args:
+- <a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs: Arbitrary keyword arguments for the linear map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_affine_map">
+<span class="sig-name descname"><span class="pre">set_affine_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_affine_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_affine_map" title="Link to this definition"></a></dt>
+<dd><p>Set an affine map for the kernel.</p>
+<p>Args:
+- <a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs: Arbitrary keyword arguments for the affine map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_log_map">
+<span class="sig-name descname"><span class="pre">set_log_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_log_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_log_map" title="Link to this definition"></a></dt>
+<dd><p>Set a logarithmic map for the kernel.</p>
+<p>Args:
+- <a href="#id5"><span class="problematic" id="id6">**</span></a>kwargs: Arbitrary keyword arguments for the log map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_exp_map">
+<span class="sig-name descname"><span class="pre">set_exp_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_exp_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_exp_map" title="Link to this definition"></a></dt>
+<dd><p>Set an exponential map for the kernel.</p>
+<p>Args:
+- <a href="#id7"><span class="problematic" id="id8">**</span></a>kwargs: Arbitrary keyword arguments for the exponential map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_scale_std_map">
+<span class="sig-name descname"><span class="pre">set_scale_std_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_scale_std_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_scale_std_map" title="Link to this definition"></a></dt>
+<dd><p>Set a standard scaling map for the kernel.</p>
+<p>Args:
+- <a href="#id9"><span class="problematic" id="id10">**</span></a>kwargs: Arbitrary keyword arguments for the scale standard map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_erf_map">
+<span class="sig-name descname"><span class="pre">set_erf_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_erf_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_erf_map" title="Link to this definition"></a></dt>
+<dd><p>Set an error function (ERF) map for the kernel.</p>
+<p>Args:
+- <a href="#id11"><span class="problematic" id="id12">**</span></a>kwargs: Arbitrary keyword arguments for the ERF map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_erfinv_map">
+<span class="sig-name descname"><span class="pre">set_erfinv_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_erfinv_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_erfinv_map" title="Link to this definition"></a></dt>
+<dd><p>Set an inverse error function (ERF) map for the kernel.</p>
+<p>Args:
+- <a href="#id13"><span class="problematic" id="id14">**</span></a>kwargs: Arbitrary keyword arguments for the inverse ERF map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_scale_factor_map">
+<span class="sig-name descname"><span class="pre">set_scale_factor_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_scale_factor_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_scale_factor_map" title="Link to this definition"></a></dt>
+<dd><p>Set a scaling factor map for the kernel.</p>
+<p>Args:
+- <a href="#id15"><span class="problematic" id="id16">**</span></a>kwargs: Arbitrary keyword arguments for the scale factor map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_scale_factor_helper">
+<span class="sig-name descname"><span class="pre">set_scale_factor_helper</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_scale_factor_helper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_scale_factor_helper" title="Link to this definition"></a></dt>
+<dd><p>Helper function to set a scaling factor map with specified bandwidth.</p>
+<p>Args:
+- <a href="#id17"><span class="problematic" id="id18">**</span></a>kwargs: Arbitrary keyword arguments, including ‘bandwidth’ for the scale factor map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_unitcube_map">
+<span class="sig-name descname"><span class="pre">set_unitcube_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_unitcube_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_unitcube_map" title="Link to this definition"></a></dt>
+<dd><p>Set a unit cube map for the kernel.</p>
+<p>Args:
+- <a href="#id19"><span class="problematic" id="id20">**</span></a>kwargs: Arbitrary keyword arguments for the unit cube map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_grid_map">
+<span class="sig-name descname"><span class="pre">set_grid_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_grid_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_grid_map" title="Link to this definition"></a></dt>
+<dd><p>Set a grid map for the kernel.</p>
+<p>Args:
+- <a href="#id21"><span class="problematic" id="id22">**</span></a>kwargs: Arbitrary keyword arguments for the grid map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_mean_distance_map">
+<span class="sig-name descname"><span class="pre">set_mean_distance_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_mean_distance_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_mean_distance_map" title="Link to this definition"></a></dt>
+<dd><p>Set a mean distance map for the kernel.</p>
+<p>Args:
+- <a href="#id23"><span class="problematic" id="id24">**</span></a>kwargs: Arbitrary keyword arguments for the mean distance map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_min_distance_map">
+<span class="sig-name descname"><span class="pre">set_min_distance_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_min_distance_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_min_distance_map" title="Link to this definition"></a></dt>
+<dd><p>Set a minimum distance map for the kernel.</p>
+<p>Args:
+- <a href="#id25"><span class="problematic" id="id26">**</span></a>kwargs: Arbitrary keyword arguments for the minimum distance map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_standard_mean_map">
+<span class="sig-name descname"><span class="pre">set_standard_mean_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_standard_mean_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_standard_mean_map" title="Link to this definition"></a></dt>
+<dd><p>Set a standard mean map pipeline for the kernel.</p>
+<p>This function sets a mean distance map and then pipes it through the erf-inverse and unit cube maps.</p>
+<p>Args:
+- <a href="#id27"><span class="problematic" id="id28">**</span></a>kwargs: Arbitrary keyword arguments for the standard mean map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_standard_min_map">
+<span class="sig-name descname"><span class="pre">set_standard_min_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_standard_min_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_standard_min_map" title="Link to this definition"></a></dt>
+<dd><p>Set a standard minimum map pipeline for the kernel.</p>
+<p>This function sets a minimum distance map and then pipes it through the erf-inverse and unit cube maps.</p>
+<p>Args:
+- <a href="#id29"><span class="problematic" id="id30">**</span></a>kwargs: Arbitrary keyword arguments for the standard minimum map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_unitcube_min_map">
+<span class="sig-name descname"><span class="pre">set_unitcube_min_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_unitcube_min_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_unitcube_min_map" title="Link to this definition"></a></dt>
+<dd><p>Set a unit cube minimum map pipeline for the kernel.</p>
+<p>This function sets a minimum distance map and then pipes it through the unit cube map.</p>
+<p>Args:
+- <a href="#id31"><span class="problematic" id="id32">**</span></a>kwargs: Arbitrary keyword arguments for the unit cube minimum map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_unitcube_erfinv_map">
+<span class="sig-name descname"><span class="pre">set_unitcube_erfinv_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_unitcube_erfinv_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_unitcube_erfinv_map" title="Link to this definition"></a></dt>
+<dd><p>Set a unit cube erf-inverse map pipeline for the kernel.</p>
+<p>This function sets an erf-inverse map and then pipes it through the unit cube map.</p>
+<p>Args:
+- <a href="#id33"><span class="problematic" id="id34">**</span></a>kwargs: Arbitrary keyword arguments for the unit cube erf-inverse map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.set_unitcube_mean_map">
+<span class="sig-name descname"><span class="pre">set_unitcube_mean_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.set_unitcube_mean_map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.set_unitcube_mean_map" title="Link to this definition"></a></dt>
+<dd><p>Set a unit cube mean map pipeline for the kernel.</p>
+<p>This function sets a mean distance map and then pipes it through the unit cube map.</p>
+<p>Args:
+- <a href="#id35"><span class="problematic" id="id36">**</span></a>kwargs: Arbitrary keyword arguments for the unit cube mean map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.map_setters.map_helper">
+<span class="sig-name descname"><span class="pre">map_helper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#map_setters.map_helper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.map_setters.map_helper" title="Link to this definition"></a></dt>
+<dd><p>This function creates a partial function for a specified map setter with provided arguments.</p>
+<p>Args:
+- map_setter (function): The map setter function to be used.
+- <a href="#id37"><span class="problematic" id="id38">**</span></a>kwargs: Arbitrary keyword arguments for the map setter function.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">codpy.core.</span></span><span class="sig-name descname"><span class="pre">kernel_setters</span></span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.kernel_helper">
+<span class="sig-name descname"><span class="pre">kernel_helper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">polynomial_order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.kernel_helper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.kernel_helper" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_kernel">
+<span class="sig-name descname"><span class="pre">set_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">polynomial_order</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the kernel function with specified parameters.</p>
+<p>This method configures the kernel function used in the calculations. It allows setting
+the type of kernel, its polynomial order, regularization factor, and an optional mapping function.</p>
+<p>Args:
+- kernel_string (str): The name of the kernel function to use.
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function to apply.</p>
+<p>The method configures the kernel and its associated parameters, preparing it for use
+in subsequent calculations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_linear_regressor_kernel">
+<span class="sig-name descname"><span class="pre">set_linear_regressor_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_linear_regressor_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_linear_regressor_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the linear regression kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function to apply.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_absnormkernel">
+<span class="sig-name descname"><span class="pre">set_absnormkernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_absnormkernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_absnormkernel" title="Link to this definition"></a></dt>
+<dd><p>Set the absolute norm kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function to apply.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_tensornorm_kernel">
+<span class="sig-name descname"><span class="pre">set_tensornorm_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_tensornorm_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_tensornorm_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the tensor norm kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function to apply.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_gaussian_kernel">
+<span class="sig-name descname"><span class="pre">set_gaussian_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_gaussian_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_gaussian_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the Gaussian kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function to apply.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_matern_tensor_kernel">
+<span class="sig-name descname"><span class="pre">set_matern_tensor_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_matern_tensor_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_matern_tensor_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the Matérn tensor kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function to apply.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.default_multiquadricnormkernel_map">
+<span class="sig-name descname"><span class="pre">default_multiquadricnormkernel_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#codpy.core.kernel_setters.default_multiquadricnormkernel_map" title="Link to this definition"></a></dt>
+<dd><p>Set a standard mean map pipeline for the kernel.</p>
+<p>This function sets a mean distance map and then pipes it through the erf-inverse and unit cube maps.</p>
+<p>Args:
+- <a href="#id39"><span class="problematic" id="id40">**</span></a>kwargs: Arbitrary keyword arguments for the standard mean map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_multiquadricnorm_kernel">
+<span class="sig-name descname"><span class="pre">set_multiquadricnorm_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map=functools.partial(&lt;function</span> <span class="pre">map_setters.set_standard_mean_map&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance='norm2')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_multiquadricnorm_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_multiquadricnorm_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the multi-quadric norm kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function defined as <cite>default_multiquadricnormkernel_map</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.default_multiquadrictensorkernel_map">
+<span class="sig-name descname"><span class="pre">default_multiquadrictensorkernel_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#codpy.core.kernel_setters.default_multiquadrictensorkernel_map" title="Link to this definition"></a></dt>
+<dd><p>Set a standard minimum map pipeline for the kernel.</p>
+<p>This function sets a minimum distance map and then pipes it through the erf-inverse and unit cube maps.</p>
+<p>Args:
+- <a href="#id41"><span class="problematic" id="id42">**</span></a>kwargs: Arbitrary keyword arguments for the standard minimum map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_multiquadrictensor_kernel">
+<span class="sig-name descname"><span class="pre">set_multiquadrictensor_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map=functools.partial(&lt;function</span> <span class="pre">map_setters.set_standard_min_map&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance='normifty')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_multiquadrictensor_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_multiquadrictensor_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the multi-quadric tensor kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function defined as <cite>default_multiquadrictensorkernel_map</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.default_sincardtensorkernel_map">
+<span class="sig-name descname"><span class="pre">default_sincardtensorkernel_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#codpy.core.kernel_setters.default_sincardtensorkernel_map" title="Link to this definition"></a></dt>
+<dd><p>Set a minimum distance map for the kernel.</p>
+<p>Args:
+- <a href="#id43"><span class="problematic" id="id44">**</span></a>kwargs: Arbitrary keyword arguments for the minimum distance map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_sincardtensor_kernel">
+<span class="sig-name descname"><span class="pre">set_sincardtensor_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map=functools.partial(&lt;function</span> <span class="pre">map_setters.set_min_distance_map&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance='normifty')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_sincardtensor_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_sincardtensor_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the sinc cardinal tensor kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function defined as <cite>default_sincardtensorkernel_map</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.default_sincardsquaretensorkernel_map">
+<span class="sig-name descname"><span class="pre">default_sincardsquaretensorkernel_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#codpy.core.kernel_setters.default_sincardsquaretensorkernel_map" title="Link to this definition"></a></dt>
+<dd><p>Set a minimum distance map for the kernel.</p>
+<p>Args:
+- <a href="#id45"><span class="problematic" id="id46">**</span></a>kwargs: Arbitrary keyword arguments for the minimum distance map configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_sincardsquaretensor_kernel">
+<span class="sig-name descname"><span class="pre">set_sincardsquaretensor_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map=functools.partial(&lt;function</span> <span class="pre">map_setters.set_min_distance_map&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance='normifty')</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_sincardsquaretensor_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_sincardsquaretensor_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the sinc cardinal square tensor kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function defined as <cite>default_sincardsquaretensorkernel_map</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_dotproduct_kernel">
+<span class="sig-name descname"><span class="pre">set_dotproduct_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_dotproduct_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_dotproduct_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the dot product kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function to apply.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_gaussianper_kernel">
+<span class="sig-name descname"><span class="pre">set_gaussianper_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_gaussianper_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_gaussianper_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the Gaussian periodic kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function to apply.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_matern_norm_kernel">
+<span class="sig-name descname"><span class="pre">set_matern_norm_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map=&lt;function</span> <span class="pre">map_setters.set_mean_distance_map&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_matern_norm_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_matern_norm_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the Matérn norm kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function defined as <cite>map_setters.set_mean_distance_map</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="codpy.core.kernel_setters.set_scalar_product_kernel">
+<span class="sig-name descname"><span class="pre">set_scalar_product_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setters.set_scalar_product_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setters.set_scalar_product_kernel" title="Link to this definition"></a></dt>
+<dd><p>Set the scalar product kernel with specified parameters.</p>
+<p>Args:
+- polynomial_order (int): The polynomial order for the kernel function.
+- regularization (float): The regularization parameter for the kernel.
+- set_map (callable, optional): An optional mapping function to apply.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="codpy.core.kernel_setter">
+<span class="sig-prename descclassname"><span class="pre">codpy.core.</span></span><span class="sig-name descname"><span class="pre">kernel_setter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">map</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polynomial_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regularization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-08</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bandwidth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/codpy/core.html#kernel_setter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#codpy.core.kernel_setter" title="Link to this definition"></a></dt>
+<dd><p>Set the kernel function with specified parameters using string identifiers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kernel</strong> (<em>str</em>) – The name of the kernel function to use.</p></li>
+<li><p><strong>map</strong> (<em>str</em>) – The name of the mapping function to use.</p></li>
+<li><p><strong>polynomial_order</strong> (<em>int</em>) – The polynomial order for the kernel function.</p></li>
+<li><p><strong>regularization</strong> (<em>float</em>) – The regularization parameter for the kernel.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The configured kernel function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="kernel.html" class="btn btn-neutral float-left" title="Kernel class" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gallery_examples/index.html" class="btn btn-neutral float-right" title="Examples Gallery" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Jean-Marc MERCIER, Shohruh MIRYUSUPOV.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
