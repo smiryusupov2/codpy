@@ -1,0 +1,803 @@
+{
+ "GreedySearch": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy.multiscale_kernel",
+   "module_short": "codpy.multiscale_kernel",
+   "name": "GreedySearch"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "GreedySearch"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy.kernel",
+   "module_short": "codpy.kernel",
+   "name": "Kernel"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "Kernel"
+  }
+ ],
+ "KernelClassifier": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy.kernel",
+   "module_short": "codpy.kernel",
+   "name": "KernelClassifier"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "KernelClassifier"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy.kernel",
+   "module_short": "codpy.kernel",
+   "name": "Kernel"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "Kernel"
+  }
+ ],
+ "MiniBatchkmeans": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy.multiscale_kernel",
+   "module_short": "codpy.multiscale_kernel",
+   "name": "MiniBatchkmeans"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "MiniBatchkmeans"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn.cluster._kmeans",
+   "module_short": "sklearn.cluster",
+   "name": "MiniBatchKMeans"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn.cluster",
+   "module_short": "sklearn.cluster",
+   "name": "MiniBatchKMeans"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn",
+   "module_short": "sklearn",
+   "name": "MiniBatchKMeans"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn.cluster._kmeans",
+   "module_short": "sklearn.cluster._kmeans",
+   "name": "_BaseKMeans"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn.cluster",
+   "module_short": "sklearn.cluster",
+   "name": "_BaseKMeans"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn",
+   "module_short": "sklearn",
+   "name": "_BaseKMeans"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn.base",
+   "module_short": "sklearn.base",
+   "name": "_ClassNamePrefixFeaturesOutMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn",
+   "module_short": "sklearn",
+   "name": "_ClassNamePrefixFeaturesOutMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn.base",
+   "module_short": "sklearn.base",
+   "name": "TransformerMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn",
+   "module_short": "sklearn",
+   "name": "TransformerMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn.base",
+   "module_short": "sklearn.base",
+   "name": "ClusterMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn",
+   "module_short": "sklearn",
+   "name": "ClusterMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn.base",
+   "module_short": "sklearn.base",
+   "name": "BaseEstimator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "sklearn",
+   "module_short": "sklearn",
+   "name": "BaseEstimator"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "abc",
+   "module_short": "abc",
+   "name": "ABC"
+  }
+ ],
+ "MultiScaleKernelClassifier": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy.multiscale_kernel",
+   "module_short": "codpy.multiscale_kernel",
+   "name": "MultiScaleKernelClassifier"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "MultiScaleKernelClassifier"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy.multiscale_kernel",
+   "module_short": "codpy.multiscale_kernel",
+   "name": "MultiScaleKernel"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "MultiScaleKernel"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy.kernel",
+   "module_short": "codpy.kernel",
+   "name": "Kernel"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "Kernel"
+  }
+ ],
+ "N_MNIST_pics": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "N_clusters": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "N_partition": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "int"
+  }
+ ],
+ "codpy.kernel.Kernel": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "codpy.kernel",
+   "module_short": "codpy.kernel",
+   "name": "Kernel"
+  }
+ ],
+ "codpy.kernel.Kernel.Knm": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "codpy.kernel.Kernel",
+   "module_short": "codpy.kernel.Kernel",
+   "name": "Knm"
+  }
+ ],
+ "codpy.kernel.Kernel.get_knm_inv": [
+  {
+   "is_class": false,
+   "is_explicit": true,
+   "module": "codpy.kernel.Kernel",
+   "module_short": "codpy.kernel.Kernel",
+   "name": "get_knm_inv"
+  }
+ ],
+ "confusion_matrix": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "sklearn.metrics",
+   "module_short": "sklearn.metrics",
+   "name": "confusion_matrix"
+  }
+ ],
+ "core.kernel_interface.set_verbose": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  }
+ ],
+ "fx": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "fx.reshape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "fx.values": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "fy": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "fz": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "fz.argmax": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "fz.reshape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "fz.values": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "get_MNIST_data": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  }
+ ],
+ "hot_encoder": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy.data_processing",
+   "module_short": "codpy.data_processing",
+   "name": "hot_encoder"
+  }
+ ],
+ "indices": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "np.random.choice": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy.random",
+   "module_short": "numpy.random",
+   "name": "choice"
+  }
+ ],
+ "np.sum": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "sum"
+  }
+ ],
+ "np.trace": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "trace"
+  }
+ ],
+ "os.environ": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "os",
+   "module_short": "os",
+   "name": "_Environ"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "os",
+   "module_short": "os",
+   "name": "environ"
+  }
+ ],
+ "pd.DataFrame": [
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core.frame",
+   "module_short": "pandas.core.frame",
+   "name": "DataFrame"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core",
+   "module_short": "pandas.core",
+   "name": "DataFrame"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas",
+   "module_short": "pandas",
+   "name": "DataFrame"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core.generic",
+   "module_short": "pandas.core.generic",
+   "name": "NDFrame"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core",
+   "module_short": "pandas.core",
+   "name": "NDFrame"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas",
+   "module_short": "pandas",
+   "name": "NDFrame"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core.arraylike",
+   "module_short": "pandas.core.arraylike",
+   "name": "OpsMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core",
+   "module_short": "pandas.core",
+   "name": "OpsMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas",
+   "module_short": "pandas",
+   "name": "OpsMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core.base",
+   "module_short": "pandas.core.base",
+   "name": "PandasObject"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core",
+   "module_short": "pandas.core",
+   "name": "PandasObject"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas",
+   "module_short": "pandas",
+   "name": "PandasObject"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core.indexing",
+   "module_short": "pandas.core.indexing",
+   "name": "IndexingMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core",
+   "module_short": "pandas.core",
+   "name": "IndexingMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas",
+   "module_short": "pandas",
+   "name": "IndexingMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core.accessor",
+   "module_short": "pandas.core.accessor",
+   "name": "DirNamesMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas.core",
+   "module_short": "pandas.core",
+   "name": "DirNamesMixin"
+  },
+  {
+   "is_class": true,
+   "is_explicit": false,
+   "module": "pandas",
+   "module_short": "pandas",
+   "name": "DirNamesMixin"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "pandas",
+   "module_short": "pandas",
+   "name": "DataFrame"
+  }
+ ],
+ "predictor": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy.multiscale_kernel",
+   "module_short": "codpy.multiscale_kernel",
+   "name": "MultiScaleKernelClassifier"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "MultiScaleKernelClassifier"
+  }
+ ],
+ "predictor.discrepancy": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy.multiscale_kernel",
+   "module_short": "codpy.multiscale_kernel",
+   "name": "MultiScaleKernelClassifier.discrepancy"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "MultiScaleKernelClassifier.discrepancy"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy.multiscale_kernel",
+   "module_short": "codpy.multiscale_kernel",
+   "name": "MultiScaleKernel.discrepancy"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "MultiScaleKernel.discrepancy"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy.kernel",
+   "module_short": "codpy.kernel",
+   "name": "Kernel.discrepancy"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "Kernel.discrepancy"
+  }
+ ],
+ "predictor.get_y": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy.multiscale_kernel",
+   "module_short": "codpy.multiscale_kernel",
+   "name": "MultiScaleKernelClassifier.get_y"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "MultiScaleKernelClassifier.get_y"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy.multiscale_kernel",
+   "module_short": "codpy.multiscale_kernel",
+   "name": "MultiScaleKernel.get_y"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "MultiScaleKernel.get_y"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy.kernel",
+   "module_short": "codpy.kernel",
+   "name": "Kernel.get_y"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy",
+   "module_short": "codpy",
+   "name": "Kernel.get_y"
+  }
+ ],
+ "random.sample": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "module.sample"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "random",
+   "module_short": "random",
+   "name": "sample"
+  }
+ ],
+ "show_confusion_matrix": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  }
+ ],
+ "tf.keras.datasets.mnist.load_data": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "tensorflow.keras.datasets.mnist",
+   "module_short": "tensorflow.keras.datasets.mnist",
+   "name": "load_data"
+  }
+ ],
+ "x": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "x.reshape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ],
+ "x.shape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "tuple"
+  }
+ ],
+ "y": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "z": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "numpy",
+   "module_short": "numpy",
+   "name": "ndarray"
+  }
+ ],
+ "z.reshape": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "builtin_function_or_method"
+  }
+ ]
+}

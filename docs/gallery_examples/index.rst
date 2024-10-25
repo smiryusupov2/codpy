@@ -35,6 +35,23 @@ This gallery demonstrates various examples using CodPy.
     </div>
 
 
+.. raw:: html
+
+    <div class="sphx-glr-thumbcontainer" tooltip="We illustrate some basic considerations while manipulating the class codpy.kernel.Kernel classes , applying it to the MNIST problem. It illustrates the following interpolation / extrapolation method">
+
+.. only:: html
+
+  .. image:: /gallery_examples/images/thumb/sphx_glr_MNIST_thumb.png
+    :alt:
+
+  :ref:`sphx_glr_gallery_examples_MNIST.py`
+
+.. raw:: html
+
+      <div class="sphx-glr-thumbnail-title">MNIST Examples</div>
+    </div>
+
+
 .. thumbnail-parent-div-close
 
 .. raw:: html
@@ -46,6 +63,7 @@ This gallery demonstrates various examples using CodPy.
    :hidden:
 
    /gallery_examples/kernel_overloading
+   /gallery_examples/MNIST
 
 
 

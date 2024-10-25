@@ -23,7 +23,7 @@ Kernel Overloading Example
 
 This example demonstrates kernel overloading using CodPy.
 
-.. GENERATED FROM PYTHON SOURCE LINES 7-39
+.. GENERATED FROM PYTHON SOURCE LINES 7-29
 
 .. code-block:: Python
 
@@ -31,7 +31,6 @@ This example demonstrates kernel overloading using CodPy.
     # import libraries
     import numpy as np
     from codpydll import *
-
     import codpy.core as core
 
 
@@ -39,17 +38,9 @@ This example demonstrates kernel overloading using CodPy.
     class my_kernel(core.cd.kernel):
         # An example of overloading codpy kernel with a user-defined expression.
 
-        def __init__(self, **kwargs):
+        def __init__(self, bandwith = 1.,**kwargs):
             core.cd.kernel.__init__(self)
-            self.bandwidth_ = float(kwargs.get("bandwidth", 1.0))
-
-        @staticmethod
-        def create(kwargs={}):
-            return my_kernel(**kwargs)
-
-        @staticmethod
-        def register():
-            cd.kernel.register("my_kernel", my_kernel.create)
+            self.bandwidth_ = bandwith
 
         def k(self, x, y):
             out = np.linalg.norm((x - y) * self.bandwidth_)
@@ -65,15 +56,15 @@ This example demonstrates kernel overloading using CodPy.
 
 
 
-
-.. GENERATED FROM PYTHON SOURCE LINES 40-41
+.. GENERATED FROM PYTHON SOURCE LINES 30-31
 
 Generate data for the kernel.
 
-.. GENERATED FROM PYTHON SOURCE LINES 43-45
+.. GENERATED FROM PYTHON SOURCE LINES 33-36
 
 .. code-block:: Python
 
+    core.kernel_interface.set_verbose(True)
     x, y = np.random.randn(3, 2), np.random.randn(3, 2)
 
 
@@ -83,16 +74,17 @@ Generate data for the kernel.
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 46-47
+.. GENERATED FROM PYTHON SOURCE LINES 37-38
 
 Create a kernel object and display the result.
 
-.. GENERATED FROM PYTHON SOURCE LINES 49-53
+.. GENERATED FROM PYTHON SOURCE LINES 40-45
 
 .. code-block:: Python
 
-    my_kernel_ = my_kernel.create()
-    result_1 = my_kernel_.k(x[0], y[0])
+    my_kernel1 = my_kernel(1)
+    my_kernel2 = my_kernel(2)
+    result_1 = my_kernel1.k(x[0], y[0])
     print("Result 1:", result_1)
 
 
@@ -103,22 +95,23 @@ Create a kernel object and display the result.
 
  .. code-block:: none
 
-    Result 1: 0.5353263912941348
+    Result 1: 3.189904653784086
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 54-55
+.. GENERATED FROM PYTHON SOURCE LINES 46-48
 
 Set the kernel and display the next result.
+my_kernel2 and my_kernel_ptr2 are the same object.
 
-.. GENERATED FROM PYTHON SOURCE LINES 57-62
+.. GENERATED FROM PYTHON SOURCE LINES 50-55
 
 .. code-block:: Python
 
-    my_kernel.set_kernel_ptr(my_kernel_)
-    my_kernel_ptr = core.kernel_interface.get_kernel_ptr()
-    result_2 = my_kernel_.k(x[0], y[0])
+    my_kernel.set_kernel_ptr(my_kernel2)
+    my_kernel_ptr2 = core.kernel_interface.get_kernel_ptr()
+    result_2 = my_kernel_ptr2.k(x[0], y[0])
     print("Result 2:", result_2)
 
 
@@ -129,16 +122,16 @@ Set the kernel and display the next result.
 
  .. code-block:: none
 
-    Result 2: 0.5353263912941348
+    Result 2: 12.759618615136343
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 63-64
+.. GENERATED FROM PYTHON SOURCE LINES 56-57
 
-Compute the Gram matrix and display it.
+Compute the Gram matrix with my_kernel2 and display it.
 
-.. GENERATED FROM PYTHON SOURCE LINES 66-69
+.. GENERATED FROM PYTHON SOURCE LINES 59-62
 
 .. code-block:: Python
 
@@ -153,32 +146,36 @@ Compute the Gram matrix and display it.
 
  .. code-block:: none
 
-    Gram Matrix: [[0.53532639 0.84452703 1.01404385]
-     [0.40688305 1.05464043 0.40891759]
-     [0.4455739  0.67120444 0.7541678 ]]
+    Gram Matrix: [[12.75961862  7.68755307  7.43318098]
+     [ 5.30028835  0.73710879  7.50393172]
+     [ 0.52912307  2.34671586  4.37847219]]
 
 
 
 
-.. GENERATED FROM PYTHON SOURCE LINES 70-71
+.. GENERATED FROM PYTHON SOURCE LINES 63-64
 
-Register the kernel (no output for this step).
+You can switch kernel as follow.
 
-.. GENERATED FROM PYTHON SOURCE LINES 73-81
+.. GENERATED FROM PYTHON SOURCE LINES 64-68
 
 .. code-block:: Python
 
-    my_kernel.register()
-    my_kernel_ptr = core.factories.get_kernel_factory()["my_kernel"]({"bandwidth": "2."})
-
-
-    # !!!!!!!! a corriger
-    # print(my_kernel_ptr.k(x[0], y[0]))
-    # my_kernel.set_kernel_ptr(my_kernel_ptr)
-    # print(core.op.Knm(x, y))
+    my_kernel.set_kernel_ptr(my_kernel1)
+    print(core.op.Knm(x, y))
+    pass
 
 
 
+
+
+.. rst-class:: sphx-glr-script-out
+
+ .. code-block:: none
+
+    [[3.18990465 1.92188827 1.85829524]
+     [1.32507209 0.1842772  1.87598293]
+     [0.13228077 0.58667896 1.09461805]]
 
 
 
@@ -186,7 +183,7 @@ Register the kernel (no output for this step).
 
 .. rst-class:: sphx-glr-timing
 
-   **Total running time of the script:** (0 minutes 0.509 seconds)
+   **Total running time of the script:** (0 minutes 0.299 seconds)
 
 
 .. _sphx_glr_download_gallery_examples_kernel_overloading.py:

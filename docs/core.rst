@@ -1,4 +1,4 @@
-Kernels and maps
+Core functionalities
 ================
 
 .. automodule:: codpy.core

@@ -4,7 +4,7 @@ from codpydll import *
 from codpy.data_conversion import get_matrix
 from codpy.data_processing import lexicographical_permutation
 
-from .core import _kernel_helper2
+from codpy.core import _kernel_helper2
 
 
 class alg:
@@ -90,6 +90,20 @@ class alg:
         # import codpy.core
         # codpy.core.set_verbose(True)
         return cd.alg.add(Knm, Knm_inv, x, y)
+    
+    def greedy_algorithm(
+        x,
+        N,
+        start_indices=set(),
+        **kwargs,
+    ):
+        # NumPy arrays input
+        x = get_matrix(x)
+        out = cd.tools.greedy_algorithm(
+            get_matrix(x), N, start_indices
+        )
+        return out
+
 
 
 if __name__ == "__main__":

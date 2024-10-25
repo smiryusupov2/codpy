@@ -6,7 +6,7 @@
 
 Computation times
 =================
-**00:00.509** total execution time for 1 file **from gallery_examples**:
+**00:37.563** total execution time for 2 files **from gallery_examples**:
 
 .. container::
 
@@ -32,6 +32,9 @@ Computation times
    * - Example
      - Time
      - Mem (MB)
+   * - :ref:`sphx_glr_gallery_examples_MNIST.py` (``MNIST.py``)
+     - 00:37.563
+     - 0.0
    * - :ref:`sphx_glr_gallery_examples_kernel_overloading.py` (``kernel_overloading.py``)
-     - 00:00.509
+     - 00:00.000
      - 0.0

@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from codpy.core import diffops, distance_labelling, kernel_interface
+import codpy.core as core
+from codpy.core import diffops, kernel_interface
 from codpy.data_conversion import get_data, get_matrix
 
 ########################################### Partial Differential tools #########################################
@@ -91,7 +92,7 @@ def taylor_expansion(
     xo, _, _, fxo = x, y, z, fx
     indices = kwargs.get("indices", [])
     if len(indices) != z.shape[0]:
-        indices = distance_labelling(**{**kwargs, **{"x": x, "axis": 0, "y": z}})
+        indices = core.misc.distance_labelling(**{**kwargs, **{"x": x, "axis": 0, "y": z}})
     xo = x[indices]
     fxo = fx[indices]
     deltax = get_data(z - xo)

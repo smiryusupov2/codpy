@@ -1,13 +1,4 @@
 {
- "cd.kernel.register": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "builtin_function_or_method"
-  }
- ],
  "core.cd.kernel": [
   {
    "is_class": true,
@@ -15,13 +6,6 @@
    "module": "codpypyd",
    "module_short": "codpypyd",
    "name": "kernel"
-  },
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "codpypyd",
-   "module_short": "codpypyd",
-   "name": "pre_kernel"
   },
   {
    "is_class": false,
@@ -47,22 +31,6 @@
    "name": "__init__"
   }
  ],
- "core.factories.get_kernel_factory": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "function"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "codpy.core.factories",
-   "module_short": "codpy.core.factories",
-   "name": "get_kernel_factory"
-  }
- ],
  "core.kernel_interface.get_kernel_ptr": [
   {
    "is_class": false,
@@ -77,6 +45,22 @@
    "module": "codpy.core.kernel_interface",
    "module_short": "codpy.core.kernel_interface",
    "name": "get_kernel_ptr"
+  }
+ ],
+ "core.kernel_interface.set_verbose": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "builtins",
+   "module_short": "builtins",
+   "name": "function"
+  },
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "codpy.core.kernel_interface",
+   "module_short": "codpy.core.kernel_interface",
+   "name": "set_verbose"
   }
  ],
  "core.op.Knm": [
@@ -118,31 +102,6 @@
    "module": "codpypyd",
    "module_short": "codpypyd",
    "name": "kernel"
-  },
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "codpypyd",
-   "module_short": "codpypyd",
-   "name": "pre_kernel"
-  }
- ],
- "my_kernel.create": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "function"
-  }
- ],
- "my_kernel.register": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "function"
   }
  ],
  "my_kernel.set_kernel_ptr": [
@@ -154,7 +113,7 @@
    "name": "builtin_function_or_method"
   }
  ],
- "my_kernel_": [
+ "my_kernel1": [
   {
    "is_class": false,
    "is_explicit": false,
@@ -163,7 +122,7 @@
    "name": "my_kernel"
   }
  ],
- "my_kernel_.k": [
+ "my_kernel1.k": [
   {
    "is_class": false,
    "is_explicit": false,
@@ -177,22 +136,40 @@
    "module": "codpypyd",
    "module_short": "codpypyd",
    "name": "kernel.k"
+  }
+ ],
+ "my_kernel2": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "__main__",
+   "module_short": "__main__",
+   "name": "my_kernel"
+  }
+ ],
+ "my_kernel_ptr2": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "__main__",
+   "module_short": "__main__",
+   "name": "my_kernel"
+  }
+ ],
+ "my_kernel_ptr2.k": [
+  {
+   "is_class": false,
+   "is_explicit": false,
+   "module": "__main__",
+   "module_short": "__main__",
+   "name": "my_kernel.k"
   },
   {
    "is_class": false,
    "is_explicit": false,
    "module": "codpypyd",
    "module_short": "codpypyd",
-   "name": "pre_kernel.k"
-  }
- ],
- "my_kernel_ptr": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "codpypyd",
-   "module_short": "codpypyd",
-   "name": "kernel"
+   "name": "kernel.k"
   }
  ],
  "np.linalg.norm": [
