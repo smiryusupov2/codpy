@@ -21,6 +21,7 @@ class MiniBatchkmeans(MiniBatchKMeans):
 
 class GreedySearch(Kernel):
     def __init__(self,x, N, **kwargs):
+        # super().__init__(x=x,max_nystrom=N,**kwargs) #seemed to be a better idea, but no evidence in results !
         super().__init__(x=x,**kwargs)
         self.greedy_select(N=N,x=x,**kwargs,all=True)
         self.cluster_centers_ = self.get_x()[self.indices]
@@ -34,3 +35,6 @@ class SharpDiscrepancy(GreedySearch):
         super().__init__(x=x,N=N,**kwargs)
         self.cluster_centers_ = cd.alg.sharp_discrepancy(self.get_x(),N,itermax)
         self.labels_ = self(self.get_x())
+    def __call__(self,z, **kwargs):
+        labels = core.op.Dnm(z, self.cluster_centers_).argmin(axis=1)
+        return labels

@@ -11,7 +11,6 @@ from codpy.core import _requires_rescale, op
 from codpy.data_conversion import get_matrix
 from codpy.dictionary import Dict, Set, cast
 from codpy.random_utils import random_select_interface
-from codpy.sampling import sharp_discrepancy
 from codpy.selection import column_selector
 from codpy.utils import format_23, format_32
 

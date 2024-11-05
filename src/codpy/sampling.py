@@ -332,35 +332,3 @@ def MiniBatchkmeans(x, **kwargs):
         .fit(x)
         .cluster_centers_
     )
-
-
-def sharp_discrepancy(**kwargs):
-    x = kwargs["x"]
-    kernel.init(**kwargs)
-    itermax = int(kwargs.get("sharp_discrepancy:itermax", 10))
-    Ny = kwargs.get("Ny", None)
-    if Ny is None:
-        if kwargs.get("y", None) is None:
-            return x
-        return cd.alg.sharp_discrepancy(x, kwargs["y"], itermax)
-    if Ny >= x.shape[0]:
-        return x
-    sharp_discrepancy_format_switchDict = {
-        pd.DataFrame: lambda x, **kwargs: sharp_discrepancy_dataframe(x, **kwargs)
-    }
-
-    def sharp_discrepancy_dataframe(x, **kwargs):
-        out = sharp_discrepancy(**{**kwargs, **{"x": get_matrix(x)}})
-        return pd.DataFrame(out, columns=x.columns)
-
-    def debug_fun(**kwargs):
-        Ny = kwargs.get("Ny", x.shape[0])
-        if Ny >= x.shape[0]:
-            return x
-        out = cd.alg.sharp_discrepancy(x, Ny, itermax)
-        return out
-
-    type_debug = type(x)
-    method = sharp_discrepancy_format_switchDict.get(type_debug, debug_fun)
-    out = method(**kwargs)
-    return out
