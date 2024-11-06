@@ -884,6 +884,7 @@ class Kernel:
         :returns: The computed MMD-based distance matrix.
         :rtype: :class:`numpy.ndarray`
         """
+        self.set_kernel_ptr()
         return core.op.Dnm(x=z, y=self.x)
     
     def discrepancy(self, z: np.ndarray) -> float:
@@ -896,6 +897,7 @@ class Kernel:
         :returns: The computed MMD-based distance matrix.
         :rtype: :class:`numpy.ndarray`
         """
+        self.set_kernel_ptr()
         return core.op.discrepancy_error(x=self.get_x(), z=z)
 
 

@@ -54,8 +54,7 @@ def show_confusion_matrix(z, fz, predictor=None, cm=True):
         print("confusion matrix:")
         print(out)
     print("score MNIST:", np.trace(out) / np.sum(out))
-    pass
-
+pass
 
 # %% [markdown]
 # Run codpy silently on/off.
@@ -64,7 +63,7 @@ core.kernel_interface.set_verbose(False)
 # %% [markdown]
 # The training set is `x,fx`, the test set is `z,fz`.
 N_clusters=100
-N_MNIST_pics=5000
+N_MNIST_pics=-1
 x, fx, z, fz = get_MNIST_data(N_MNIST_pics)
 
 # %% [markdown]

@@ -6,9 +6,8 @@ from scipy.special import softmax
 from codpy.permutation import map_invertion
 from sklearn.cluster import KMeans,MiniBatchKMeans
 
-
 class MiniBatchkmeans(MiniBatchKMeans):
-    def __init__(self,x, N, max_iter = 300, random_state = 42,batch_size = 8192,verbose = False,**kwargs):
+    def __init__(self,x, N, max_iter = 300, random_state = 42,batch_size = 1024,verbose = False,**kwargs):
         super().__init__(n_clusters=N,
             init="k-means++",
             batch_size = batch_size,
@@ -27,6 +26,7 @@ class GreedySearch(Kernel):
         self.cluster_centers_ = self.get_x()[self.indices]
         self.labels_ = self(self.get_x())
     def __call__(self,z, **kwargs):
+        self.set_kernel_ptr()
         labels = core.op.Dnm(z, self.cluster_centers_).argmin(axis=1)
         return labels
     
@@ -35,6 +35,3 @@ class SharpDiscrepancy(GreedySearch):
         super().__init__(x=x,N=N,**kwargs)
         self.cluster_centers_ = cd.alg.sharp_discrepancy(self.get_x(),N,itermax)
         self.labels_ = self(self.get_x())
-    def __call__(self,z, **kwargs):
-        labels = core.op.Dnm(z, self.cluster_centers_).argmin(axis=1)
-        return labels
