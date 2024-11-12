@@ -5,15 +5,16 @@ import numpy as np
 import pandas as pd
 from scipy.special import softmax
 from codpy.permutation import map_invertion
-from codpy.clustering import GreedySearch,MiniBatchkmeans
+from codpy.clustering import *
 
 
 class MultiScaleKernel(Kernel):
     params = {}
-    def __init__(self,N,Nmax=None,method = MiniBatchkmeans,**kwargs):
+    def __init__(self,N,n_batch=sys.maxsize,method = MiniBatchkmeans,balanced = True,**kwargs):
         self.method = method
         self.N = N
-        self.Nmax = Nmax
+        self.n_batch = n_batch
+        self.balanced = balanced
         super().__init__(method=self.method,**kwargs)
         pass
 
@@ -21,17 +22,18 @@ class MultiScaleKernel(Kernel):
     def set(self,x=None,fx=None,y=None,**kwargs):
         super().set(x=x,fx=fx,y=y,**kwargs)
         self.clustering = self.method(x=self.get_x(),N=self.N,fx=self.get_fx(),**kwargs)
+        if (self.balanced):
+            self.clustering = BalancedClustering(self.clustering)
         y,labels = self.clustering.cluster_centers_,self.clustering.labels_
         self.set_y(y)
         self.labels = map_invertion(labels)
         self.kernels = {}
         fx_proj = self.get_fx() - super().__call__(z=x)
-        if self.Nmax is None: self.Nmax = self.get_x().shape[0] / self.N 
         for key in self.labels.keys():
             indices = list(self.labels[key])
-            if len(indices) > self.Nmax:
-                N = int(len(indices) / self.Nmax)+1
-                self.kernels[key] = MultiScaleKernel(x=x[indices],fx=fx_proj[indices],N=N,Nmax=self.Nmax,**kwargs)
+            if len(indices) > self.n_batch:
+                N = int(len(indices) / self.n_batch)+1
+                self.kernels[key] = MultiScaleKernel(x=x[indices],fx=fx_proj[indices],N=N,n_batch=self.n_batch,**kwargs)
             else:
                 self.kernels[key] = Kernel(x=x[indices],fx=fx_proj[indices],**kwargs)
         # test = fx - self.__call__(z=x) # reproductibility : should be zero if no regularization

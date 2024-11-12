@@ -60,12 +60,9 @@ class alg:
         )
         return out[:, 0:Dx], out[:, Dx:], permutation
 
-    def Pi(x, z, fz=[], nmax=10, rescale=False, **kwargs):
+    def Pi(x, y, z, fz=[], nmax=10, **kwargs):
         # print('######','Pi','######')
-        kernel_interface.init(**kwargs)
-        if rescale:
-            kernel_interface.rescale(x, z)
-        out = cd.alg.Pi(x=x, y=x, z=z, fz=fz, nmax=nmax)
+        out = cd.alg.Pi(x=x, y=y, z=z, fz=fz, nmax=nmax)
         return out
 
     def HybridGreedyNystroem(

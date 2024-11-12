@@ -535,7 +535,7 @@ class Kernel:
         if self.Delta is None:
             self.Delta = diffops.nablaT_nabla(self.y, self.x)
         return self.Delta
-    def greedy_select(self, N,x=None, fx=None, all=False, norm_="frobenius", **kwargs):
+    def greedy_select(self, N,x=None, fx=None, all=False, n_batch=1, norm ="frobenius", **kwargs):
         """
         Select a subset of points using a greedy Nystrom approximation technique :
 
@@ -584,7 +584,7 @@ class Kernel:
         else: x = self.get_x()
         if fx is not None: self.set_fx(fx)
         self.rescale()
-
+        theta = None
         # If function values (fx) are provided, apply polynomial regression to `x`
         if fx is not None:
             if self.get_polynomial_values() is not None:
@@ -602,8 +602,8 @@ class Kernel:
                 fx=fx,
                 N=N,
                 tol=0.0,
-                error_type=norm_,
-                n_batch=1,
+                error_type=norm,
+                n_batch=n_batch,
                 **kwargs,
             )
         else: 
@@ -621,9 +621,9 @@ class Kernel:
             self.kernel = core.kernel_interface.get_kernel_ptr()
             self.x=self.x[indices]
             self.y=self.x
-            self.fx=self.fx[indices]
-            self.theta = None
-            # self.theta = theta
+            if self.fx is not None: self.fx=self.fx[indices]
+            # test = self.get_theta()-theta
+            if theta is not None:self.set_theta(theta)
         return self
     
     def set(
