@@ -5,6 +5,7 @@ license
 setup.py
 src/codpy/__init__.py
 src/codpy/algs.py
+src/codpy/clustering.py
 src/codpy/config.py
 src/codpy/core.py
 src/codpy/data_conversion.py

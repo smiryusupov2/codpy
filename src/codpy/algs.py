@@ -3,7 +3,8 @@ from codpydll import *
 
 from codpy.data_conversion import get_matrix
 from codpy.data_processing import lexicographical_permutation
-
+from codpy.data_conversion import get_matrix
+from codpy.lalg import *
 from codpy.core import _kernel_helper2
 
 
@@ -60,9 +61,14 @@ class alg:
         )
         return out[:, 0:Dx], out[:, Dx:], permutation
 
-    def Pi(x, y, z, fz=[], nmax=10, **kwargs):
+    def Pi(x, y, z=None, fz=None, nmax=5, **kwargs):
         # print('######','Pi','######')
-        out = cd.alg.Pi(x=x, y=y, z=z, fz=fz, nmax=nmax)
+        from codpy.kernel import Kernel, KernelClassifier
+        out = cd.alg.Pi(x=x, y=y, nmax=nmax)
+        if z is not None:
+            k = KernelClassifier(x=x,fx=out,**kwargs)
+            out = lalg.prod(k(z),fz)
+        # return lalg.prod(out,fz)
         return out
 
     def HybridGreedyNystroem(

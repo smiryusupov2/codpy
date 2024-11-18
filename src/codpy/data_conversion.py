@@ -32,7 +32,7 @@ get_float_switchDict = {
                         pd.core.indexes.base.Index : lambda vals, **kwargs: get_float(vals.tolist(), **kwargs),
                         pd.core.series.Series : lambda vals, **kwargs: get_float(vals.tolist(), **kwargs),
                         pd.core.indexes.datetimes.DatetimeIndex: lambda vals, **kwargs: get_float(vals.tolist(), **kwargs),
-                        pd.core.indexes.numeric.Float64Index: lambda vals, **kwargs: get_float(vals.tolist(), **kwargs),
+                        # pd.core.indexes.numeric.Float64Index: lambda vals, **kwargs: get_float(vals.tolist(), **kwargs),
                         pd.Index:lambda vals, **kwargs: get_float(vals.tolist(), **kwargs),
                         datetime.date :lambda vals, **kwargs: float(vals.toordinal()),
                         datetime.datetime: lambda vals, **kwargs: vals.timestamp(),#/86400, #number of seconds in a day, to keep data and datetime consistent
