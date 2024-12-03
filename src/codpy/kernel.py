@@ -2,9 +2,9 @@ from typing import Tuple
 
 import numpy as np
 from codpydll import *
+from scipy.special import softmax
 from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
-from scipy.special import softmax
 
 import codpy.core as core
 from codpy.algs import alg
@@ -19,10 +19,10 @@ class Kernel:
         Note:
             This class is similar to libraries as scikit-learn or XGBoost, in the sense that they use a fit / predict pattern, with the following correspondances and differences.
 
-            - Datas are loaded into memory in the contructor :func:`__init__`, or via :func:`set` 
-            - For matching distributions, use :func:`map`, 
+            - Datas are loaded into memory in the contructor :func:`__init__`, or via :func:`set`
+            - For matching distributions, use :func:`map`,
             - The `predict` function is made directly through :func:`__call__`
-            
+
             It implements the following methods :
 
             - In the context of functions interpolation / extrapolation
@@ -33,11 +33,11 @@ class Kernel:
                 - $K(X, Y)^{-1} = (K(Y, X)K(X, Y) + \epsilon R(Y,Y))^{-1}K(Y,X)$ is computed as a least-square method with optional regularization terms, , see :func:`get_knm_inv`.
 
             - For matching distributions
-                $$f_{k,\\theta}(\cdot) = K(\cdot, Y) K(X, Y)^{-1} f(X\circ \sigma)$$, where $\sigma$ is a permutation.            
-            
+                $$f_{k,\\theta}(\cdot) = K(\cdot, Y) K(X, Y)^{-1} f(X\circ \sigma)$$, where $\sigma$ is a permutation.
+
             - Fitting is done just-in-time (at first prediction), and means computing the parameters $\\theta = K(X, Y)^{-1} f(X)$, together with $\sigma$ for distributions. The function :func:`get_theta()` performs those computations and corresponds to fit in others frameworks.
-            
-    """ 
+
+    """
 
     def __init__(
         self,
@@ -55,7 +55,7 @@ class Kernel:
         """
         Initializes the Kernel class with default or user-defined parameters.
 
-        :param x: A bi-dimensional numpy array. 
+        :param x: A bi-dimensional numpy array.
         :param fx: A bi-dimensional numpy array. If `x` or `fx` is not `None`, then call :func:`set`
         :param max_pool: Maximum pool size for the kernel operations. Defaults to 1000.
         :type max_pool: :class:`int`, optional
@@ -84,7 +84,7 @@ class Kernel:
             self.set_kernel = self.default_kernel_functor()
 
         if x is not None or fx is not None:
-            self.set(x=x, y=y,fx=fx, **kwargs)
+            self.set(x=x, y=y, fx=fx, **kwargs)
 
     def default_kernel_functor(self) -> callable:
         """
@@ -93,7 +93,7 @@ class Kernel:
         This method provides a default kernel initialization. We picked up a quite simple but robust kernel functor
 
             >>> core.kernel_setter("maternnorm", "standardmean", 0, 1e-9)
-        
+
         defining the `maternnorm` kernel with the `standardmean` map. It sets a polynomial order of 0 and a regularization value of 1e-9.
 
         :returns: The initialized default kernel function using :func:`core.kernel_setter`.
@@ -535,7 +535,10 @@ class Kernel:
         if self.Delta is None:
             self.Delta = diffops.nablaT_nabla(self.y, self.x)
         return self.Delta
-    def greedy_select(self, N,x=None, fx=None, all=False, n_batch=1, norm ="frobenius", **kwargs):
+
+    def greedy_select(
+        self, N, x=None, fx=None, all=False, n_batch=1, norm="frobenius", **kwargs
+    ):
         """
         Select a subset of points using a greedy Nystrom approximation technique :
 
@@ -552,7 +555,7 @@ class Kernel:
         :type N: :class:`int`
         :param fx: Function values corresponding to ``x``.
 
-            - if fx is None, 
+            - if fx is None,
                 $$d(Y,X) = \\frac{1}{N_X} \\sum_{n=1}^{N_x}  k(x^n,\cdot) - \\frac{2}{N_Y} \\sum_{m=1}^{N_Y} k(\cdot,y^m)$$
                 This choice corresponds to minimizing the discrepancy error, see :func:`core.op.discrepancy_error()`.
             - if fx is not None, $d(X,Y) = \|f(X)-f_{k,\\theta}(X)\|$
@@ -580,9 +583,12 @@ class Kernel:
             N = self.max_nystrom
 
         # Set input data and function values (fx) in the internal state of the object
-        if x is not None:self.set_x(x)
-        else: x = self.get_x()
-        if fx is not None: self.set_fx(fx)
+        if x is not None:
+            self.set_x(x)
+        else:
+            x = self.get_x()
+        if fx is not None:
+            self.set_fx(fx)
         self.rescale()
         theta = None
         # If function values (fx) are provided, apply polynomial regression to `x`
@@ -606,28 +612,34 @@ class Kernel:
                 n_batch=n_batch,
                 **kwargs,
             )
-        else: 
-            indices = list(alg.greedy_algorithm(x=self.get_x(),N=N,**kwargs))
+        else:
+            indices = list(alg.greedy_algorithm(x=self.get_x(), N=N, **kwargs))
             #
         self.indices = indices
         if all is True:
             # if there is a flag all, then
             # f_\theta(.) = K(.,Y)K(X,Y)^{-1}f(X)
-            self.y=self.x[indices]
+            self.y = self.x[indices]
             # self.rescale()
         else:
             # else X = Y is set:
             #  f_\theta(.) = K(.,Y)K(Y,Y)^{-1}f(Y)
             self.kernel = core.kernel_interface.get_kernel_ptr()
-            self.x=self.x[indices]
-            self.y=self.x
-            if self.fx is not None: self.fx=self.fx[indices]
+            self.x = self.x[indices]
+            self.y = self.x
+            if self.fx is not None:
+                self.fx = self.fx[indices]
             # test = self.get_theta()-theta
-            if theta is not None:self.set_theta(theta)
+            if theta is not None:
+                self.set_theta(theta)
         return self
-    
+
     def set(
-        self, x: np.ndarray = None, fx: np.ndarray = None, y: np.ndarray = None,**kwargs
+        self,
+        x: np.ndarray = None,
+        fx: np.ndarray = None,
+        y: np.ndarray = None,
+        **kwargs,
     ) -> None:
         """
         Set the input data ``x``, function values ``fx``, and target data ``y`` for the kernel.
@@ -666,7 +678,7 @@ class Kernel:
         return self
 
     def map(
-        self, x: np.ndarray, y: np.ndarray, distance: str = None, sub: bool = False
+        self, x: np.ndarray, y: np.ndarray, distance: str = "norm22", sub: bool = False
     ) -> None:
         r"""
         Maps the input data points ``x`` to the target data points ``y`` using the kernel and optimal transport techniques.
@@ -886,7 +898,7 @@ class Kernel:
         """
         self.set_kernel_ptr()
         return core.op.Dnm(x=z, y=self.x)
-    
+
     def discrepancy(self, z: np.ndarray) -> float:
         """
         Compute the MMD (Maximum Mean Discrepancy) between the kernel features $x$ and $z$.
@@ -899,7 +911,6 @@ class Kernel:
         """
         self.set_kernel_ptr()
         return core.op.discrepancy_error(x=self.get_x(), z=z)
-
 
     def get_kernel(self) -> callable:
         """
@@ -988,14 +999,18 @@ class Kernel:
             Knm += polynomial_regressor
 
         return Knm
-    
-def clip_probs(probs,min=None,max=None):
-    if min == None: min = 1e-9
-    if max == None: max = 1- 1e-9
-    out = np.where(probs < min,min,probs)
-    out = np.where(out > max,max,out)
+
+
+def clip_probs(probs, min=None, max=None):
+    if min == None:
+        min = 1e-9
+    if max == None:
+        max = 1 - 1e-9
+    out = np.where(probs < min, min, probs)
+    out = np.where(out > max, max, out)
     out /= core.get_matrix(out.sum(1))
     return out
+
 
 class KernelClassifier(Kernel):
     """
@@ -1004,17 +1019,24 @@ class KernelClassifier(Kernel):
             It overloads the prediction method as follows :
 
                 $$\text{softmax} (\log(f)_{k,\\theta})(\cdot)$$
-    """ 
-    def set_fx(self, fx: np.ndarray, set_polynomial_regressor: bool = True, **kwargs  ) -> None:
-        if fx is not None: fx = np.log(clip_probs(fx))
-        super().set_fx(fx,set_polynomial_regressor=set_polynomial_regressor,**kwargs)
+    """
+
+    def set_fx(
+        self, fx: np.ndarray, set_polynomial_regressor: bool = True, **kwargs
+    ) -> None:
+        if fx is not None:
+            fx = np.log(clip_probs(fx))
+        super().set_fx(fx, set_polynomial_regressor=set_polynomial_regressor, **kwargs)
+
     def __call__(self, z, **kwargs):
         z = core.get_matrix(z)
-        if self.x is None : return None
+        if self.x is None:
+            return None
             # return softmax(np.full((z.shape[0],self.actions_dim),np.log(.5)),axis=1)
-        Knm= super().__call__(z,**kwargs)
-        return softmax(Knm,axis=1)
-    
-    def greedy_select(self, N,x=None, fx=None, all=False, norm_="classifier", **kwargs):
-        return super().greedy_select(N=N,x=x,fx=fx, all=all, norm_=norm_, **kwargs)
+        Knm = super().__call__(z, **kwargs)
+        return softmax(Knm, axis=1)
 
+    def greedy_select(
+        self, N, x=None, fx=None, all=False, norm_="classifier", **kwargs
+    ):
+        return super().greedy_select(N=N, x=x, fx=fx, all=all, norm_=norm_, **kwargs)
