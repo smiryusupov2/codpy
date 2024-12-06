@@ -177,8 +177,37 @@ def fill(matrix, values, indices=None, op=None):
 
 
 if __name__ == "__main__":
-    # for k in cast_dict:print(k,cast_dict[k])
+    import matplotlib.pyplot as plt
+    import scipy.special
+    delta_t = .1
+    M=50
+    MC = np.zeros([M,M])
+    SD = np.zeros([M,M])
+    import random
+    normals = np.random.normal(size=[M,M])
+    normals -= np.mean(normals, axis=0)
+    erfinv = scipy.special.erfinv(np.linspace(-.5+.5/M, .5-.5/M,M))
+    for n in range(1,M):
+        MC[:,n] = MC[:,n-1] + np.sqrt(delta_t)*normals[:,n]
+        SD[:,n] = erfinv * 4.*np.sqrt(n*delta_t)
+    labels = ["Naive MC","Sharp Disc"]
+    for i in range(M):
+        x,y = MC[i,:], range(M)
+        line, = plt.plot(x,y, color="r", alpha=.5)
+    line.set_label("Naive MC")
+    for i in range(M):
+        x,y = SD[i,:], range(M)
+        line, = plt.plot(x,y, color="b")
+    line.set_label("Sharp Disc.")
+    plt.legend()
+    plt.title("Brownian motion")
     # test = [1,2]
     # test=map_invertion(test)
     # print(test)
+    plt.show()
+    # u = f(t) u_0
+    # dtu = f'(t) u_0 = Delta u / 2 = f'(t)/(f(t)) Delta u
+    # (f'/f)=1/2 f=sqrt(2)
+    # ln(f)=t
+    # f = exp(t)
     pass

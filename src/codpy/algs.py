@@ -5,7 +5,7 @@ from codpy.data_conversion import get_matrix
 from codpy.data_processing import lexicographical_permutation
 from codpy.data_conversion import get_matrix
 from codpy.lalg import *
-from codpy.core import _kernel_helper2
+import codpy.core 
 
 
 class alg:
@@ -25,7 +25,7 @@ class alg:
     ):
         # print('######','iso_probas_projection','######')
         params = {
-            "set_codpykernel": _kernel_helper2(
+            "set_codpykernel": codpy.core._kernel_helper2(
                 kernel=kernel_fun,
                 map=map,
                 polynomial_order=polynomial_order,
@@ -60,15 +60,13 @@ class alg:
             rescale=rescale,
         )
         return out[:, 0:Dx], out[:, Dx:], permutation
-
+    
     def Pi(x, y, z=None, fz=None, nmax=5, **kwargs):
         # print('######','Pi','######')
         from codpy.kernel import Kernel, KernelClassifier
         out = cd.alg.Pi(x=x, y=y, nmax=nmax)
-        if z is not None:
-            k = KernelClassifier(x=x,fx=out,**kwargs)
-            out = lalg.prod(k(z),fz)
-        # return lalg.prod(out,fz)
+        if z is not None and fz is not None: out = lalg.prod(KernelClassifier(x=x,fx=out,**kwargs),fz)
+        # else: out = k(x)
         return out
 
     def HybridGreedyNystroem(
@@ -88,6 +86,11 @@ class alg:
         )
         return cn, indices
 
+    def balanced_clustering(D):
+        return cd.alg.balanced_clustering(D)
+    def two_balanced_clustering(DX,DY,C):
+        labels1,labels2 = cd.alg.two_balanced_clustering(DX,DY,C)
+        return np.array(labels1),np.array(labels2)
 
     def add(Knm, Knm_inv, x, y):
         # import codpy.core
@@ -107,7 +110,8 @@ class alg:
         )
         return out
 
-
+    def proportional_fitting(probs,iter=100,**kwargs):
+        return cd.alg.proportional_fitting(probs,iter)
 
 if __name__ == "__main__":
     from include_all import *
@@ -116,7 +120,7 @@ if __name__ == "__main__":
     lalg.prod(x, x)
     kernel_interface.rescale(x)
     Knm = op.Knm(x=x, y=x)
-    Knm_inv = lalg.cholesky(x=Knm, eps=1e-2)
+    Knm_inv = lalg.cholesky_inverse(x=Knm, eps=1e-2)
     Knm_inv = lalg.lstsq(A=Knm)
 
     print(op.Knm_inv(x=x, y=x, fx=op.Knm(x=x, y=x)))

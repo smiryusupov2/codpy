@@ -91,11 +91,11 @@ class lalg:
             The scalar product of the two vectors.
         """
         return cd.lalg.scalar_product(x,y)
-    def cholesky(x,eps = 0): 
+    def cholesky_inverse(x,eps = 0): 
         """
         Compute the inverse of a square symetrical matrix using Cholesky decomposition.
 
-        This method performs the Cholesky decomposition on a given matrix x. It optionally 
+        This method inverse a matrix m by computing the Cholesky decomposition on $x x^T$. It optionally 
         uses a small value eps for numerical stability.
 
         Args:
@@ -105,7 +105,42 @@ class lalg:
         Returns:
             The inverse of the regularized matrix.
         """
-        return cd.lalg.cholesky(x,eps)
+        return cd.lalg.cholesky_inverse(x,eps)
+    def cholesky(x): 
+        """
+        Compute the Cholesky decomposition.
+
+        This method performs the Cholesky decomposition on a given matrix x.
+
+        Args:
+            x: The matrix to decompose.
+
+        Returns:
+            The Cholesky decomposition of the matrix.
+        """
+        return cd.lalg.cholesky(x)
+    # def stochastic_projection(x): 
+    #     """
+    #     A small algorithm to compute $\arg \inf |M - AA^T|^2$.
+    #     Args:
+    #         x: The matrix to decompose.
+
+    #     Returns:
+    #         $AA^T$.
+    #     """
+    #     A = np.identity(x.shape[0])
+    #     def helper(A):
+    #         return lalg.prod(x-lalg.prod(A,lalg.transpose(A)),A)
+    #     for n in range(x.shape[0]) :
+    #         direction = x-lalg.prod(A,lalg.transpose(A))
+    #         error = (direction*direction).sum()
+    #         direction = (direction + lalg.transpose(direction))/2.
+    #         sm = lalg.prod(direction,A)
+    #         factor = (sm * direction).sum() / (direction * direction).sum()
+    #         A += sm * factor
+    #         pass
+    #     out = lalg.prod(A,lalg.transpose(A))
+    #     return out
     def inverse(x): 
         """
         Compute the inverse of a square matrix using LU decomposition.

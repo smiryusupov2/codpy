@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans, MiniBatchKMeans
 from codpy.core import _requires_rescale, op
 from codpy.data_conversion import get_matrix
 from codpy.selection import column_selector
+import codpy.algs 
 
 
 def kernel_density_estimator(
@@ -66,69 +67,47 @@ def kernel_density_estimator(
 
 
 def kernel_conditional_density_estimator(
-    x_vals,
-    y_vals,
-    x_data,
-    y_data,
-    kernel="gaussian",
-    map="bandwidth",
-    bandwidth=1.0,
-    rescale_params: dict = {"max": 2000, "seed": 42},
+    X,
+    Y,
+    **kwargs
 ):
     """
-    Estimate the conditional density of 'y' given 'x' using the Nadaraya-Watson estimator.
+    Estimate the conditional density of 'Y' given 'X' using Nadaraya-Watson kernel conditional density estimator.
 
-    This function calculates the conditional density of values in 'y_vals' given the values in 'x_vals',
-    based on a joint distribution ('x_data', 'y_data'). It uses KDE method for the estimation, with the
-    kernel specified in 'kwargs'.
+    This function calculates the conditional density of values based on a joint distribution ('X', 'Y'). 
+    It uses KDE method for the estimation.
 
     Args:
-        x_vals (array-like): Values of 'x' for which the conditional density of 'y' is estimated.
-        y_vals (array-like): Values of 'y' for which the density is to be estimated conditionally on 'x_vals'.
-        x_data (array-like): Observed data for 'x' in the joint distribution with 'y'.
-        y_data (array-like): Observed data for 'y' in the joint distribution with 'x'.
-        kwargs (dict, optional): Parameters for the kernel function used in the Nadaraya-Watson estimator.
-                                If not provided, default parameters are used.
+        X (array-like): Observed data for 'x' in the joint distribution with 'y'.
+        Y (array-like): Observed data for 'y' in the joint distribution with 'x'.
+
+    pre-requisite:
+        A kernel must be loaded and rescaled to the data X AND Y
 
     Returns:
-        array-like: The estimated conditional density of 'y' given 'x'.
+        array-like: The estimated conditional density of 'Y' given 'X', that is a stochastic matrix.
 
     Example:
         Define joint distribution data for 'x' and 'y'
 
-        >>> x_data = np.array([...])
-        >>> y_data = np.array([...])
-
-        Values for conditional density estimation
-
-        >>> x_vals = np.array([...])
-        >>> y_vals = np.array([...])
+        >>> X = np.array([...])
+        >>> Y = np.array([...])
 
         Compute the conditional density
 
-        >>> conditional_density = kernel_conditional_density_estimator(x_vals, y_vals, x_data, y_data)
+        >>> conditional_density = kernel_conditional_density_estimator(X, Y)
     """
-    # given a joint distribution (x_data, y_data), return the density y_val | x_val using the Nadaraya-Watson estimate
+    # given a joint distribution (X, Y), return the density y_val | x_val using the Nadaraya-Watson estimate
     marginal_x = op.Knm(
-        x=x_data,
-        y=x_vals,
-        kernel=kernel,
-        map=map,
-        rescale_params=rescale_params,
-        bandwidth=bandwidth,
+        x=X,
+        y=X
     )
     marginal_y = op.Knm(
-        x=y_data,
-        y=y_vals,
-        kernel=bandwidth,
-        map=map,
-        rescale_params=rescale_params,
-        bandwidth=bandwidth,
+        x=Y,
+        y=Y
     )
-    joint_weights = marginal_x * marginal_y
-    sum_x = np.sum(marginal_x, axis=0)
-    joint_weights = np.sum(joint_weights, axis=0) / sum_x
-    return joint_weights
+    out = marginal_x * marginal_y
+    return codpy.algs.alg.proportional_fitting(out,**kwargs)
 
 
 def rejection_sampling(proposed_sample, probas, acceptance_ratio=0.0):
