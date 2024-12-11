@@ -678,7 +678,12 @@ class Kernel:
         return self
 
     def map(
-        self, x: np.ndarray, y: np.ndarray, distance: str = "norm22", sub: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        distance: str = "norm22",
+        sub: bool = False,
+        **kwargs,
     ) -> None:
         r"""
         Maps the input data points ``x`` to the target data points ``y`` using the kernel and optimal transport techniques.
@@ -880,7 +885,7 @@ class Kernel:
         self._set_polynomial_regressor()
         return self
 
-    def kernel_distance(self,y: np.ndarray,x=None) -> np.ndarray:
+    def kernel_distance(self, y: np.ndarray, x=None) -> np.ndarray:
         """
         Compute a MMD-like (Maximum Mean Discrepancy) based distance matrix between the input data ``x`` and the new data ``z``.
 
@@ -897,7 +902,8 @@ class Kernel:
         :rtype: :class:`numpy.ndarray`
         """
         self.set_kernel_ptr()
-        if x is None: x= self.x
+        if x is None:
+            x = self.x
         return core.op.Dnm(x=y, y=x)
 
     def discrepancy(self, z: np.ndarray) -> float:
@@ -1000,7 +1006,19 @@ class Kernel:
             Knm += polynomial_regressor
 
         return Knm
-    
+
+
+def clip_probs(probs, min=None, max=None):
+    if min == None:
+        min = 1e-9
+    if max == None:
+        max = 1 - 1e-9
+    out = np.where(probs < min, min, probs)
+    out = np.where(out > max, max, out)
+    out /= core.get_matrix(out.sum(1))
+    return out
+
+
 class KernelClassifier(Kernel):
     """
     A simple overload of the kernel :class:`Kernel` for proabability handling.
@@ -1009,6 +1027,25 @@ class KernelClassifier(Kernel):
 
                 $$\text{softmax} (\log(f)_{k,\\theta})(\cdot)$$
     """
+
+    def __init__(
+        self,
+        x=None,
+        y=None,
+        fx=None,
+        max_pool=1000,
+        max_nystrom=1000,
+        reg=1e-9,
+        order=None,
+        dim=1,
+        set_kernel=None,
+        **kwargs,
+    ):
+        super().__init__(
+            x, y, fx, max_pool, max_nystrom, reg, order, dim, set_kernel, **kwargs
+        )
+
+        self.x = x
 
     def set_fx(
         self, fx: np.ndarray, set_polynomial_regressor: bool = True, **kwargs
