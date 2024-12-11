@@ -85,6 +85,7 @@ class Kernel:
 
         if x is not None or fx is not None:
             self.set(x=x, y=y, fx=fx, **kwargs)
+        else : self.x,self.y,self.fx = None,None,None
 
     def default_kernel_functor(self) -> callable:
         """
@@ -652,6 +653,7 @@ class Kernel:
         :type y: :class:`numpy.ndarray`, optional
         """
         if x is None and fx is None:
+            self.x, self.fx = None, None
             return
         if x is not None and fx is None:
             self.set_x(core.get_matrix(x.copy()))
@@ -681,7 +683,7 @@ class Kernel:
         self,
         x: np.ndarray,
         y: np.ndarray,
-        distance: str = "norm22",
+        distance: str = "norm2",
         sub: bool = False,
         **kwargs,
     ) -> None:
@@ -1028,30 +1030,13 @@ class KernelClassifier(Kernel):
                 $$\text{softmax} (\log(f)_{k,\\theta})(\cdot)$$
     """
 
-    def __init__(
-        self,
-        x=None,
-        y=None,
-        fx=None,
-        max_pool=1000,
-        max_nystrom=1000,
-        reg=1e-9,
-        order=None,
-        dim=1,
-        set_kernel=None,
-        **kwargs,
-    ):
-        super().__init__(
-            x, y, fx, max_pool, max_nystrom, reg, order, dim, set_kernel, **kwargs
-        )
-
-        self.x = x
-
     def set_fx(
         self, fx: np.ndarray, set_polynomial_regressor: bool = True, **kwargs
     ) -> None:
         if fx is not None:
-            fx = np.log(clip_probs(fx))
+            if clip is not None: fx=clip(fx)
+            debug = np.where(fx < 1e-9, 1e-9,fx)
+            fx = np.log(debug)
         super().set_fx(fx, set_polynomial_regressor=set_polynomial_regressor, **kwargs)
 
     def __call__(self, z, **kwargs):

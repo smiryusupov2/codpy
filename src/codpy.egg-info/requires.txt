@@ -1,4 +1,4 @@
-codpydll==0.1.8
+codpydll==0.1.10
 numpy==1.24.4
 xarray==2022.9.0
 mkl==2022.2.1

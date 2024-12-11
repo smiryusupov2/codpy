@@ -35,7 +35,7 @@ class MiniBatchkmeans(MiniBatchKMeans):
         return self.predict(z)
 
     def distance(self, x, y):
-        return core.op.Dnm(x, y, distance="norm22")
+        return core.op.Dnm(x, y, distance="norm2")
 
 
 class GreedySearch(Kernel):

@@ -97,52 +97,61 @@ class MultiScaleOT(MultiScaleKernel):
     ):
         super().__init__(N, n_batch, method, balanced, **kwargs)
 
-    def set(self, X1, X2,epsilon=1e-8,**kwargs):
-        Kernel().set(x=np.concatenate([X1,X2]), fx=None, y=None, **kwargs)
+    def set(self, x, y,epsilon=1e-8,**kwargs):
         n_clusters = self.N
 
         if n_clusters <= 1:
-            return super().map(x=X1, y=X2)
+            return super().map(x=x, y=y)
 
-        self.MB1 = self.method(X1, n_clusters)
-        self.MB2 = self.method(X2, n_clusters)
+        self.MB1 = self.method(x, n_clusters)
+        self.MB2 = self.method(y, n_clusters)
 
-        centers_X1 = self.MB1.cluster_centers_
-        centers_X2 = self.MB2.cluster_centers_
+        centers_X = self.MB1.cluster_centers_
+        centers_Y = self.MB2.cluster_centers_
 
-        # C = self.kernel_distance(centers_X1, centers_X2)+epsilon*core.op.Dnm(centers_X1, centers_X2,distance="norm22")
-        C = core.op.Dnm(centers_X1, centers_X2,distance="norm22")
-        Dx = self.MB1.distance(X1, centers_X1)+epsilon*core.op.Dnm(X1, centers_X1,distance="norm22")
-        Dy = self.MB2.distance(X2, centers_X2)+epsilon*core.op.Dnm(X2, centers_X2,distance="norm22")
+        C = core.op.Dnm(centers_X, centers_Y,distance="norm2")
+        Dx = self.MB1.distance(x, centers_X)+epsilon*core.op.Dnm(x, centers_X,distance="norm22")
+        Dy = self.MB2.distance(y, centers_Y)+epsilon*core.op.Dnm(y, centers_Y,distance="norm22")
         perm = lsap(C)
-        label1, label2 = alg.two_balanced_clustering(Dx,Dy,C)
-        # label1, label2 = self.clustering1.get_labels(), self.clustering2.get_labels()
-        invlabel1, invlabel2 = map_invertion(label1), map_invertion(label2)
+        self.label1, self.label2 = alg.two_balanced_clustering(Dx,Dy,C)
+        self.invlabel1, self.invlabel2 = map_invertion(self.label1), map_invertion(self.label2)
         
 
         self.kernels = {}
-        for key, value in invlabel1.items():
+        X_,Y_=None,None
+        index = 0
+        for key, value in self.invlabel1.items():
             mapped_key = perm[key]
-            mapped_values = invlabel2[mapped_key]
-            X_k = X1[list(value)]
-            Y_k = X2[list(mapped_values)]
+            mapped_values = self.invlabel2[mapped_key]
+            X_k = x[list(value)]
+            Y_k = y[list(mapped_values)]
             # a little bit violent, but safe !
             min_ = min(X_k.shape[0],Y_k.shape[0])
             X_k,Y_k = X_k[:min_],Y_k[:min_]
             k = Kernel(**kwargs)
             k.map(X_k, Y_k,**kwargs)
+            if X_ is None:
+                X_ = k.get_x()
+                Y_ = Y_k
+            else:
+                X_ = np.concatenate([X_,k.get_x()])
+                Y_ = np.concatenate([Y_,Y_k])
             self.kernels[key] = k
+            self.label1[range(index,index+X_k.shape[0])] = key
+            index +=X_k.shape[0]
+        Kernel.set(self,x=X_, fx=Y_, y=centers_X, **kwargs)
         return self
-
+    
     def __call__(self, z, **kwargs):
+        out = super().__call__(z, **kwargs)
         if not hasattr(self, "MB1"):
-            return super().__call__(z, **kwargs)
-        labels1 = self.MB1(z)
-        assign = map_invertion(labels1)
+            return out
+        labelsz = self.MB1.distance(self.get_x(),z).argmin(axis=0)
+        labelsx = self.label1[labelsz]
+        assign = map_invertion(labelsx)
         # extrapolation
-        z_mapped = np.zeros_like(z)
         for key in assign.keys():
             indices = list(assign[key])
-            z_mapped[indices] = self.kernels[key](z[indices])
+            out[indices] = self.kernels[key](z[indices])
 
-        return z_mapped
+        return out

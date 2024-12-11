@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: codpy
-Version: 0.1.13
+Version: 0.1.15
 Summary: An RKHS based module for numerics, statistic and machine learning
 Home-page: https://github.com/johnlem/codpy_alpha
 Author: jean-marc mercier
