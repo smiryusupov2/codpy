@@ -3,6 +3,8 @@ MANIFEST.in
 README.md
 license
 setup.py
+src/codpy/AAD.py
+src/codpy/KQLearning.py
 src/codpy/__init__.py
 src/codpy/algs.py
 src/codpy/clustering.py

@@ -1031,7 +1031,7 @@ class KernelClassifier(Kernel):
     """
 
     def set_fx(
-        self, fx: np.ndarray, set_polynomial_regressor: bool = True, **kwargs
+        self, fx: np.ndarray, set_polynomial_regressor: bool = True, clip = alg.proportional_fitting,**kwargs
     ) -> None:
         if fx is not None:
             if clip is not None: fx=clip(fx)
