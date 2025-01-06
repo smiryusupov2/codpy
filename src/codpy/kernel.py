@@ -384,7 +384,7 @@ class Kernel:
         self.set_theta(None)
 
     def _set_knm(self, k):
-        self.knm = k
+        self.k = k
 
     def get_x(self, **kwargs) -> np.ndarray:
         """
