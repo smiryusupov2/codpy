@@ -13,7 +13,7 @@ import codpy.core as core
 import codpy.selection as selection
 from codpy.data_processing import hot_encoder
 from codpy.kernel import Kernel, KernelClassifier
-from codpy.lalg import lalg as lalg
+from codpy.lalg import LAlg
 from codpy.utils import gather
 
 
@@ -196,13 +196,13 @@ class KACAgent:
         next_states_actions = self.all_states_actions(next_states)
         value_function = Kernel()
         value_function.set(x=states_actions)
-        Knm = value_function.Knm(x=states_actions, y=states_actions)
-        projection_op = value_function.Knm(
+        knm = value_function.knm(x=states_actions, y=states_actions)
+        projection_op = value_function.knm(
             x=next_states_actions, y=states_actions
         ).reshape([states_actions.shape[0], self.actions_dim, states_actions.shape[0]])
         sum_policy = np.einsum("...ji,...j", projection_op, policy)
-        projection_op = lalg.lstsq(Knm - sum_policy * self.gamma)
-        thetas = lalg.prod(projection_op, rewards)
+        projection_op = LAlg.lstsq(knm - sum_policy * self.gamma)
+        thetas = LAlg.prod(projection_op, rewards)
         value_function.set_theta(thetas)
 
         # check
@@ -217,13 +217,13 @@ class KACAgent:
         next_states_actions = self.all_states_actions(next_states)
         value_function = Kernel()
         value_function.set(x=states_actions)
-        Knm = value_function.Knm(x=states_actions, y=states_actions)
-        projection_op = value_function.Knm(
+        knm = value_function.knm(x=states_actions, y=states_actions)
+        projection_op = value_function.knm(
             x=next_states_actions, y=states_actions
         ).reshape([states_actions.shape[0], self.actions_dim, states_actions.shape[0]])
         sum_policy = np.einsum("...ji,...j", projection_op, policy)
-        projection_op = lalg.lstsq(Knm - sum_policy * self.gamma)
-        thetas = lalg.prod(projection_op, rewards)
+        projection_op = LAlg.lstsq(knm - sum_policy * self.gamma)
+        thetas = LAlg.prod(projection_op, rewards)
         value_function.set_theta(thetas)
         ##end
         next_states_values = value_function(next_states_actions).reshape(
@@ -234,7 +234,7 @@ class KACAgent:
 
         derivative_estimator = Kernel()
         derivative_estimator.set_x(states_actions)
-        derivative_estimator.set_theta(lalg.prod(projection_op, second_member))
+        derivative_estimator.set_theta(LAlg.prod(projection_op, second_member))
         if output_value_function:
             return derivative_estimator, value_function
         return derivative_estimator
@@ -243,12 +243,12 @@ class KACAgent:
         self, states, actions, next_states, rewards_matrix, policy
     ):
         value_function = Kernel(x=states)
-        operator_inv = value_function.Knm(
+        operator_inv = value_function.knm(
             x=states, y=states
-        ) - self.gamma * value_function.Knm(x=next_states, y=states)
-        operator = lalg.lstsq(operator_inv)
+        ) - self.gamma * value_function.knm(x=next_states, y=states)
+        operator = LAlg.lstsq(operator_inv)
         second_member = core.get_matrix((policy * rewards_matrix).sum(1))
-        value_function.set_theta(lalg.prod(operator, second_member))
+        value_function.set_theta(LAlg.prod(operator, second_member))
         # def check():
         #     test = value_function(states)-self.gamma*value_function(next_states)-second_member
         #     assert(np.abs(test).max() < 1e-4)
@@ -266,10 +266,10 @@ class KACAgent:
     ):
         ##begin get_state_value_function code
         derivative_estimator = Kernel(x=states)
-        operator = derivative_estimator.Knm(
+        operator = derivative_estimator.knm(
             x=states, y=states
-        ) - self.gamma * derivative_estimator.Knm(x=next_states, y=states)
-        operator = lalg.lstsq(operator)
+        ) - self.gamma * derivative_estimator.knm(x=next_states, y=states)
+        operator = LAlg.lstsq(operator)
 
         ##end
         @np.vectorize
@@ -297,7 +297,7 @@ class KACAgent:
         #     pass
         # check_derivative(policy)
 
-        derivative_estimator.set_theta(lalg.prod(operator, coeffs))
+        derivative_estimator.set_theta(LAlg.prod(operator, coeffs))
 
         # def check():
         #     #check the derivated Bellman relation \nabla_ln \pi ( V(S_T) - gamma V(S_{T+1} - \E(R) ) =0)
@@ -308,7 +308,7 @@ class KACAgent:
         if output_value_function:
             value_function = Kernel(x=states)
             second_member = (policy * rewards_matrix).reshape(policy.shape).sum(1)
-            value_function.set_theta(lalg.prod(operator, second_member))
+            value_function.set_theta(LAlg.prod(operator, second_member))
             return derivative_estimator, value_function
         return derivative_estimator
 
@@ -589,8 +589,8 @@ class KQLearning2(KQLearning):
     ):
         states_actions = np.concatenate([states, actions], axis=1)
         next_states_actions = self.all_states_actions(next_states)
-        projection_op = self.actor.Knm(x=next_states_actions, y=self.actor.get_x())
-        Knm = self.actor.Knm(x=states_actions, y=self.actor.get_x())
+        projection_op = self.actor.knm(x=next_states_actions, y=self.actor.get_x())
+        knm = self.actor.knm(x=states_actions, y=self.actor.get_x())
         error, count = 1e10, 0
         shape = actions.shape
 
@@ -598,17 +598,17 @@ class KQLearning2(KQLearning):
             indices = [
                 self.actions_dim * i + max_indices[i] for i in range(len(max_indices))
             ]
-            max_projection = Knm - projection_op[indices] * self.gamma
-            next_theta = lalg.lstsq(max_projection, rewards)
+            max_projection = knm - projection_op[indices] * self.gamma
+            next_theta = LAlg.lstsq(max_projection, rewards)
 
             def f(x):
                 interpolated_thetas = self.actor.get_theta() * x + next_theta * (
                     1.0 - x
                 )
                 bellman_error = (
-                    lalg.prod(Knm, interpolated_thetas)
+                    LAlg.prod(knm, interpolated_thetas)
                     - core.get_matrix(
-                        lalg.prod(projection_op, interpolated_thetas)
+                        LAlg.prod(projection_op, interpolated_thetas)
                         .reshape(shape)
                         .max(1)
                     )
@@ -624,7 +624,7 @@ class KQLearning2(KQLearning):
 
         while error > 0.01 and count < max_count:
             next_states_values = (
-                lalg.prod(projection_op, self.actor.get_theta()).reshape(shape)
+                LAlg.prod(projection_op, self.actor.get_theta()).reshape(shape)
                 * self.gamma
                 + rewards
             )

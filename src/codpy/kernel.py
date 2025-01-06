@@ -7,9 +7,9 @@ from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
 
 import codpy.core as core
-from codpy.algs import alg
-from codpy.core import diffops
-from codpy.lalg import lalg as lalg
+from codpy.algs import Alg
+from codpy.core import DiffOps
+from codpy.lalg import LAlg
 from codpy.permutation import lsap
 
 
@@ -29,7 +29,7 @@ class Kernel:
 
                 $$f_{k,\\theta}(\cdot) = K(\cdot, Y) \\theta, \quad \\theta = K(X, Y)^{-1} f(X),$$
 
-                - $K(X, Y)$ is the Gram matrix, see :func:`Knm`
+                - $K(X, Y)$ is the Gram matrix, see :func:`knm`
                 - $K(X, Y)^{-1} = (K(Y, X)K(X, Y) + \epsilon R(Y,Y))^{-1}K(Y,X)$ is computed as a least-square method with optional regularization terms, , see :func:`get_knm_inv`.
 
             - For matching distributions
@@ -85,7 +85,8 @@ class Kernel:
 
         if x is not None or fx is not None:
             self.set(x=x, y=y, fx=fx, **kwargs)
-        else : self.x,self.y,self.fx = None,None,None
+        else:
+            self.x, self.y, self.fx = None, None, None
 
     def default_kernel_functor(self) -> callable:
         """
@@ -292,7 +293,7 @@ class Kernel:
             return polynomial_kernel.predict(z_polyvariables)
         return None
 
-    def Knm(
+    def knm(
         self, x: np.ndarray, y: np.ndarray, fy: np.ndarray = [], **kwargs
     ) -> np.ndarray:
         """
@@ -311,11 +312,11 @@ class Kernel:
         Example:
             >>> x_data = np.array([...])
             >>> y_data = np.array([...])
-            >>> kernel_matrix = Kernel(x=x_data,y=y_data).Knm()
+            >>> kernel_matrix = Kernel(x=x_data,y=y_data).knm()
         """
 
         self.set_kernel_ptr()
-        return core.op.Knm(x=x, y=y, fy=fy)
+        return core.KerOp.knm(x=x, y=y, fy=fy)
 
     def get_knm_inv(
         self, epsilon: float = None, epsilon_delta: np.ndarray = None, **kwargs
@@ -357,7 +358,7 @@ class Kernel:
             else:
                 epsilon_delta = epsilon_delta * self.get_Delta()
             self._set_knm_inv(
-                core.op.Knm_inv(
+                core.KerOp.knm_inv(
                     x=self.get_x(),
                     y=self.get_y(),
                     epsilon=epsilon,
@@ -375,7 +376,7 @@ class Kernel:
         :rtype: :class:`numpy.ndarray`
         """
         if not hasattr(self, "knm") or self.knm is None:
-            self._set_knm(core.op.Knm(x=self.x, y=self.y))
+            self._set_knm(core.KerOp.knm(x=self.x, y=self.y))
         return self.knm
 
     def _set_knm_inv(self, k):
@@ -496,7 +497,7 @@ class Kernel:
         if theta is None:
             return
         # self.fx = None
-        # self.fx =  lalg.prod(self.get_knm(),self.theta)
+        # self.fx =  LAlg.prod(self.get_knm(),self.theta)
         # if self.get_order() is not None :
         #     self.fx += self.get_polynomial_regressor(z=self.get_x())
 
@@ -522,7 +523,7 @@ class Kernel:
                 self.theta = None
             else:
                 # Compute the regression coefficient `theta` using the kernel matrix inverse and the function values.
-                self.theta = lalg.prod(self.get_knm_inv(), fx)
+                self.theta = LAlg.prod(self.get_knm_inv(), fx)
         return self.theta
 
     def get_Delta(self) -> np.ndarray:
@@ -534,7 +535,7 @@ class Kernel:
         """
 
         if self.Delta is None:
-            self.Delta = diffops.nablaT_nabla(self.y, self.x)
+            self.Delta = DiffOps.nabla_t_nabla(self.y, self.x)
         return self.Delta
 
     def greedy_select(
@@ -558,7 +559,7 @@ class Kernel:
 
             - if fx is None,
                 $$d(Y,X) = \\frac{1}{N_X} \\sum_{n=1}^{N_x}  k(x^n,\cdot) - \\frac{2}{N_Y} \\sum_{m=1}^{N_Y} k(\cdot,y^m)$$
-                This choice corresponds to minimizing the discrepancy error, see :func:`core.op.discrepancy_error()`.
+                This choice corresponds to minimizing the discrepancy error, see :func:`core.KerOp.discrepancy_error()`.
             - if fx is not None, $d(X,Y) = \|f(X)-f_{k,\\theta}(X)\|$
                 In which case, we are interested in adaptive mesh or control variate technics.
 
@@ -604,7 +605,7 @@ class Kernel:
             # Apply hybrid greedy Nystrom with error between ||f .-f_{k,\theta}||_A and  wrt a given norm
             # udefined by user
             # to compute Y
-            theta, indices = alg.HybridGreedyNystroem(
+            theta, indices = Alg.HybridGreedyNystroem(
                 x=self.get_x(),
                 fx=fx,
                 N=N,
@@ -614,7 +615,7 @@ class Kernel:
                 **kwargs,
             )
         else:
-            indices = list(alg.greedy_algorithm(x=self.get_x(), N=N, **kwargs))
+            indices = list(Alg.greedy_algorithm(x=self.get_x(), N=N, **kwargs))
             #
         self.indices = indices
         if all is True:
@@ -625,7 +626,7 @@ class Kernel:
         else:
             # else X = Y is set:
             #  f_\theta(.) = K(.,Y)K(Y,Y)^{-1}f(Y)
-            self.kernel = core.kernel_interface.get_kernel_ptr()
+            self.kernel = core.KerInterface.get_kernel_ptr()
             self.x = self.x[indices]
             self.y = self.x
             if self.fx is not None:
@@ -727,7 +728,7 @@ class Kernel:
             self.permutation = cd.alg.encoder(self.get_x(), self.get_fx())
         else:
             # If the dimensionalities are the same, use the LSAP algorithm to compute the permutation
-            D = core.op.Dnm(x=x, y=y, distance=distance)
+            D = core.KerOp.dnm(x=x, y=y, distance=distance)
             self.permutation = lsap(D, bool(sub))  # Solve LSAP to find permutation
         # Update `x` based on the computed permutation
         self.set_x(self.get_x()[self.permutation])
@@ -802,7 +803,7 @@ class Kernel:
             return None
 
         # Compute the kernel matrix `K(z, X)` where `X` is the current input dataset
-        Knm = core.op.Knm(x=z, y=self.get_y())
+        knm = core.KerOp.knm(x=z, y=self.get_y())
 
         # If a polynomial order is defined, remove the polynomial regression component from `fz`
         if self.order is not None:
@@ -822,10 +823,10 @@ class Kernel:
         if eps is None:
             # Use the default regularization value if none is provided
             eps = self.reg
-        # if self.theta is not None: fzz += eps*lalg.prod(Knm,self.theta)
+        # if self.theta is not None: fzz += eps*LAlg.prod(knm,self.theta)
         # Solve the least-squares problem with regularization:
         # $$ \theta = \left( K(z, X)^\top K(z, X) + \text{eps} \cdot I \right)^{-1} K(z, X)^\top fzz $$
-        self.set_theta(lalg.lstsq(Knm, fzz, eps=eps))
+        self.set_theta(LAlg.lstsq(knm, fzz, eps=eps))
         # err = self(z)-fz
         # err= (err**2).sum()
 
@@ -875,7 +876,7 @@ class Kernel:
 
         # the method add computes an updated Gram matrix using the already
         # pre-computed Gram matrix K(x,x).
-        self.Knm, self.Knm_inv, y = alg.add(
+        self.knm, self.knm_inv, y = Alg.add(
             self.get_knm(), self.get_knm_inv(), self.get_x(), x
         )
         self.set_x(y)
@@ -906,7 +907,7 @@ class Kernel:
         self.set_kernel_ptr()
         if x is None:
             x = self.x
-        return core.op.Dnm(x=y, y=x)
+        return core.KerOp.dnm(x=y, y=x)
 
     def discrepancy(self, z: np.ndarray) -> float:
         """
@@ -919,7 +920,7 @@ class Kernel:
         :rtype: :class:`numpy.ndarray`
         """
         self.set_kernel_ptr()
-        return core.op.discrepancy_error(x=self.get_x(), z=z)
+        return core.KerOp.discrepancy_error(x=self.get_x(), z=z)
 
     def get_kernel(self) -> callable:
         """
@@ -934,7 +935,7 @@ class Kernel:
         if not hasattr(self, "kernel"):
             self.set_kernel()
             # self.order= None
-            self.kernel = core.kernel_interface.get_kernel_ptr()
+            self.kernel = core.KerInterface.get_kernel_ptr()
         return self.kernel
 
     def set_kernel_ptr(self) -> None:
@@ -945,9 +946,9 @@ class Kernel:
         function, sets the polynomial order to zero, and applies the regularization
         parameter defined in the object.
         """
-        core.kernel_interface.set_kernel_ptr(self.get_kernel())
-        core.kernel_interface.set_polynomial_order(0)
-        core.kernel_interface.set_regularization(self.reg)
+        core.KerInterface.set_kernel_ptr(self.get_kernel())
+        core.KerInterface.set_polynomial_order(0)
+        core.KerInterface.set_regularization(self.reg)
 
     def rescale(self) -> None:
         """
@@ -965,9 +966,9 @@ class Kernel:
         if self.get_x() is not None:
             # instructs to set the map parameter
             # applied to the data
-            core.kernel_interface.rescale(self.get_x(), max=self.max_nystrom)
+            core.KerInterface.rescale(self.get_x(), max=self.max_nystrom)
             # retrives the kernel
-            self.kernel = core.kernel_interface.get_kernel_ptr()
+            self.kernel = core.KerInterface.get_kernel_ptr()
 
     def __call__(self, z: np.ndarray) -> np.ndarray:
         """
@@ -1001,13 +1002,13 @@ class Kernel:
         if fy is None:
             fy = self.get_knm_inv()
 
-        Knm = core.op.Knm(x=z, y=self.get_y(), fy=fy)
+        knm = core.KerOp.knm(x=z, y=self.get_y(), fy=fy)
 
         if self.order is not None:
             polynomial_regressor = self.get_polynomial_regressor(z)
-            Knm += polynomial_regressor
+            knm += polynomial_regressor
 
-        return Knm
+        return knm
 
 
 def clip_probs(probs, min=None, max=None):
@@ -1031,11 +1032,16 @@ class KernelClassifier(Kernel):
     """
 
     def set_fx(
-        self, fx: np.ndarray, set_polynomial_regressor: bool = True, clip = alg.proportional_fitting,**kwargs
+        self,
+        fx: np.ndarray,
+        set_polynomial_regressor: bool = True,
+        clip=Alg.proportional_fitting,
+        **kwargs,
     ) -> None:
         if fx is not None:
-            if clip is not None: fx=clip(fx)
-            debug = np.where(fx < 1e-9, 1e-9,fx)
+            if clip is not None:
+                fx = clip(fx)
+            debug = np.where(fx < 1e-9, 1e-9, fx)
             fx = np.log(debug)
         super().set_fx(fx, set_polynomial_regressor=set_polynomial_regressor, **kwargs)
 
@@ -1044,8 +1050,8 @@ class KernelClassifier(Kernel):
         if self.x is None:
             return None
             # return softmax(np.full((z.shape[0],self.actions_dim),np.log(.5)),axis=1)
-        Knm = super().__call__(z, **kwargs)
-        return softmax(Knm, axis=1)
+        knm = super().__call__(z, **kwargs)
+        return softmax(knm, axis=1)
 
     def greedy_select(
         self, N, x=None, fx=None, all=False, norm_="classifier", **kwargs

@@ -35,7 +35,7 @@ class MiniBatchkmeans(MiniBatchKMeans):
         return self.predict(z)
 
     def distance(self, x, y):
-        return core.op.Dnm(x, y, distance="norm2")
+        return core.KerOp.dnm(x, y, distance="norm2")
 
 
 class GreedySearch(Kernel):
@@ -50,12 +50,12 @@ class GreedySearch(Kernel):
 
     def __call__(self, z, **kwargs):
         self.set_kernel_ptr()
-        labels = core.op.Dnm(z, self.cluster_centers_).argmin(axis=1)
+        labels = core.KerOp.dnm(z, self.cluster_centers_).argmin(axis=1)
         return labels
 
     def distance(self, x, y):
         self.set_kernel_ptr()
-        return core.op.Dnm(x, y)
+        return core.KerOp.dnm(x, y)
 
 
 class SharpDiscrepancy(GreedySearch):
@@ -72,7 +72,7 @@ class BalancedClustering:
         self.x = self.method.x
         self.D = (
             self.method.distance(self.x, self.cluster_centers_)
-            + core.op.Dnm(self.x, self.cluster_centers_, distance="norm22") * epsilon
+            + core.KerOp.dnm(self.x, self.cluster_centers_, distance="norm22") * epsilon
         )
         self.labels_ = np.array(cd.alg.balanced_clustering(self.D))
         pass

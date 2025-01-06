@@ -113,7 +113,7 @@ def variable_selector(**params) -> dict:
     x, y, z, fx, fz = kwargs["x"], kwargs["y"], kwargs["z"], kwargs["fx"], kwargs["fz"]
     error_fun, predictor = (
         kwargs.get("error_fun", get_mean_squared_error),
-        kwargs.get("predictor", op.projection),
+        kwargs.get("predictor", KerOp.projection),
     )
     variable_selector_csv = kwargs.get("variables_selector_csv", [])
     matching_cols = kwargs.get("selector_cols", [])

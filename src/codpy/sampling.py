@@ -2,14 +2,13 @@ import math
 import warnings
 
 import numpy as np
-import pandas as pd
 from codpydll import *
 from sklearn.cluster import KMeans, MiniBatchKMeans
 
-from codpy.core import _requires_rescale, op
+import codpy.algs
+from codpy.core import _requires_rescale
 from codpy.data_conversion import get_matrix
 from codpy.selection import column_selector
-import codpy.algs 
 
 
 def kernel_density_estimator(
@@ -66,15 +65,11 @@ def kernel_density_estimator(
     return cd.tools.density_estimator(x, y)
 
 
-def kernel_conditional_density_estimator(
-    X,
-    Y,
-    **kwargs
-):
+def kernel_conditional_density_estimator(X, Y, **kwargs):
     """
     Estimate the conditional density of 'Y' given 'X' using Nadaraya-Watson kernel conditional density estimator.
 
-    This function calculates the conditional density of values based on a joint distribution ('X', 'Y'). 
+    This function calculates the conditional density of values based on a joint distribution ('X', 'Y').
     It uses KDE method for the estimation.
 
     Args:
@@ -98,16 +93,10 @@ def kernel_conditional_density_estimator(
         >>> conditional_density = kernel_conditional_density_estimator(X, Y)
     """
     # given a joint distribution (X, Y), return the density y_val | x_val using the Nadaraya-Watson estimate
-    marginal_x = op.Knm(
-        x=X,
-        y=X
-    )
-    marginal_y = op.Knm(
-        x=Y,
-        y=Y
-    )
+    marginal_x = KerOp.knm(x=X, y=X)
+    marginal_y = KerOp.knm(x=Y, y=Y)
     out = marginal_x * marginal_y
-    return codpy.algs.alg.proportional_fitting(out,**kwargs)
+    return codpy.algs.alg.proportional_fitting(out, **kwargs)
 
 
 def rejection_sampling(proposed_sample, probas, acceptance_ratio=0.0):
@@ -253,7 +242,7 @@ def kmeans(x, **kwargs):
     ).fit(x)
 
 
-def MiniBatchkmeans(x, **kwargs):
+def mini_batch_kmeans(x, **kwargs):
     """
     Perform mini-batch K-means clustering on a dataset.
 

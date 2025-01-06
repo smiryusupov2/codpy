@@ -1,11 +1,13 @@
-import codpy.core as core
-from codpy.kernel import *
-from codpy.algs import alg
+import sys
+
 import numpy as np
-import pandas as pd
-from scipy.special import softmax,log_softmax
-from codpy.permutation import map_invertion
+from scipy.special import softmax
+
+import codpy.core as core
+from codpy.algs import alg
 from codpy.clustering import *
+from codpy.kernel import Kernel
+from codpy.permutation import map_invertion
 
 
 class MultiScaleKernel(Kernel):
@@ -70,13 +72,22 @@ class MultiScaleKernelClassifier(MultiScaleKernel):
             It overloads the prediction method as follows :
 
                 $$\text{softmax} (\log(f)_{k,\\theta})(\cdot)$$
-    """ 
-    def set_fx(self, fx: np.ndarray, set_polynomial_regressor: bool = True, clip = alg.proportional_fitting,**kwargs  ) -> None:
-        if fx is not None: 
-            if clip is not None: fx=clip(fx)
-            debug = np.where(fx < 1e-9, 1e-9,fx)
+    """
+
+    def set_fx(
+        self,
+        fx: np.ndarray,
+        set_polynomial_regressor: bool = True,
+        clip=alg.proportional_fitting,
+        **kwargs,
+    ) -> None:
+        if fx is not None:
+            if clip is not None:
+                fx = clip(fx)
+            debug = np.where(fx < 1e-9, 1e-9, fx)
             fx = np.log(debug)
-        super().set_fx(fx,set_polynomial_regressor=set_polynomial_regressor,**kwargs)
+        super().set_fx(fx, set_polynomial_regressor=set_polynomial_regressor, **kwargs)
+
     def __call__(self, z, **kwargs):
         z = core.get_matrix(z)
         if self.x is None:
@@ -97,7 +108,7 @@ class MultiScaleOT(MultiScaleKernel):
     ):
         super().__init__(N, n_batch, method, balanced, **kwargs)
 
-    def set(self, x, y,epsilon=1e-8,**kwargs):
+    def set(self, x, y, epsilon=1e-8, **kwargs):
         n_clusters = self.N
 
         if n_clusters <= 1:
@@ -109,16 +120,22 @@ class MultiScaleOT(MultiScaleKernel):
         centers_X = self.MB1.cluster_centers_
         centers_Y = self.MB2.cluster_centers_
 
-        C = core.op.Dnm(centers_X, centers_Y,distance="norm2")
-        Dx = self.MB1.distance(x, centers_X)+epsilon*core.op.Dnm(x, centers_X,distance="norm22")
-        Dy = self.MB2.distance(y, centers_Y)+epsilon*core.op.Dnm(y, centers_Y,distance="norm22")
+        C = core.KerOp.dnm(centers_X, centers_Y, distance="norm2")
+        Dx = self.MB1.distance(x, centers_X) + epsilon * core.KerOp.dnm(
+            x, centers_X, distance="norm22"
+        )
+        Dy = self.MB2.distance(y, centers_Y) + epsilon * core.KerOp.dnm(
+            y, centers_Y, distance="norm22"
+        )
         perm = lsap(C)
-        self.label1, self.label2 = alg.two_balanced_clustering(Dx,Dy,C)
-        self.invlabel1, self.invlabel2 = map_invertion(self.label1), map_invertion(self.label2)
-        
+        self.label1, self.label2 = alg.two_balanced_clustering(Dx, Dy, C)
+        self.invlabel1, self.invlabel2 = (
+            map_invertion(self.label1),
+            map_invertion(self.label2),
+        )
 
         self.kernels = {}
-        X_,Y_=None,None
+        X_, Y_ = None, None
         index = 0
         for key, value in self.invlabel1.items():
             mapped_key = perm[key]
@@ -126,27 +143,27 @@ class MultiScaleOT(MultiScaleKernel):
             X_k = x[list(value)]
             Y_k = y[list(mapped_values)]
             # a little bit violent, but safe !
-            min_ = min(X_k.shape[0],Y_k.shape[0])
-            X_k,Y_k = X_k[:min_],Y_k[:min_]
+            min_ = min(X_k.shape[0], Y_k.shape[0])
+            X_k, Y_k = X_k[:min_], Y_k[:min_]
             k = Kernel(**kwargs)
-            k.map(X_k, Y_k,**kwargs)
+            k.map(X_k, Y_k, **kwargs)
             if X_ is None:
                 X_ = k.get_x()
                 Y_ = Y_k
             else:
-                X_ = np.concatenate([X_,k.get_x()])
-                Y_ = np.concatenate([Y_,Y_k])
+                X_ = np.concatenate([X_, k.get_x()])
+                Y_ = np.concatenate([Y_, Y_k])
             self.kernels[key] = k
-            self.label1[range(index,index+X_k.shape[0])] = key
-            index +=X_k.shape[0]
-        Kernel.set(self,x=X_, fx=Y_, y=centers_X, **kwargs)
+            self.label1[range(index, index + X_k.shape[0])] = key
+            index += X_k.shape[0]
+        Kernel.set(self, x=X_, fx=Y_, y=centers_X, **kwargs)
         return self
-    
+
     def __call__(self, z, **kwargs):
         out = super().__call__(z, **kwargs)
         if not hasattr(self, "MB1"):
             return out
-        labelsz = self.MB1.distance(self.get_x(),z).argmin(axis=0)
+        labelsz = self.MB1.distance(self.get_x(), z).argmin(axis=0)
         labelsx = self.label1[labelsz]
         assign = map_invertion(labelsx)
         # extrapolation

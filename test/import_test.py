@@ -36,7 +36,7 @@ def test_extrapolation_linear(func, decimal=3):
     fx = func(x)
     fz = func(z)
 
-    f_z = op.extrapolation(x, z, fx, kernel_fun="linear", map=None)
+    f_z = KerOp.extrapolation(x, z, fx, kernel_fun="linear", map=None)
 
     np.testing.assert_almost_equal(f_z, fz, decimal=decimal)
 
@@ -46,7 +46,7 @@ def test_denoiser(func, decimal=3):
     z = np.random.randn(100, 1)
     fx = func(x)
     fz = func(z)
-    f_z_den = op.denoiser(x, z, fx, kernel_fun="maternnorm", map="standardmean")
+    f_z_den = KerOp.denoiser(x, z, fx, kernel_fun="maternnorm", map="standardmean")
 
     np.testing.assert_almost_equal(fz, f_z_den, decimal=decimal)
 
@@ -55,28 +55,28 @@ def test_norm(func, decimal=3):
     x = np.random.randn(100, 1)
     z = np.random.randn(100, 1)
     fx = func(x)
-    norm_ = op.norm(x, x, x, fx, kernel_fun="linear", map=None, rescale=True)
+    norm_ = KerOp.norm(x, x, x, fx, kernel_fun="linear", map=None, rescale=True)
     alpha, residuals, rank, s = np.linalg.lstsq(x, fx, rcond=None)
     alpha = np.squeeze(alpha)
     norm = alpha**2
     np.testing.assert_almost_equal(norm, norm_, decimal=decimal)
 
 
-def test_Knm(decimal=3):
+def test_knm(decimal=3):
     x = np.random.randn(100, 1)
 
-    Knm = Kernel(
+    knm = Kernel(
         set_kernel=core.kernel_setter("maternnorm", "standardmean", 0, 1e-9), x=x
-    ).Knm(x, x)
+    ).knm(x, x)
 
 
-def test_Knm_inv(decimal=3):
+def test_knm_inv(decimal=3):
     x = np.random.randn(10, 2)
     fx = np.random.randn(10, 3)
     kernel.rescale(x)
-    Knm = op.Knm(x=x, y=x)
-    Knm_inv = lalg.cholesky(x=Knm, eps=1e-9)
-    Kinv = op.Knm_inv(x=x, y=x, fx=fx)
+    knm = KerOp.knm(x=x, y=x)
+    knm_inv = lalg.cholesky(x=knm, eps=1e-9)
+    Kinv = KerOp.knm_inv(x=x, y=x, fx=fx)
     Kinv1 = np.linalg.solve(x @ x.T, fx)
 
     np.testing.assert_almost_equal(Kinv, Kinv1, decimal=decimal)
@@ -86,7 +86,7 @@ def test_diff_matrix(decimal=3):
     x = np.random.randn(100, 1)
     z = np.random.randn(100, 1)
     DiffM = np.sum((x[:, np.newaxis, :] - z[np.newaxis, :, :]) ** 2, axis=2)
-    D = op.Dnm(x=x, y=z, distance="norm22", kernel_fun="linear", map=None)
+    D = KerOp.dnm(x=x, y=z, distance="norm22", kernel_fun="linear", map=None)
     # np.testing.assert_almost_equal(DiffM, D, decimal=decimal) # pourquoi ca ?
 
 
@@ -161,7 +161,7 @@ def test_nabla(func, decimal=3):
     x = np.random.randn(100, 1)
     z = np.random.randn(100, 1)
     fx = func(x, order=1)
-    _nabla = diffops.nabla(x, x, z, fx, kernel_fun="linear", map=None)
+    _nabla = DiffOps.nabla(x, x, z, fx, kernel_fun="linear", map=None)
     np.testing.assert_almost_equal(_nabla, 1, decimal=decimal)
 
 
@@ -169,9 +169,9 @@ def test_nablaTnabla(func, decimal=3):
     x = np.random.randn(100, 1)
     z = np.random.randn(100, 1)
     fx = func(x, order=2)
-    _nabla = diffops.nabla(x, x, z, fx, kernel_fun="linear", map=None)
-    _nabla1 = diffops.nablaT(x, x, z, fz=_nabla, kernel_fun="linear", map=None)
-    _nablaTnabla = diffops.nablaT_nabla(x, x, fx, kernel_fun="linear", map=None)
+    _nabla = DiffOps.nabla(x, x, z, fx, kernel_fun="linear", map=None)
+    _nabla1 = DiffOps.nablaT(x, x, z, fz=_nabla, kernel_fun="linear", map=None)
+    _nablaTnabla = DiffOps.nablaT_nabla(x, x, fx, kernel_fun="linear", map=None)
     np.testing.assert_almost_equal(_nablaTnabla, _nabla1, decimal=decimal)
 
 
@@ -179,12 +179,12 @@ def test_LerayT(func, decimal=3):
     x = np.random.randn(100, 1)
     z = np.random.randn(100, 1)
     fx = func(x, order=2)
-    _nabla = diffops.nabla(x, x, z, fx, kernel_fun="linear", map=None)
-    _nabla_inv = diffops.nabla_inv(
+    _nabla = DiffOps.nabla(x, x, z, fx, kernel_fun="linear", map=None)
+    _nabla_inv = DiffOps.nabla_inv(
         x, x, z, fz=_nabla, fx=fx, kernel_fun="linear", map=None
     )
-    _LerayT_ = diffops.nabla(x, x, z, fx=_nabla_inv, kernel_fun="linear", map=None)
-    _LerayT = diffops.Leray_T(x, x, fx=_nabla, kernel_fun="linear", map=None)
+    _LerayT_ = DiffOps.nabla(x, x, z, fx=_nabla_inv, kernel_fun="linear", map=None)
+    _LerayT = DiffOps.Leray_T(x, x, fx=_nabla, kernel_fun="linear", map=None)
     np.testing.assert_almost_equal(_LerayT_, _LerayT, decimal=decimal)
 
 
@@ -193,18 +193,18 @@ def test_Leray(func, decimal=3):
     z = np.random.randn(100, 1)
     fx = func(x, order=2)
     # fz = func(z, order = 2)
-    _nabla = diffops.nabla(x, x, z, fx, kernel_fun="linear", map=None)
-    _Leray_fz = _nabla - diffops.nabla(
+    _nabla = DiffOps.nabla(x, x, z, fx, kernel_fun="linear", map=None)
+    _Leray_fz = _nabla - DiffOps.nabla(
         x=x,
         y=x,
         z=z,
-        fx=diffops.nabla_inv(
+        fx=DiffOps.nabla_inv(
             x=x, y=x, z=z, fz=_nabla, kernel_fun="gaussian", map="standardmin"
         ),
         kernel_fun="linear",
         map=None,
     )
-    _Leray = diffops.Leray(x, x, fx=_nabla, kernel_fun="linear", map=None)
+    _Leray = DiffOps.Leray(x, x, fx=_nabla, kernel_fun="linear", map=None)
     np.testing.assert_almost_equal(_Leray_fz, _Leray, decimal=decimal)
 
 
@@ -249,8 +249,8 @@ def testkernel():
 
 if __name__ == "__main__":
     testkernel()
-    test_Knm()
-    test_Knm_inv()
+    test_knm()
+    test_knm_inv()
     test_extrapolation_linear(func=func)
     test_norm(func, decimal=3)
     test_diff_matrix(decimal=3)
@@ -278,7 +278,7 @@ if __name__ == "__main__":
 # fx = func(x)
 # fz = func(z)
 
-# # alpha = op.coefficients(x,x,fx, kernel_fun="linear", map = None)
+# # alpha = KerOp.coefficients(x,x,fx, kernel_fun="linear", map = None)
 # # #ker_den = kernel_density_estimator(x = x, y = z)
 # # data = np.random.multivariate_normal([0, 0], [[1, 0.5], [0.5, 1]], 500)
 # # xx, yy = data.T

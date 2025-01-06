@@ -1,13 +1,9 @@
-import warnings
-from typing import List
-
 import numpy as np
 import pandas as pd
 import xarray
 from codpydll import *
 from scipy.optimize import linear_sum_assignment
 
-from codpy.core import _requires_rescale, op
 from codpy.data_conversion import get_matrix
 from codpy.dictionary import Dict, Set, cast
 from codpy.random_utils import random_select_interface
@@ -82,7 +78,7 @@ def lsap(C: np.ndarray, sub=False) -> np.ndarray:
     It comes also with a parallelized, but sub optimal version, for large scale lsap problems.
 
     This function finds an optimal assignment that minimizes the total cost based on the
-    cost matrix C. 
+    cost matrix C.
 
     Args:
         C (:class:`numpy.ndarray`): A 2D array representing the cost matrix. Each element ``C[i, j]`` is the cost
@@ -193,7 +189,6 @@ def match(x, Ny=None, sharp_discrepancy_xmax=None, sharp_discrepancy_seed=None):
 if __name__ == "__main__":
     import time
 
-    import core
     import pandas as pd
 
     N, D = [2**n for n in range(8, 15)], 3
@@ -201,7 +196,7 @@ if __name__ == "__main__":
     for n in N:
         A = np.random.normal(size=[n, D])
         B = np.random.normal(size=[n, D])
-        C = core.op.Dnm(A, B, distance="norm22")
+        C = KerOp.dnm(A, B, distance="norm22")
         start = time.time()
         permutation = lsap(C, False)
         end = time.time()

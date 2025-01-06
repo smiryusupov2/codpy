@@ -1,14 +1,16 @@
-import pandas as pd
+import warnings
+
+import numpy as np
 from codpydll import *
 
+import codpy.core
+from codpy.core import KerInterface, KerOp, _requires_rescale
 from codpy.data_conversion import get_matrix
 from codpy.data_processing import lexicographical_permutation
-from codpy.data_conversion import get_matrix
-from codpy.lalg import *
-import codpy.core 
+from codpy.lalg import LAlg
 
 
-class alg:
+class Alg:
     def _iso_probas_projection(
         x,
         fx,
@@ -32,17 +34,17 @@ class alg:
                 regularization=regularization,
             )
         }
-        if rescale == True or _requires_rescale(map_name=map):
+        if rescale or _requires_rescale(map_name=map):
             params["rescale"] = True
             params["rescalekernel"] = rescale_params
             if verbose:
                 warnings.warn(
                     "Rescaling is set to True as it is required for the chosen map."
                 )
-            kernel_interface.init(x, x, x, **params)
+            KerInterface.init(x, x, x, **params)
         else:
             params["rescale"] = rescale
-            kernel_interface.init(**params)
+            KerInterface.init(**params)
         Nx, Dx = np.shape(x)
         Nx, Df = np.shape(fx)
         Ny = len(probas)
@@ -51,7 +53,7 @@ class alg:
         quantile = np.array(np.arange(start=0.5 / Nx, stop=1.0, step=1.0 / Nx)).reshape(
             Nx, 1
         )
-        out = op.projection(
+        out = KerOp.projection(
             x=quantile,
             y=probas,
             z=probas,
@@ -60,16 +62,18 @@ class alg:
             rescale=rescale,
         )
         return out[:, 0:Dx], out[:, Dx:], permutation
-    
-    def Pi(x, y, z=None, fz=None, nmax=5, **kwargs):
+
+    def pi(x, y, z=None, fz=None, nmax=5, **kwargs):
         # print('######','Pi','######')
-        from codpy.kernel import Kernel, KernelClassifier
+        from codpy.kernel import KernelClassifier
+
         out = cd.alg.Pi(x=x, y=y, nmax=nmax)
-        if z is not None and fz is not None: out = lalg.prod(KernelClassifier(x=x,fx=out,**kwargs),fz)
+        if z is not None and fz is not None:
+            out = LAlg.prod(KernelClassifier(x=x, fx=out, **kwargs), fz)
         # else: out = k(x)
         return out
 
-    def HybridGreedyNystroem(
+    def hybrid_greedy_nystroem(
         x,
         fx,
         tol=1e-5,
@@ -88,15 +92,16 @@ class alg:
 
     def balanced_clustering(D):
         return cd.alg.balanced_clustering(D)
-    def two_balanced_clustering(DX,DY,C):
-        labels1,labels2 = cd.alg.two_balanced_clustering(DX,DY,C)
-        return np.array(labels1),np.array(labels2)
 
-    def add(Knm, Knm_inv, x, y):
+    def two_balanced_clustering(DX, DY, C):
+        labels1, labels2 = cd.alg.two_balanced_clustering(DX, DY, C)
+        return np.array(labels1), np.array(labels2)
+
+    def add(knm, knm_inv, x, y):
         # import codpy.core
         # codpy.core.set_verbose(True)
-        return cd.alg.add(Knm, Knm_inv, x, y)
-    
+        return cd.alg.add(knm, knm_inv, x, y)
+
     def greedy_algorithm(
         x,
         N,
@@ -105,24 +110,23 @@ class alg:
     ):
         # NumPy arrays input
         x = get_matrix(x)
-        out = cd.tools.greedy_algorithm(
-            get_matrix(x), N, start_indices
-        )
+        out = cd.tools.greedy_algorithm(get_matrix(x), N, start_indices)
         return out
 
-    def proportional_fitting(probs,iter=100,**kwargs):
-        return cd.alg.proportional_fitting(probs,iter)
+    def proportional_fitting(probs, iter=100, **kwargs):
+        return cd.alg.proportional_fitting(probs, iter)
+
 
 if __name__ == "__main__":
     from include_all import *
 
     x, fx = np.random.rand(10, 2), np.random.rand(10, 3)
-    lalg.prod(x, x)
-    kernel_interface.rescale(x)
-    Knm = op.Knm(x=x, y=x)
-    Knm_inv = lalg.cholesky_inverse(x=Knm, eps=1e-2)
-    Knm_inv = lalg.lstsq(A=Knm)
+    LAlg.prod(x, x)
+    KerInterface.rescale(x)
+    Knm = KerOp.knm(x=x, y=x)
+    Knm_inv = LAlg.cholesky_inverse(x=Knm, eps=1e-2)
+    Knm_inv = LAlg.lstsq(A=Knm)
 
-    print(op.Knm_inv(x=x, y=x, fx=op.Knm(x=x, y=x)))
+    print(KerOp.knm_inv(x=x, y=x, fx=KerOp.knm(x=x, y=x)))
     alg.HybridGreedyNystroem(x=x, fx=fx)
     pass

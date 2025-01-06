@@ -1,243 +1,243 @@
 {
- "core.cd.kernel": [
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "codpypyd",
-   "module_short": "codpypyd",
-   "name": "kernel"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "codpy.core.cd",
-   "module_short": "codpy.core.cd",
-   "name": "kernel"
-  }
- ],
- "core.cd.kernel.__init__": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "instancemethod"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "codpy.core.cd.kernel",
-   "module_short": "codpy.core.cd.kernel",
-   "name": "__init__"
-  }
- ],
- "core.kernel_interface.get_kernel_ptr": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "function"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "codpy.core.kernel_interface",
-   "module_short": "codpy.core.kernel_interface",
-   "name": "get_kernel_ptr"
-  }
- ],
- "core.kernel_interface.set_verbose": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "function"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "codpy.core.kernel_interface",
-   "module_short": "codpy.core.kernel_interface",
-   "name": "set_verbose"
-  }
- ],
- "core.op.Knm": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "function"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "codpy.core.op",
-   "module_short": "codpy.core.op",
-   "name": "Knm"
-  }
- ],
- "gram_matrix": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "numpy",
-   "module_short": "numpy",
-   "name": "ndarray"
-  }
- ],
- "my_kernel": [
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "__main__",
-   "module_short": "__main__",
-   "name": "my_kernel"
-  },
-  {
-   "is_class": true,
-   "is_explicit": false,
-   "module": "codpypyd",
-   "module_short": "codpypyd",
-   "name": "kernel"
-  }
- ],
- "my_kernel.set_kernel_ptr": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "builtin_function_or_method"
-  }
- ],
- "my_kernel1": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "__main__",
-   "module_short": "__main__",
-   "name": "my_kernel"
-  }
- ],
- "my_kernel1.k": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "__main__",
-   "module_short": "__main__",
-   "name": "my_kernel.k"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "codpypyd",
-   "module_short": "codpypyd",
-   "name": "kernel.k"
-  }
- ],
- "my_kernel2": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "__main__",
-   "module_short": "__main__",
-   "name": "my_kernel"
-  }
- ],
- "my_kernel_ptr2": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "__main__",
-   "module_short": "__main__",
-   "name": "my_kernel"
-  }
- ],
- "my_kernel_ptr2.k": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "__main__",
-   "module_short": "__main__",
-   "name": "my_kernel.k"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "codpypyd",
-   "module_short": "codpypyd",
-   "name": "kernel.k"
-  }
- ],
- "np.linalg.norm": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "function"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "numpy.linalg",
-   "module_short": "numpy.linalg",
-   "name": "norm"
-  }
- ],
- "np.random.randn": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "builtins",
-   "module_short": "builtins",
-   "name": "builtin_function_or_method"
-  },
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "numpy.random",
-   "module_short": "numpy.random",
-   "name": "randn"
-  }
- ],
- "result_1": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "numpy",
-   "module_short": "numpy",
-   "name": "float64"
-  }
- ],
- "result_2": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "numpy",
-   "module_short": "numpy",
-   "name": "float64"
-  }
- ],
- "x": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "numpy",
-   "module_short": "numpy",
-   "name": "ndarray"
-  }
- ],
- "y": [
-  {
-   "is_class": false,
-   "is_explicit": false,
-   "module": "numpy",
-   "module_short": "numpy",
-   "name": "ndarray"
-  }
- ]
+    "core.cd.kernel": [
+        {
+            "is_class": true,
+            "is_explicit": false,
+            "module": "codpypyd",
+            "module_short": "codpypyd",
+            "name": "kernel"
+        },
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "codpy.core.cd",
+            "module_short": "codpy.core.cd",
+            "name": "kernel"
+        }
+    ],
+    "core.cd.kernel.__init__": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "builtins",
+            "module_short": "builtins",
+            "name": "instancemethod"
+        },
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "codpy.core.cd.kernel",
+            "module_short": "codpy.core.cd.kernel",
+            "name": "__init__"
+        }
+    ],
+    "core.kernel_interface.get_kernel_ptr": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "builtins",
+            "module_short": "builtins",
+            "name": "function"
+        },
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "codpy.core.kernel_interface",
+            "module_short": "codpy.core.kernel_interface",
+            "name": "get_kernel_ptr"
+        }
+    ],
+    "core.kernel_interface.set_verbose": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "builtins",
+            "module_short": "builtins",
+            "name": "function"
+        },
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "codpy.core.kernel_interface",
+            "module_short": "codpy.core.kernel_interface",
+            "name": "set_verbose"
+        }
+    ],
+    "core.KerOp.Knm": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "builtins",
+            "module_short": "builtins",
+            "name": "function"
+        },
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "codpy.core.op",
+            "module_short": "codpy.core.op",
+            "name": "Knm"
+        }
+    ],
+    "gram_matrix": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "numpy",
+            "module_short": "numpy",
+            "name": "ndarray"
+        }
+    ],
+    "my_kernel": [
+        {
+            "is_class": true,
+            "is_explicit": false,
+            "module": "__main__",
+            "module_short": "__main__",
+            "name": "my_kernel"
+        },
+        {
+            "is_class": true,
+            "is_explicit": false,
+            "module": "codpypyd",
+            "module_short": "codpypyd",
+            "name": "kernel"
+        }
+    ],
+    "my_kernel.set_kernel_ptr": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "builtins",
+            "module_short": "builtins",
+            "name": "builtin_function_or_method"
+        }
+    ],
+    "my_kernel1": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "__main__",
+            "module_short": "__main__",
+            "name": "my_kernel"
+        }
+    ],
+    "my_kernel1.k": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "__main__",
+            "module_short": "__main__",
+            "name": "my_kernel.k"
+        },
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "codpypyd",
+            "module_short": "codpypyd",
+            "name": "kernel.k"
+        }
+    ],
+    "my_kernel2": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "__main__",
+            "module_short": "__main__",
+            "name": "my_kernel"
+        }
+    ],
+    "my_kernel_ptr2": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "__main__",
+            "module_short": "__main__",
+            "name": "my_kernel"
+        }
+    ],
+    "my_kernel_ptr2.k": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "__main__",
+            "module_short": "__main__",
+            "name": "my_kernel.k"
+        },
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "codpypyd",
+            "module_short": "codpypyd",
+            "name": "kernel.k"
+        }
+    ],
+    "np.linalg.norm": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "builtins",
+            "module_short": "builtins",
+            "name": "function"
+        },
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "numpy.linalg",
+            "module_short": "numpy.linalg",
+            "name": "norm"
+        }
+    ],
+    "np.random.randn": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "builtins",
+            "module_short": "builtins",
+            "name": "builtin_function_or_method"
+        },
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "numpy.random",
+            "module_short": "numpy.random",
+            "name": "randn"
+        }
+    ],
+    "result_1": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "numpy",
+            "module_short": "numpy",
+            "name": "float64"
+        }
+    ],
+    "result_2": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "numpy",
+            "module_short": "numpy",
+            "name": "float64"
+        }
+    ],
+    "x": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "numpy",
+            "module_short": "numpy",
+            "name": "ndarray"
+        }
+    ],
+    "y": [
+        {
+            "is_class": false,
+            "is_explicit": false,
+            "module": "numpy",
+            "module_short": "numpy",
+            "name": "ndarray"
+        }
+    ]
 }

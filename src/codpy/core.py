@@ -1,24 +1,19 @@
+import itertools
 from functools import partial
 
 import numpy as np
+import pandas as pd
 from codpydll import *
 
 from codpy.data_conversion import get_matrix
-from codpy.random_utils import *
+from codpy.random_utils import random_select, random_select_interface
 from codpy.selection import column_selector
 from codpy.utils import softmaxindices, softminindices
 
 
-class _codpy_param_getter:
-    def get_params(**kwargs):
-        return kwargs.get("codpy", {})
-
-    def get_kernel_fun(**kwargs):
-        return _codpy_param_getter.get_params(**kwargs)["set_kernel"]
-
-
-class op:
-    def projection(x, y, z, fx, reg=[], **kwargs):
+class KerOp:
+    @staticmethod
+    def projection(x, y, z, fx, reg=None, **kwargs):
         """
         Performs projection in kernel regression for efficient computation, targeting a lower sampling space.
         Note:
@@ -49,6 +44,8 @@ class op:
                    polynomial_order=2)
         """
 
+        reg = reg if reg is not None else []
+
         def project_dataframe(x, y, z, fx, reg):
             x, y, z = column_selector([x, y, z], **kwargs)
             f_z = cd.op.projection(x, y, z, fx, reg)
@@ -69,10 +66,11 @@ class op:
                 for zi in z
             ]
 
-        if isinstance(x, pd.DataFrame):
-            return project_dataframe(x, y, z, fx, reg)
-
-        return project_array(x, y, z, fx, reg)
+        return (
+            project_dataframe(x, y, z, fx, reg)
+            if isinstance(x, pd.DataFrame)
+            else project_array(x, y, z, fx, reg)
+        )
 
     def _weighted_projection(**kwargs):
         projection_format_switchDict = {
@@ -83,7 +81,7 @@ class op:
 
             def fun(zi):
                 kwargs["z"] = zi
-                return op.weighted_projection(**kwargs)
+                return KerOp._weighted_projection(**kwargs)
 
             out = [fun(zi) for zi in z]
             return out
@@ -104,7 +102,7 @@ class op:
                 f_z = pd.DataFrame(f_z, columns=list(fx.columns), index=z.index)
             return f_z
 
-        kernel_interface.init(**kwargs)
+        KerInterface.init(**kwargs)
         type_debug = type(kwargs.get("x", []))
 
         def debug_fun(**kwargs):
@@ -125,7 +123,8 @@ class op:
 
         return f_z
 
-    def extrapolation(x, z, fx=[], **kwargs):
+    @staticmethod
+    def extrapolation(x, z, fx=None, reg=None, **kwargs):
         """
         Performs extrapolation in the context of kernel regression.
 
@@ -136,10 +135,13 @@ class op:
             * ``kernel`` function
             * ``map``
         """
+        reg = reg if reg is not None else []
+        fx = fx if fx is not None else []
 
-        return op.projection(x=x, y=x, z=z, fx=fx)
+        return KerOp.projection(x=x, y=x, z=z, reg=reg, fx=fx)
 
-    def interpolation(x, z, fx=[], **kwargs):
+    @staticmethod
+    def interpolation(x, y, z, fx=None, **kwargs):
         """
         Performs interpolation in the context of kernel regression.
 
@@ -150,9 +152,11 @@ class op:
             * ``kernel`` function
             * ``map``
         """
-        return op.projection(x=x, y=z, z=z, fx=fx, **kwargs)
+        fx = fx if fx is not None else []
+        return KerOp.projection(x=x, y=y, z=z, fx=fx, **kwargs)
 
-    def gradient_denoiser(x, z, fx=[], epsilon=1e-9, **kwargs):
+    @staticmethod
+    def gradient_denoiser(x, z, fx=None, epsilon=1e-9, **kwargs):
         """
         A function for performing least squares regression penalized by the norm of the gradient,
         induced by a positive definite (PD) kernel.
@@ -173,16 +177,15 @@ class op:
         >>> fx_test = z * 2
 
         # Perform denoising on the input data or new data points 'z'
-        op.denoiser(xtrain, xtest, fx_train, kernel_fun = "maternnorm", map = "standardmean")
+        KerOp.denoiser(xtrain, xtest, fx_train, kernel_fun = "maternnorm", map = "standardmean")
         """
-        reg = epsilon * diffops.nablaT_nabla(x=x, y=x, fx=[])
-        out = op.extrapolation(x, z=z, fx=fx)
-        # self.reg = self.epsilon*op.nablaT_nabla(**{**kw,**{'fx':[],'y':self.y,'x':self.x}})
-        # self.kernel = kernel_setters.kernel_helper(kernel_setters.set_matern_normkernel, 0,1e-8 ,map_setters.set_standard_mean_map)
-        # out = op.extrapolation(**{**self.params,**{'z':z}})
+        fx = fx if fx is not None else []
+        reg = epsilon * DiffOps.nabla_t_nabla(x=x, y=x, fx=[])
+        out = KerOp.extrapolation(x, z=z, fx=fx, reg=reg)
         return out
 
-    def norm(x, y, z, fx=[], **kwargs):
+    @staticmethod
+    def norm(x, y, z, fx=None, **kwargs):
         """
         Calculate the kernel-induced norm based on the provided matrices.
 
@@ -200,11 +203,14 @@ class op:
             * ``kernel`` function
             * ``map``
         """
+
+        fx = fx if fx is not None else []
         return cd.tools.norm_projection(
             get_matrix(x), get_matrix(y), get_matrix(z), get_matrix(fx)
         )
 
-    def coefficients(x, y, fx=[], **kwargs) -> np.ndarray:
+    @staticmethod
+    def coefficients(x, y, fx=None, **kwargs) -> np.ndarray:
         """
         Computes the regressors or coefficients for kernelized regression, using a specified PD kernel.
 
@@ -255,10 +261,11 @@ class op:
             - ``'standardmin'``: Standard minimum map pipeline combining minimum distance scaling with other transformations.
             - ``'standardmean'``: Standard mean map pipeline combining mean distance scaling with other transformations.
         """
+        fx = fx if fx is not None else []
         return cd.op.coefficients(get_matrix(x), get_matrix(y), get_matrix(fx), [])
 
-    # @cache
-    def Knm(x, y, fy=[], **kwargs) -> np.ndarray:
+    @staticmethod
+    def knm(x, y, fy=None, **kwargs) -> np.ndarray:
         """
         Computes the kernel matrix induced by a positive definite (pd) kernel.
 
@@ -271,12 +278,14 @@ class op:
 
         Returns:
             - if fx is empty: matrix np.array of size (NxM) The computed kernel matrix, representing the kernel-induced distances or similarities between the data points in 'x' and 'y'.
-            - prod(Knm(x,y),fx) else. This allow performance and memory optimizations.
+            - prod(knm(x,y),fx) else. This allow performance and memory optimizations.
 
         """
+        fy = fy if fy is not None else []
         return cd.op.Knm(get_matrix(x), get_matrix(y), get_matrix(fy))
 
-    def Knm_inv(x, y, fx=[], epsilon=1e-9, reg_matrix=[], **kwargs):
+    @staticmethod
+    def knm_inv(x, y, fx=None, epsilon=1e-9, reg_matrix=[], **kwargs):
         """
         Args:
             x (:class:`numpy.ndarray`): Input data points for the gradient computation. np.array of size N , D.
@@ -284,18 +293,20 @@ class op:
             fx (:class:`numpy.ndarray`): optional-Function values or responses at the data points in `x`. np.array of size M , Df.
         Returns:
             - if reg is empty:
-                - if fx is empty: matrix np.array of size (NxM), that is the least square inverse of Knm(x,y).
-                - prod(Knm_inv(x,y),fx) else. This allow performance and memory optimizations. The output corresponds then to the coefficient of fx in the kernel induced basis.
+                - if fx is empty: matrix np.array of size (NxM), that is the least square inverse of knm(x,y).
+                - prod(knm_inv(x,y),fx) else. This allow performance and memory optimizations. The output corresponds then to the coefficient of fx in the kernel induced basis.
             - else:
-                - if fx is empty: matrix np.array of size (NxM), that corresponds to the least square computation (Knm(y,x)Knm(x,y)+reg)^{-1}Knm(y,x).
-                - prod(Knm_inv(x,y),fx) else. This allow performance and memory optimizations. The output corresponds then to the coefficient of fx in the kernel induced basis.
+                - if fx is empty: matrix np.array of size (NxM), that corresponds to the least square computation (knm(y,x)knm(x,y)+reg)^{-1}knm(y,x).
+                - prod(knm_inv(x,y),fx) else. This allow performance and memory optimizations. The output corresponds then to the coefficient of fx in the kernel induced basis.
         """
-        kernel_interface.set_regularization(epsilon)
+        fx = fx if fx is not None else []
+        KerInterface.set_regularization(epsilon)
         return cd.op.Knm_inv(
             get_matrix(x), get_matrix(y), get_matrix(fx), get_matrix(reg_matrix)
         )
 
-    def Dnm(x, y, distance=None, **kwargs) -> np.ndarray:
+    @staticmethod
+    def dnm(x, y, distance=None, **kwargs) -> np.ndarray:
         """
         Computes a distance matrix induced by a positive definite (pd) kernel.
 
@@ -323,11 +334,13 @@ class op:
             get_matrix(x), get_matrix(x), get_matrix(z), get_matrix(fx)
         )
 
-class misc:
+
+class Misc:
     """
     Miscellaneous kernel functions or classes.
     """
-    
+
+    @staticmethod
     def distance_labelling(
         x, y, label=None, distance=None, maxmin: str = "min", axis: int = 1, **kwargs
     ) -> np.ndarray:
@@ -345,13 +358,13 @@ class misc:
             max (bool, optional): Determines the type of labelling:
                 - If True, uses softmax labelling.
                 - If False (default), uses softmin labelling.
-                :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
+                :param kernel_fun: The name of the kernel function to use. KerOptions include ``'gaussian'``, ``'tensornorm'``, etc.
 
         Returns:
             np.array: An array of labelled distances between the data points in x and y.
         """
         # print('######','distance_labelling','######')
-        D = op.Dnm(x, y, distance, **kwargs)
+        D = KerOp.dnm(x, y, distance, **kwargs)
         if maxmin == "min":
             indices = softminindices(D, axis=axis)
         else:
@@ -361,7 +374,7 @@ class misc:
         else:
             return indices
 
-
+    @staticmethod
     def discrepancy(
         x: np.array, z: np.array, y: np.array = None, disc_type="raw", **kwargs
     ):
@@ -391,8 +404,7 @@ class misc:
         else:
             return np.sqrt(cd.tools.discrepancy_error(x, z, disc_type))
 
-
-    class discrepancy_functional:
+    class DiscrepancyFunctional:
         """
         A kernel-induced discrepancy between two distributions.
 
@@ -420,7 +432,7 @@ class misc:
 
             Initialize discrepancy functional for 'x'
 
-            >>> discrepancy = discrepancy_functional(x)
+            >>> discrepancy = DiscrepancyFunctional(x)
 
             Compute MMD between 'x' and 'y'
 
@@ -460,7 +472,7 @@ class misc:
             self.Nx = len(x)
             self.x = x.copy()
 
-            self.Kxx = op.Knm(
+            self.Kxx = KerOp.knm(
                 x,
                 x,
                 fx,
@@ -508,7 +520,7 @@ class misc:
             :type kwargs: dict
             """
             N = len(ys)
-            Kxy = op.Knm(
+            Kxy = KerOp.knm(
                 x=ys,
                 y=self.x,
                 fx=fx,
@@ -527,15 +539,18 @@ class misc:
             return out
 
 
-class diffops:
-    def nabla_Knm(x: np.array, y: np.array, fy=[], **kwargs):
+class DiffOps:
+    @staticmethod
+    def nabla_knm(x: np.array, y: np.array, fy=None, **kwargs):
         """
         Args:
 
         """
+        fy = fy if fy is not None else []
         return cd.op.nabla_Knm(get_matrix(x), get_matrix(y), get_matrix(fy))
 
-    def nabla(x: np.array, z: np.array, y=None, fx=[], **kwargs):
+    @staticmethod
+    def nabla(x: np.array, z: np.array, y=None, fx=None, **kwargs):
         """
         Compute the kernel-induced gradient of a function.
 
@@ -555,13 +570,14 @@ class diffops:
             >>> z = np.random.randn(100, 1)
             >>> fx = x * 2
             >>> fz = z * 2
-            >>> gradient = diffops.nabla(x,x,z,fx)
+            >>> gradient = DiffOps.nabla(x,x,z,fx)
         """
-        if y is None:
-            y = x
+        fx = fx if fx is not None else []
+        y = x if y is None else y
         return cd.op.nabla(get_matrix(x), get_matrix(y), get_matrix(z), get_matrix(fx))
 
-    def nabla_inv(x, z, y=None, fz=[], **kwargs):
+    @staticmethod
+    def nabla_inv(x, z, y=None, fz=None, **kwargs):
         """
         Compute the inverse of the kernel-induced gradient operation.
 
@@ -583,11 +599,12 @@ class diffops:
             >>> vector_field = np.array([...])
             >>> inv_gradient = nabla_inv(x_data, y_data, z_data, fz=vector_field)
         """
-        if y is None:
-            y = x
+        fz = fz if fz is not None else []
+        y = x if y is None else y
         return cd.op.nabla_inv(get_matrix(x), get_matrix(y), get_matrix(z), fz)
 
-    def nablaT(x, y, z, fz, **kwargs):
+    @staticmethod
+    def nabla_t(x, y, z, fz, **kwargs):
         """
         Compute the divergence of a vector field using a kernel-induced method.
 
@@ -610,11 +627,12 @@ class diffops:
             >>> y_data = np.array([...])
             >>> z_data = np.array([...])
             >>> vector_field = np.array([...])
-            >>> divergence = nablaT(x_data, y_data, z_data, fz=vector_field)
+            >>> divergence = nabla_t(x_data, y_data, z_data, fz=vector_field)
         """
         return cd.op.nablaT(get_matrix(x), get_matrix(y), get_matrix(z), get_matrix(fz))
 
-    def nablaT_inv(x, z, y=None, fx=[], **kwargs):
+    @staticmethod
+    def nabla_t_inv(x, z, y=None, fx=None, **kwargs):
         """
         Compute the inverse of the transposed gradient operation.
 
@@ -634,15 +652,16 @@ class diffops:
             >>> y_data = np.array([...])
             >>> z_data = np.array([...])
             >>> fx_data = np.array([...])
-            >>> inv_transpose_gradient = nablaT_inv(x_data, y_data, z_data, fx_data)
+            >>> inv_transpose_gradient = nabla_t_inv(x_data, y_data, z_data, fx_data)
         """
-        if y is None:
-            y = x
+        fx = fx if fx is not None else []
+        y = x if y is None else y
         return cd.op.nablaT_inv(
             get_matrix(x), get_matrix(y), get_matrix(z), get_matrix(fx)
         )
 
-    def nablaT_nabla(x, y, fx=[], **kwargs):
+    @staticmethod
+    def nabla_t_nabla(x, y, fx=None, **kwargs):
         """
         Compute the kernel-induced discrete Laplace operator.
 
@@ -667,22 +686,27 @@ class diffops:
             >>> x_data = np.array([...])
             >>> y_data = np.array([...])
             >>> fx_data = np.array([...])
-            >>> laplace_operator = nablaT_nabla(x_data, y_data, fx_data)
+            >>> laplace_operator = nabla_t_nabla(x_data, y_data, fx_data)
         """
+        fx = fx if fx is not None else []
         return cd.op.nablaT_nabla(x=get_matrix(x), y=get_matrix(y), fx=get_matrix(fx))
 
-    def nablaT_nabla_inv(x, y, fx=[], **kwargs):
+    @staticmethod
+    def nabla_t_nabla_inv(x, y, fx=None, **kwargs):
         """
         Args:
 
         """
-
+        fx = fx if fx is not None else []
         return cd.op.nablaT_nabla_inv(get_matrix(x), get_matrix(y), get_matrix(fx))
 
-    def Leray_T(x, y, fx=[], **kwargs):
+    @staticmethod
+    def leray_t(x, y, fx=None, **kwargs):
+        fx = fx if fx is not None else []
         return cd.op.Leray_T(get_matrix(x), get_matrix(y), get_matrix(fx))
 
-    def Leray(x, y, fx=[], **kwargs):
+    @staticmethod
+    def leray(x, y, fx=None, **kwargs):
         """
         Compute the Leray operator for a given set of input matrices.
 
@@ -699,11 +723,13 @@ class diffops:
             >>> x_data = np.array([...])
             >>> y_data = np.array([...])
             >>> fx_data = np.array([...])
-            >>> leray_result = Leray(x_data, y_data, fx_data)
+            >>> leray_result = leray(x_data, y_data, fx_data)
         """
+        fx = fx if fx is not None else []
         return cd.op.Leray(get_matrix(x), get_matrix(y), get_matrix(fx))
 
-    def hessian(x, z, fx=[], **kwargs) -> np.ndarray:
+    @staticmethod
+    def hessian(x, z, fx=None, **kwargs) -> np.ndarray:
         """
         Compute the kernel-induced Hessian matrix of a function
 
@@ -727,25 +753,15 @@ class diffops:
             >>> fx_data = np.array([...])
             >>> hessian_matrix = hessian(x_data, z_data, fx_data)
         """
-        indices = distance_labelling(x=z, y=x)
-        grad = diffops.nabla(
-            x=x,
-            y=x,
-            z=z,
-            fx=[],
-            kernel_fun=kernel_fun,
-            map=map,
-            polynomial_order=polynomial_order,
-            regularization=regularization,
-            rescale=rescale,
-        )
+        fx = fx if fx is not None else []
+        indices = Misc.distance_labelling(x=z, y=x)
+        grad = DiffOps.nabla(x=x, y=x, z=z, fx=[], **kwargs)
         N_X = x.shape[0]
-        # N_Z = z.shape[0]
         D = x.shape[1]
-        gradT = np.zeros([N_X, D, N_X])
+        grad_t = np.zeros([N_X, D, N_X])
 
         def helper(d):
-            gradT[:, d, :] = grad[:, d, :].T.copy()
+            grad_t[:, d, :] = grad[:, d, :].T.copy()
 
         [helper(d) for d in range(D)]
         if fx is not None:
@@ -759,7 +775,7 @@ class diffops:
             for d in itertools.product(range(D), range(D)):
                 debug = grad[:, d[1], :] @ get_matrix(fx)
                 # multi_plot([[z,debug]],plotD,projection='3d',loc = 'upper left',prop={'size': 3},mp_ncols=2,**kwargs)
-                mat = gradT[:, d[0], :]
+                mat = grad_t[:, d[0], :]
                 out[:, d[0], d[1], :] = -mat @ debug
                 # multi_plot([[z,out[:,d[0], d[1],:]]],plotD,projection='3d',loc = 'upper left',prop={'size': 3},mp_ncols=2,**kwargs)
             out = out[indices, :, :, :]
@@ -773,80 +789,92 @@ class diffops:
         else:
             hess = np.zeros([N_X, D, D, N_X])
             for d in itertools.product(range(D), range(D)):
-                hess[:, d[0], d[1], :] = -gradT[:, d[0], :] @ grad[:, d[1], :]
+                hess[:, d[0], d[1], :] = -grad_t[:, d[0], :] @ grad[:, d[1], :]
                 # test = hess[:,d[0]*D + d[1],:]
             return hess[indices, :, :, :]
 
 
-class factories:
+class Factories:
     """
-    A class to manipulate built-in codpy factories.
-    
+    A class to manipulate built-in codpy Factories.
+
     Note: two kinds of factories are exhibited
-        - Kernel factories through :func:`factories.get_kernel_factory()`, defining real-valued function $k(x,y)$ from a positive-definite kernel.
-        - Maps factories through :func:`factories.get_map_factory()`, defining maps $x\mapsto S(x)$, used to fit the data to a kernel using $k\circ S$.
+        - Kernel factories through :func:`Factories.get_kernel_factory()`, defining real-valued function $k(x,y)$ from a positive-definite kernel.
+        - Maps Factories through :func:`Factories.get_map_factory()`, defining maps $x\mapsto S(x)$, used to fit the data to a kernel using $k\circ S$.
     Users can overload these factories to add their own kernels and map, see :meth:`kernel_overloading.my_kernel_overloading`
     """
+
+    @staticmethod
     def check_map_strings(strings):
         """
-        Simply check that the string, or list of strings, are keys for the dictionary :func:`factories.get_map_factory_keys()`
+        Simply check that the string, or list of strings, are keys for the dictionary :func:`Factories.get_map_factory_keys()`
 
         Args:
             strings : (:class:`str` or :class:`list`).
         """
         if isinstance(strings, list):
-            [kernel_interface.check_map_strings(s) for s in strings]
+            [Factories.check_map_strings(s) for s in strings]
         else:
-            ok = strings in factories.get_map_factory_keys()
+            ok = strings in Factories.get_map_factory_keys()
             if not ok:
                 raise NameError("unknown map:" + strings)
 
-
+    @staticmethod
     def check_kernel_strings(strings):
         """
-        Simply check that the string, or list of strings, are keys in the dictionary :func:`factories.get_kernel_factory_keys()`
+        Simply check that the string, or list of strings, are keys in the dictionary :func:`Factories.get_kernel_factory_keys()`
 
         Args:
             strings : (:class:`str` or :class:`list`).
         """
-        ok = strings in factories.get_kernel_factory_keys()
+        ok = strings in Factories.get_kernel_factory_keys()
         if not ok:
             raise NameError("unknown kernel:" + strings)
 
+    @staticmethod
     def get_kernel_factory():
         return cd.factories.get_kernels_factory()
+
+    @staticmethod
     def get_kernel_factory_keys():
         return cd.factories.kernel_factory_keys()
 
+    @staticmethod
     def get_map_factory():
         return cd.factories.get_maps_factory()
+
+    @staticmethod
     def get_map_factory_keys():
         return cd.factories.maps_factory_keys()
 
-class kernel_interface:
+
+class KerInterface:
     """
     Miscellaneous instructions to instruct the C++ interface.
     """
+
+    @staticmethod
     def set_verbose(verbose=True):
         """
         Produce a diagnosis file "output.xml" to debug, profile or audit the C++ core.
         """
         cd.verbose(verbose)
 
-
+    @staticmethod
     def set_num_threads(n) -> None:
         """
         Limit the number of threads used by the C++ core.
         """
         cd.set_num_threads(n)
 
-    def rescale( x, y=[], z=[], max=None, seed=42, **kwargs):
+    @staticmethod
+    def rescale(x, y=[], z=[], max=None, seed=42, **kwargs):
         """
         Intruct the kernel map to fit its parameters in order to match the variables $x,y,z$.
 
         Args:
             x,y,z (:class:`numpy.ndarray` or :class:`pandas.DataFrame`): Input data points to fit.
-            max : (:class:`int`). Random select max datapoints. Used to limit the input size for performances. 
+            max : (:class:`int`). Random select max datapoints. Used to limit the input size for performances.
             seed : (:class:`int`). The seed used to random selection. See (:class:`max`)
         """
         if max is not None:
@@ -858,18 +886,21 @@ class kernel_interface:
         x, y, z = get_matrix(x), get_matrix(y), get_matrix(z)
         cd.kernel_interface.rescale(x, y, z)
 
+    @staticmethod
     def get_kernel_ptr():
         """
         Return a smart pointer to the current kernel used by codpy.
         """
         return cd.get_kernel_ptr()
 
+    @staticmethod
     def set_kernel_ptr(kernel_ptr):
         """
         Set codpy with a kernel.
         """
         cd.set_kernel_ptr(kernel_ptr)
 
+    @staticmethod
     def set_polynomial_order(order):
         """
         Allow to set an integer, used for polynomial regression with codpy's internal kernels.
@@ -883,64 +914,69 @@ class kernel_interface:
 
         cd.kernel_interface.set_polynomial_order(order)
 
+    @staticmethod
     def set_regularization(regularization):
         """
         Set a float value for Tykhonov regularization in kernel ridge inversion.
         """
         cd.kernel_interface.set_regularization(regularization)
 
+    @staticmethod
     def pipe_kernel_ptr(kernel_ptr):
         cd.kernel_interface.pipe_kernel_ptr(kernel_ptr)
 
+    @staticmethod
     def pipe_kernel_fun(kernel_fun, regularization=1e-8):
-        kern1 = kernel_interface.get_kernel_ptr()
+        kern1 = KerInterface.get_kernel_ptr()
         kernel_fun()
-        kern2 = kernel_interface.get_kernel_ptr()
-        kernel_interface.set_kernel_ptr(kern1)
-        kernel_interface.pipe_kernel_ptr(kern2)
+        kern2 = KerInterface.get_kernel_ptr()
+        KerInterface.set_kernel_ptr(kern1)
+        KerInterface.pipe_kernel_ptr(kern2)
         cd.kernel_interface.set_regularization(regularization)
 
+    @staticmethod
     def init(x=[], y=[], z=[], **kwargs):
         set_codpy_kernel = kwargs.get("set_codpy_kernel", None)
         if set_codpy_kernel is not None:
             set_codpy_kernel()
         rescale = kwargs.get("rescale", False)
         if rescale:
-            kernel_interface.rescale(x, y, z, **kwargs)
+            KerInterface.rescale(x, y, z, **kwargs)
 
-    def set_kernel(kernel_key, reg=1e-8, check_=True,extras={}):
+    @staticmethod
+    def set_kernel(kernel_key, reg=1e-8, check_=True, extras={}):
         """
-        An utility to instruct codpy to set a kernel. The list of available kernels is given by :func:`factories.get_map_factory_keys()`
+        An utility to instruct codpy to set a kernel. The list of available kernels is given by :func:`Factories.get_map_factory_keys()`
 
         Args:
 
-            kernel_key : (:class:`str`). Must be in  :func:`factories.get_map_factory_keys()`
+            kernel_key : (:class:`str`). Must be in  :func:`Factories.get_map_factory_keys()`
             reg : (:class:`float`). Set a regularization parameters. See :func:`kernel_interface.set_regularization`
-            check_ : (:class:`bool`). Check if the key is in :func:`factories.get_map_factory_keys()`
+            check_ : (:class:`bool`). Check if the key is in :func:`Factories.get_map_factory_keys()`
             extras : (:class:`dic(str,str)`). A list of parameters to set the kernel.
         """
         if check_:
-            factories.check_kernel_strings(kernel_key)
-        kernel_ptr = factories.get_kernel_factory()[kernel_key](extras)
+            Factories.check_kernel_strings(kernel_key)
+        kernel_ptr = Factories.get_kernel_factory()[kernel_key](extras)
         kernel_ptr.set_kernel_ptr(kernel_ptr)
         cd.kernel_interface.set_regularization(reg)
 
-
+    @staticmethod
     def set_map(strings, check_=True, kwargs={}):
         """
-        An utility to set an internal codpy map for kernels. The list of available maps is given by :func:`factories.get_map_factory_keys()`
-        
+        An utility to set an internal codpy map for kernels. The list of available maps is given by :func:`Factories.get_map_factory_keys()`
+
         Args:
 
             strings : (:class:`str` or :class:`list`). A list of maps :
-            
+
                 - if  :class:`str`: instanciate and set to codpy the map.
                 - if  :class:`list`: instanciate and set to codpy the first map, then 'pipe' (means compose) the others maps.
         """
         if check_:
-            if kernel_interface.get_kernel_ptr() == None:
+            if KerInterface.get_kernel_ptr() is None:
                 raise AssertionError("set a kernel first, see set_kernel")
-            check_map_strings(strings)
+            Factories.check_map_strings(strings)
         if isinstance(strings, list):
             ss = strings.copy()
             cd.kernel_interface.set_map(ss.pop(0), kwargs)
@@ -949,11 +985,10 @@ class kernel_interface:
             cd.kernel_interface.set_map(strings, kwargs)
 
 
-
-class map_setters:
+class MapSetters:
     """
-    A collection of classes / function to manipulate internal codpy maps. 
-    Internal codpy maps can be listed using :func:`factories.get_map_factory_keys`
+    A collection of classes / function to manipulate internal codpy maps.
+    Internal codpy maps can be listed using :func:`Factories.get_map_factory_keys`
     """
 
     class set:
@@ -961,8 +996,9 @@ class map_setters:
             self.strings = strings
 
         def __call__(self, **kwargs):
-            set_map(self.strings, kwargs)
+            KerInterface.set_map(self.strings, kwargs)
 
+    @staticmethod
     def set_linear_map(**kwargs):
         """
         Set a linear map for the kernel.
@@ -972,6 +1008,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("linear_map", kwargs)
 
+    @staticmethod
     def set_affine_map(**kwargs):
         """
         Set an affine map for the kernel.
@@ -981,6 +1018,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("affine_map", kwargs)
 
+    @staticmethod
     def set_log_map(**kwargs):
         """
         Set a logarithmic map for the kernel.
@@ -990,6 +1028,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("log", kwargs)
 
+    @staticmethod
     def set_exp_map(**kwargs):
         """
         Set an exponential map for the kernel.
@@ -999,6 +1038,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("exp", kwargs)
 
+    @staticmethod
     def set_scale_std_map(**kwargs):
         """
         Set a standard scaling map for the kernel.
@@ -1008,6 +1048,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("scale_std", kwargs)
 
+    @staticmethod
     def set_erf_map(**kwargs):
         """
         Set an error function (ERF) map for the kernel.
@@ -1017,6 +1058,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("scale_to_erf", kwargs)
 
+    @staticmethod
     def set_erfinv_map(**kwargs):
         """
         Set an inverse error function (ERF) map for the kernel.
@@ -1026,6 +1068,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("scale_to_erfinv", kwargs)
 
+    @staticmethod
     def set_scale_factor_map(**kwargs):
         """
         Set a scaling factor map for the kernel.
@@ -1035,6 +1078,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("scale_factor", kwargs)
 
+    @staticmethod
     def set_scale_factor_helper(**kwargs):
         """
         Helper function to set a scaling factor map with specified bandwidth.
@@ -1043,9 +1087,10 @@ class map_setters:
         - **kwargs: Arbitrary keyword arguments, including 'bandwidth' for the scale factor map configuration.
         """
         return lambda: partial(
-            map_setters.set_scale_factor_map, **{"h": str(kwargs["bandwidth"])}
+            MapSetters.set_scale_factor_map, **{"h": str(kwargs["bandwidth"])}
         )()
 
+    @staticmethod
     def set_unitcube_map(**kwargs):
         """
         Set a unit cube map for the kernel.
@@ -1055,6 +1100,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("scale_to_unitcube", kwargs)
 
+    @staticmethod
     def set_grid_map(**kwargs):
         """
         Set a grid map for the kernel.
@@ -1064,6 +1110,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("map_to_grid", kwargs)
 
+    @staticmethod
     def set_mean_distance_map(**kwargs):
         """
         Set a mean distance map for the kernel.
@@ -1073,6 +1120,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("scale_to_mean_distance", kwargs)
 
+    @staticmethod
     def set_min_distance_map(**kwargs):
         """
         Set a minimum distance map for the kernel.
@@ -1082,6 +1130,7 @@ class map_setters:
         """
         cd.kernel_interface.set_map("scale_to_min_distance", kwargs)
 
+    @staticmethod
     def set_standard_mean_map(**kwargs):
         """
         Set a standard mean map pipeline for the kernel.
@@ -1091,10 +1140,11 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the standard mean map configuration.
         """
-        map_setters.set_mean_distance_map(**kwargs)
+        MapSetters.set_mean_distance_map(**kwargs)
         _pipe__map_setters.pipe_erfinv_map()
         _pipe__map_setters.pipe_unitcube_map()
 
+    @staticmethod
     def set_standard_min_map(**kwargs):
         """
         Set a standard minimum map pipeline for the kernel.
@@ -1104,10 +1154,11 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the standard minimum map configuration.
         """
-        map_setters.set_min_distance_map(**kwargs)
+        MapSetters.set_min_distance_map(**kwargs)
         _pipe__map_setters.pipe_erfinv_map()
         _pipe__map_setters.pipe_unitcube_map()
 
+    @staticmethod
     def set_unitcube_min_map(**kwargs):
         """
         Set a unit cube minimum map pipeline for the kernel.
@@ -1117,9 +1168,10 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the unit cube minimum map configuration.
         """
-        map_setters.set_min_distance_map(**kwargs)
+        MapSetters.set_min_distance_map(**kwargs)
         _pipe__map_setters.pipe_unitcube_map()
 
+    @staticmethod
     def set_unitcube_erfinv_map(**kwargs):
         """
         Set a unit cube erf-inverse map pipeline for the kernel.
@@ -1129,9 +1181,10 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the unit cube erf-inverse map configuration.
         """
-        map_setters.set_erfinv_map()
+        MapSetters.set_erfinv_map()
         _pipe__map_setters.pipe_unitcube_map()
 
+    @staticmethod
     def set_unitcube_mean_map(**kwargs):
         """
         Set a unit cube mean map pipeline for the kernel.
@@ -1141,9 +1194,10 @@ class map_setters:
         Args:
         - **kwargs: Arbitrary keyword arguments for the unit cube mean map configuration.
         """
-        map_setters.set_mean_distance_map(**kwargs)
+        MapSetters.set_mean_distance_map(**kwargs)
         _pipe__map_setters.pipe_unitcube_map()
 
+    @staticmethod
     def map_helper(map_setter, **kwargs):
         """
         This function creates a partial function for a specified map setter with provided arguments.
@@ -1155,12 +1209,14 @@ class map_setters:
         return partial(map_setter, kwargs)
 
 
-class kernel_setters:
+class KernelSetters:
+    @staticmethod
     def kernel_helper(
         setter, polynomial_order: int = 0, regularization: float = 1e-8, set_map=None
     ):
         return partial(setter, polynomial_order, regularization, set_map)
 
+    @staticmethod
     def set_kernel(
         kernel_string,
         polynomial_order: int = 2,
@@ -1187,15 +1243,16 @@ class kernel_setters:
         if set_map:
             set_map()
         if polynomial_order > 0:
-            linearkernel = kernel_setters.kernel_helper(
-                setter=kernel_setters.set_linear_regressor_kernel,
+            linearkernel = KernelSetters.kernel_helper(
+                setter=KernelSetters.set_linear_regressor_kernel,
                 polynomial_order=polynomial_order,
                 regularization=regularization,
                 set_map=None,
             )
-            kernel_interface.pipe_kernel_fun(linearkernel, regularization)
+            KerInterface.pipe_kernel_fun(linearkernel, regularization)
         cd.kernel_interface.set_regularization(regularization)
 
+    @staticmethod
     def set_linear_regressor_kernel(
         polynomial_order: int = 2, regularization: float = 1e-8, set_map=None
     ):
@@ -1213,6 +1270,7 @@ class kernel_setters:
         if set_map:
             set_map()
 
+    @staticmethod
     def set_absnormkernel(
         polynomial_order: int = 0, regularization: float = 1e-8, set_map=None
     ):
@@ -1224,8 +1282,9 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        kernel_setters.set_kernel("absnorm", polynomial_order, regularization, set_map)
+        KernelSetters.set_kernel("absnorm", polynomial_order, regularization, set_map)
 
+    @staticmethod
     def set_tensornorm_kernel(
         polynomial_order: int = 0, regularization: float = 1e-8, set_map=None
     ):
@@ -1237,10 +1296,11 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        kernel_setters.set_kernel(
+        KernelSetters.set_kernel(
             "tensornorm", polynomial_order, regularization, set_map
         )
 
+    @staticmethod
     def set_gaussian_kernel(
         polynomial_order: int = 0, regularization: float = 1e-8, set_map=None
     ):
@@ -1252,8 +1312,9 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        kernel_setters.set_kernel("gaussian", polynomial_order, regularization, set_map)
+        KernelSetters.set_kernel("gaussian", polynomial_order, regularization, set_map)
 
+    @staticmethod
     def set_matern_tensor_kernel(
         polynomial_order: int = 0, regularization: float = 1e-8, set_map=None
     ):
@@ -1265,14 +1326,15 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        kernel_setters.set_kernel(
+        KernelSetters.set_kernel(
             "materntensor", polynomial_order, regularization, set_map
         )
 
     default_multiquadricnormkernel_map = partial(
-        map_setters.set_standard_mean_map, distance="norm2"
+        MapSetters.set_standard_mean_map, distance="norm2"
     )
 
+    @staticmethod
     def set_multiquadricnorm_kernel(
         polynomial_order: int = 0,
         regularization: float = 1e-8,
@@ -1286,14 +1348,15 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function defined as `default_multiquadricnormkernel_map`.
         """
-        kernel_setters.set_kernel(
+        KernelSetters.set_kernel(
             "multiquadricnorm", polynomial_order, regularization, set_map
         )
 
     default_multiquadrictensorkernel_map = partial(
-        map_setters.set_standard_min_map, distance="normifty"
+        MapSetters.set_standard_min_map, distance="normifty"
     )
 
+    @staticmethod
     def set_multiquadrictensor_kernel(
         polynomial_order: int = 0,
         regularization: float = 1e-8,
@@ -1307,14 +1370,15 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function defined as `default_multiquadrictensorkernel_map`.
         """
-        kernel_setters.set_kernel(
+        KernelSetters.set_kernel(
             "multiquadrictensor", polynomial_order, regularization, set_map
         )
 
     default_sincardtensorkernel_map = partial(
-        map_setters.set_min_distance_map, distance="normifty"
+        MapSetters.set_min_distance_map, distance="normifty"
     )
 
+    @staticmethod
     def set_sincardtensor_kernel(
         polynomial_order: int = 0,
         regularization: float = 1e-8,
@@ -1328,14 +1392,15 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function defined as `default_sincardtensorkernel_map`.
         """
-        kernel_setters.set_kernel(
+        KernelSetters.set_kernel(
             "sincardtensor", polynomial_order, regularization, set_map
         )
 
     default_sincardsquaretensorkernel_map = partial(
-        map_setters.set_min_distance_map, distance="normifty"
+        MapSetters.set_min_distance_map, distance="normifty"
     )
 
+    @staticmethod
     def set_sincardsquaretensor_kernel(
         polynomial_order: int = 0,
         regularization: float = 0,
@@ -1349,10 +1414,11 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function defined as `default_sincardsquaretensorkernel_map`.
         """
-        kernel_setters.set_kernel(
+        KernelSetters.set_kernel(
             "sincardsquaretensor", polynomial_order, regularization, set_map
         )
 
+    @staticmethod
     def set_dotproduct_kernel(
         polynomial_order: int = 0, regularization: float = 1e-8, set_map=None
     ):
@@ -1364,10 +1430,11 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        kernel_setters.set_kernel(
+        KernelSetters.set_kernel(
             "DotProduct", polynomial_order, regularization, set_map
         )
 
+    @staticmethod
     def set_gaussianper_kernel(
         polynomial_order: int = 0, regularization: float = 1e-8, set_map=None
     ):
@@ -1379,14 +1446,15 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        kernel_setters.set_kernel(
+        KernelSetters.set_kernel(
             "gaussianper", polynomial_order, regularization, set_map
         )
 
+    @staticmethod
     def set_matern_norm_kernel(
         polynomial_order: int = 2,
         regularization: float = 1e-8,
-        set_map=map_setters.set_mean_distance_map,
+        set_map=MapSetters.set_mean_distance_map,
     ):
         """
         Set the Matérn norm kernel with specified parameters.
@@ -1394,12 +1462,13 @@ class kernel_setters:
         Args:
         - polynomial_order (int): The polynomial order for the kernel function.
         - regularization (float): The regularization parameter for the kernel.
-        - set_map (callable, optional): An optional mapping function defined as `map_setters.set_mean_distance_map`.
+        - set_map (callable, optional): An optional mapping function defined as `MapSetters.set_mean_distance_map`.
         """
-        kernel_setters.set_kernel(
+        KernelSetters.set_kernel(
             "maternnorm", polynomial_order, regularization, set_map
         )
 
+    @staticmethod
     def set_scalar_product_kernel(
         polynomial_order: int = 0, regularization: float = 1e-8, set_map=None
     ):
@@ -1411,42 +1480,53 @@ class kernel_setters:
         - regularization (float): The regularization parameter for the kernel.
         - set_map (callable, optional): An optional mapping function to apply.
         """
-        kernel_setters.set_kernel(
+        KernelSetters.set_kernel(
             "scalar_product", polynomial_order, regularization, set_map
         )
 
 
 class _pipe__map_setters:
+    @staticmethod
     def pipe(s, **kwargs):
         cd.kernel_interface.pipe_map(s, kwargs)
 
+    @staticmethod
     def pipe_log_map(**kwargs):
         _pipe__map_setters.pipe("log", **kwargs)
 
+    @staticmethod
     def pipe_exp_map(**kwargs):
         _pipe__map_setters.pipe("exp", **kwargs)
 
+    @staticmethod
     def pipe_linear_map(**kwargs):
         _pipe__map_setters.pipe("linear_map", **kwargs)
 
+    @staticmethod
     def pipe_affine_map(**kwargs):
         _pipe__map_setters.pipe_affine_map("affine_map", **kwargs)
 
+    @staticmethod
     def pipe_scale_std_map(**kwargs):
         _pipe__map_setters.pipe("scale_std", **kwargs)
 
+    @staticmethod
     def pipe_erf_map(**kwargs):
         _pipe__map_setters.pipe("scale_to_erf", **kwargs)
 
+    @staticmethod
     def pipe_erfinv_map(**kwargs):
         _pipe__map_setters.pipe("scale_to_erfinv", **kwargs)
 
+    @staticmethod
     def pipe_unitcube_map(**kwargs):
         _pipe__map_setters.pipe("scale_to_unitcube", **kwargs)
 
+    @staticmethod
     def pipe_mean_distance_map(**kwargs):
         _pipe__map_setters.pipe("scale_to_mean_distance", **kwargs)
 
+    @staticmethod
     def pipe_min_distance_map(**kwargs):
         _pipe__map_setters.pipe("scale_to_min_distance", **kwargs)
 
@@ -1454,92 +1534,92 @@ class _pipe__map_setters:
 kernel_settings = {
     "linear": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_linear_regressor_kernel,
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_linear_regressor_kernel,
         polynomial_order,
         regularization,
         map_func,
     ),
     "gaussian": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_gaussian_kernel, polynomial_order, regularization, map_func
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_gaussian_kernel, polynomial_order, regularization, map_func
     ),
     "tensornorm": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_tensornorm_kernel, polynomial_order, regularization, map_func
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_tensornorm_kernel, polynomial_order, regularization, map_func
     ),
     "absnorm": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_absnormkernel, polynomial_order, regularization, map_func
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_absnormkernel, polynomial_order, regularization, map_func
     ),
     "matern": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_matern_tensor_kernel,
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_matern_tensor_kernel,
         polynomial_order,
         regularization,
         map_func,
     ),
     "multiquadricnorm": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_multiquadricnorm_kernel,
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_multiquadricnorm_kernel,
         polynomial_order,
         regularization,
         map_func,
     ),
     "multiquadrictensor": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_multiquadrictensor_kernel,
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_multiquadrictensor_kernel,
         polynomial_order,
         regularization,
         map_func,
     ),
     "sincardtensor": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_sincardtensor_kernel,
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_sincardtensor_kernel,
         polynomial_order,
         regularization,
         map_func,
     ),
     "sincardsquaretensor": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_sincardsquaretensor_kernel,
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_sincardsquaretensor_kernel,
         polynomial_order,
         regularization,
         map_func,
     ),
     "dotproduct": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_dotproduct_kernel, polynomial_order, regularization, map_func
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_dotproduct_kernel, polynomial_order, regularization, map_func
     ),
     "gaussianper": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_gaussianper_kernel,
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_gaussianper_kernel,
         polynomial_order,
         regularization,
         map_func,
     ),
     "maternnorm": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_matern_norm_kernel,
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_matern_norm_kernel,
         polynomial_order,
         regularization,
         map_func,
     ),
     "scalarproduct": lambda: lambda polynomial_order,
     regularization,
-    map_func: kernel_setters.kernel_helper(
-        kernel_setters.set_scalar_product_kernel,
+    map_func: KernelSetters.kernel_helper(
+        KernelSetters.set_scalar_product_kernel,
         polynomial_order,
         regularization,
         map_func,
@@ -1547,21 +1627,21 @@ kernel_settings = {
 }
 
 _map_settings = {
-    "linear": map_setters.set_linear_map,
-    "affine": map_setters.set_affine_map,
-    "log": map_setters.set_log_map,
-    "exp": map_setters.set_exp_map,
-    "scalestd": map_setters.set_scale_std_map,
-    "erf": map_setters.set_erf_map,
-    "erfinv": map_setters.set_erfinv_map,
-    "scalefactor": map_setters.set_scale_factor_map,
-    "bandwidth": map_setters.set_scale_factor_helper,
-    "grid": map_setters.set_grid_map,
-    "unitcube": map_setters.set_unitcube_map,
-    "meandistance": map_setters.set_mean_distance_map,
-    "mindistance": map_setters.set_min_distance_map,
-    "standardmin": map_setters.set_standard_min_map,
-    "standardmean": map_setters.set_standard_mean_map,
+    "linear": MapSetters.set_linear_map,
+    "affine": MapSetters.set_affine_map,
+    "log": MapSetters.set_log_map,
+    "exp": MapSetters.set_exp_map,
+    "scalestd": MapSetters.set_scale_std_map,
+    "erf": MapSetters.set_erf_map,
+    "erfinv": MapSetters.set_erfinv_map,
+    "scalefactor": MapSetters.set_scale_factor_map,
+    "bandwidth": MapSetters.set_scale_factor_helper,
+    "grid": MapSetters.set_grid_map,
+    "unitcube": MapSetters.set_unitcube_map,
+    "meandistance": MapSetters.set_mean_distance_map,
+    "mindistance": MapSetters.set_min_distance_map,
+    "standardmin": MapSetters.set_standard_min_map,
+    "standardmean": MapSetters.set_standard_mean_map,
 }
 
 
@@ -1631,9 +1711,3 @@ def kernel_setter(kernel, map, polynomial_order=0, regularization=1e-8, bandwidt
     return lambda: _kernel_helper2(
         kernel, map, polynomial_order, regularization, bandwidth
     )
-
-
-if __name__ == "__main__":
-    x,y = np.random.randn(10, 2),np.random.randn(10, 2)
-
-    pass
