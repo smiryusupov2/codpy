@@ -14,6 +14,7 @@ from codpy.permutation import lsap
 from codpy.clustering import MiniBatchkmeans, BalancedClustering
 from codpy.permutation import map_invertion
 
+
 class Kernel:
     """
     A class to manipulate datas for various kernel-based operations, such as interpolations or extrapolations of functions, or mapping between distributions.
@@ -39,18 +40,19 @@ class Kernel:
             - Fitting is done just-in-time (at first prediction), and means computing the parameters $\\theta = K(X, Y)^{-1} f(X)$, together with $\sigma$ for distributions. The function :func:`get_theta()` performs those computations and corresponds to fit in others frameworks.
 
     """
+
     def __init__(
         self,
         x=None,
         y=None,
         fx=None,
-        max_nystrom:    int = sys.maxsize,
-        reg:            float = 1e-9,
-        order:          int = None,
-        n_batch:        int = sys.maxsize,
-        set_kernel:     callable = None,
-        set_clustering: callable = None, 
-        **kwargs: dict
+        max_nystrom: int = sys.maxsize,
+        reg: float = 1e-9,
+        order: int = None,
+        n_batch: int = sys.maxsize,
+        set_kernel: callable = None,
+        set_clustering: callable = None,
+        **kwargs: dict,
     ) -> None:
         """
         Initializes the Kernel class with default or user-defined parameters.
@@ -73,7 +75,7 @@ class Kernel:
         self.order = order
         self.reg = reg
         self.max_nystrom = int(max_nystrom)
-        self.n_batch=n_batch
+        self.n_batch = n_batch
 
         if set_clustering is not None:
             self.set_clustering = set_clustering
@@ -96,7 +98,9 @@ class Kernel:
         :returns: A clustering of the set x into N clusters.
         :rtype: :class:`callable`
         """
-        return lambda x,N,**kwargs:BalancedClustering(MiniBatchkmeans(x=x,N=N,**kwargs))
+        return lambda x, N, **kwargs: BalancedClustering(
+            MiniBatchkmeans(x=x, N=N, **kwargs)
+        )
 
     def default_kernel_functor(self) -> callable:
         """
@@ -352,7 +356,7 @@ class Kernel:
 
         self.set_kernel_ptr()
         return core.KerOp.dnm(x=x, y=y, fy=fy)
-    
+
     def get_knm_inv(
         self, epsilon: float = None, epsilon_delta: np.ndarray = None, **kwargs
     ) -> np.ndarray:
@@ -531,8 +535,7 @@ class Kernel:
         :type theta: :class:`numpy.ndarray`
         """
         self.theta = theta
-        if theta is None:
-            return
+        return self
         # self.fx = None
         # self.fx =  LAlg.prod(self.get_knm(),self.theta)
         # if self.get_order() is not None :
@@ -718,7 +721,7 @@ class Kernel:
 
         if self.n_batch is None or self.n_batch > self.x.shape[0]:
             return self
-        self.N = int(self.x.shape[0] / self.n_batch +1)
+        self.N = int(self.x.shape[0] / self.n_batch + 1)
         self.clustering = self.set_clustering(
             x=self.get_x(), N=self.N, fx=self.get_fx(), **kwargs
         )
@@ -737,7 +740,7 @@ class Kernel:
                     fx=fx_proj[indices],
                     n_batch=self.n_batch,
                     clustering=self.clustering,
-                    **kwargs
+                    **kwargs,
                 )
             else:
                 self.kernels[key] = Kernel(x=x[indices], fx=fx_proj[indices], **kwargs)
