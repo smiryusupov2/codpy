@@ -1,11 +1,10 @@
 import numpy as np
-from sklearn.cluster import MiniBatchKMeans
+import sklearn.cluster 
 
+import codpy
 import codpy.core as core
-from codpy.kernel import *
 
-
-class MiniBatchkmeans(MiniBatchKMeans):
+class MiniBatchkmeans(sklearn.cluster.MiniBatchKMeans):
     def __init__(
         self,
         x,
@@ -38,23 +37,23 @@ class MiniBatchkmeans(MiniBatchKMeans):
         return core.KerOp.dnm(x, y, distance="norm2")
 
 
-class GreedySearch(Kernel):
+class GreedySearch:
     def __init__(self, x, N, **kwargs):
         # super().__init__(x=x,max_nystrom=N,**kwargs) #seemed to be a better idea, but no evidence in results !
-        super().__init__(x=x, **kwargs)
-        self.greedy_select(N=N, x=x, **kwargs)
-        self.cluster_centers_ = x[self.indices]
+        self.k = codpy.kernel.Kernel(x=x, **kwargs)
+        self.k.greedy_select(N=N, x=x, **kwargs)
+        self.cluster_centers_ = x[self.k.indices]
 
     def get_labels(self):
         return self(self.x)
 
     def __call__(self, z, **kwargs):
-        self.set_kernel_ptr()
+        self.k.set_kernel_ptr()
         labels = core.KerOp.dnm(z, self.cluster_centers_).argmin(axis=1)
         return labels
 
     def distance(self, x, y):
-        self.set_kernel_ptr()
+        self.k.set_kernel_ptr()
         return core.KerOp.dnm(x, y)
 
 
@@ -65,9 +64,9 @@ class SharpDiscrepancy(GreedySearch):
 
 
 class BalancedClustering:
-    def __init__(self, method, epsilon=0, **kwargs):
+    def __init__(self, method, x, N, epsilon=0, **kwargs):
         self.cut = 100000000
-        self.method = method
+        self.method = method(x,N,**kwargs)
         self.cluster_centers_ = self.method.cluster_centers_
         self.x = self.method.x
         self.D = (

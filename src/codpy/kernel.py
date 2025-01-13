@@ -11,7 +11,8 @@ from codpy.algs import Alg
 from codpy.core import DiffOps
 from codpy.lalg import LAlg
 from codpy.permutation import lsap
-
+from codpy.clustering import MiniBatchkmeans, BalancedClustering
+from codpy.permutation import map_invertion
 
 class Kernel:
     """
@@ -38,45 +39,46 @@ class Kernel:
             - Fitting is done just-in-time (at first prediction), and means computing the parameters $\\theta = K(X, Y)^{-1} f(X)$, together with $\sigma$ for distributions. The function :func:`get_theta()` performs those computations and corresponds to fit in others frameworks.
 
     """
-
     def __init__(
         self,
         x=None,
         y=None,
         fx=None,
-        max_pool: int = 1000,
-        max_nystrom: int = 1000,
-        reg: float = 1e-9,
-        order: int = None,
-        dim: int = 1,
-        set_kernel: callable = None,
-        **kwargs: dict,
+        max_nystrom:    int = sys.maxsize,
+        reg:            float = 1e-9,
+        order:          int = None,
+        n_batch:        int = sys.maxsize,
+        set_kernel:     callable = None,
+        set_clustering: callable = None, 
+        **kwargs: dict
     ) -> None:
         """
         Initializes the Kernel class with default or user-defined parameters.
 
         :param x: A bi-dimensional numpy array.
         :param fx: A bi-dimensional numpy array. If `x` or `fx` is not `None`, then call :func:`set`
-        :param max_pool: Maximum pool size for the kernel operations. Defaults to 1000.
-        :type max_pool: :class:`int`, optional
         :param max_nystrom: Maximum number of Nystrom samples. Defaults to 1000.
         :type max_nystrom: :class:`int`, optional
         :param reg: Regularization parameter for kernel operations. Defaults to 1e-9.
         :type reg: :class:`float`, optional
-        :param order: Polynomial order for polynomial kernel functions. Defaults to ``None``.
-        :type order: :class:`int`, optional
+        :param order: Polynomial order for polynomial kernel functions. Defaults to ``None`` (no polynomial regression).
+        :type order: :class:`int`, optional, order of the polynomial kernel
         :param dim: Dimensionality of the input data. Defaults to 1.
         :type dim: :class:`int`, optional
-        :param set_kernel: A custom kernel function initializer. If not provided, a default kernel is used.
+        :param set_kernel: A custom kernel function initializer. If not provided, defaults to ``self.default_clustering_functor()``.
         :type set_kernel: :class:`callable`, optional
         :param kwargs: Additional keyword arguments for further customization.
         :type kwargs: :class:`dict`
         """
-        self.dim = dim
         self.order = order
         self.reg = reg
-        self.max_pool = int(max_pool)
         self.max_nystrom = int(max_nystrom)
+        self.n_batch=n_batch
+
+        if set_clustering is not None:
+            self.set_clustering = set_clustering
+        else:
+            self.set_clustering = self.default_clustering_functor()
 
         if set_kernel is not None:
             self.set_kernel = set_kernel
@@ -87,6 +89,14 @@ class Kernel:
             self.set(x=x, y=y, fx=fx, **kwargs)
         else:
             self.x, self.y, self.fx = None, None, None
+
+    def default_clustering_functor(self) -> callable:
+        """
+        Initialize and return the default clustering method for large dataset partitioning.
+        :returns: A clustering of the set x into N clusters.
+        :rtype: :class:`callable`
+        """
+        return lambda x,N,**kwargs:BalancedClustering(MiniBatchkmeans(x=x,N=N,**kwargs))
 
     def default_kernel_functor(self) -> callable:
         """
@@ -318,6 +328,31 @@ class Kernel:
         self.set_kernel_ptr()
         return core.KerOp.knm(x=x, y=y, fy=fy)
 
+    def dnm(
+        self, x: np.ndarray, y: np.ndarray, fy: np.ndarray = [], **kwargs
+    ) -> np.ndarray:
+        """
+        Compute the kernel matrix $D(X, Y)=k(x^i, y^j)_{i,j}$, where the kernel function $k$ is defined at class initialization, see :attr:`self.set_kernel`.
+
+        :param x: Input data points :math:`(N, D)`, where :math:`N` is the number of points and :math:`D` is the dimensionality.
+        :type x: :class:`numpy.ndarray`
+        :param y: Secondary data points :math:`(M, D)`, where :math:`M` is the number of points and :math:`D` is the dimensionality.
+        :type y: :class:`numpy.ndarray`
+        :param fy: Optional matrix values for optimization purposes. If not None, perform and return the multiplication $K(X, Y)f_y$.
+        :type fy: :class:`numpy.ndarray`, optional
+
+        :returns: The computed kernel matrix :math:`K` of size :math:`(N, M)`.
+        :rtype: :class:`numpy.ndarray`
+
+        Example:
+            >>> x_data = np.array([...])
+            >>> y_data = np.array([...])
+            >>> kernel_matrix = Kernel(x=x_data,y=y_data).knm()
+        """
+
+        self.set_kernel_ptr()
+        return core.KerOp.dnm(x=x, y=y, fy=fy)
+    
     def get_knm_inv(
         self, epsilon: float = None, epsilon_delta: np.ndarray = None, **kwargs
     ) -> np.ndarray:
@@ -375,16 +410,16 @@ class Kernel:
         :returns: The Gram matrix $K(x,y)$.
         :rtype: :class:`numpy.ndarray`
         """
-        if not hasattr(self, "knm") or self.knm is None:
+        if not hasattr(self, "knm_") or self.knm_ is None:
             self._set_knm(core.KerOp.knm(x=self.x, y=self.y))
-        return self.knm
+        return self.knm_
 
     def _set_knm_inv(self, k):
         self.knm_inv = k
         self.set_theta(None)
 
     def _set_knm(self, k):
-        self.k = k
+        self.knm_ = k
 
     def get_x(self, **kwargs) -> np.ndarray:
         """
@@ -459,6 +494,8 @@ class Kernel:
         """
         if not hasattr(self, "fx"):
             self.fx = None
+        if self.fx is None and self.get_theta() is not None:
+            self.fx = LAlg.prod(self.get_knm(), self.get_theta())
         return self.fx
 
     def set_fx(
@@ -678,6 +715,33 @@ class Kernel:
             self.set_x(x), self.set_fx(fx), self.set_y(y=y)
             self.rescale()
             pass
+
+        if self.n_batch is None or self.n_batch > self.x.shape[0]:
+            return self
+        self.N = int(self.x.shape[0] / self.n_batch +1)
+        self.clustering = self.set_clustering(
+            x=self.get_x(), N=self.N, fx=self.get_fx(), **kwargs
+        )
+
+        y, labels = self.clustering.cluster_centers_, self.clustering.labels_
+        self.set_y(y)
+        self.labels = map_invertion(labels)
+        self.kernels = {}
+        fx_proj = self.get_fx() - super().__call__(z=x)
+        for key in self.labels.keys():
+            indices = list(self.labels[key])
+            if len(indices) > self.n_batch:
+                N = int(len(indices) / self.n_batch) + 1
+                self.kernels[key] = Kernel(
+                    x=x[indices],
+                    fx=fx_proj[indices],
+                    n_batch=self.n_batch,
+                    clustering=self.clustering,
+                    **kwargs
+                )
+            else:
+                self.kernels[key] = Kernel(x=x[indices], fx=fx_proj[indices], **kwargs)
+        # test = fx - self.__call__(z=x) # reproductibility : should be zero if no regularization
         return self
 
     def map(
@@ -744,25 +808,6 @@ class Kernel:
         if self.x is None:
             return 0
         return self.x.shape[0]
-
-    def update_set(
-        self, z: np.ndarray, fz: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Update the training set by limiting the data to a maximum pool size.
-
-        This method trims the input data ``z`` and corresponding function values ``fz``
-        to the size defined by the ``max_pool`` parameter.
-
-        :param z: Input data points to update.
-        :type z: :class:`numpy.ndarray`
-        :param fz: Function values corresponding to the input data ``z``.
-        :type fz: :class:`numpy.ndarray`
-
-        :returns: The trimmed input data points and corresponding function values, limited by ``max_pool``.
-        :rtype: Tuple[:class:`numpy.ndarray`, :class:`numpy.ndarray`]
-        """
-        return z[-self.max_pool :], fz[-self.max_pool :]
 
     def update(
         self, z: np.ndarray, fz: np.ndarray, eps: float = None, **kwargs
@@ -868,15 +913,13 @@ class Kernel:
             Here, $[.]$ denotes standard matrix concatenation, where $f(X)$ and $f(Y)$ are the function values for the original and new data points, respectively.
         """
         x, fx = core.get_matrix(y.copy()), core.get_matrix(fy.copy())
-        # if self.x is not None and x is not None: x=np.concatenate([self.x,x.copy()])[-self.max_pool:]
-        # if self.fx is not None and fx is not None: fx=np.concatenate([self.fx,fx.copy()])[-self.max_pool:]
         if not hasattr(self, "x") or self.x is None:
             self.set(x, fx)
             return
 
         # the method add computes an updated Gram matrix using the already
         # pre-computed Gram matrix K(x,x).
-        self.knm, self.knm_inv, y = Alg.add(
+        self.knm_, self.knm_inv, y = Alg.add(
             self.get_knm(), self.get_knm_inv(), self.get_x(), x
         )
         self.set_x(y)
@@ -969,6 +1012,7 @@ class Kernel:
             core.KerInterface.rescale(self.get_x(), max=self.max_nystrom)
             # retrives the kernel
             self.kernel = core.KerInterface.get_kernel_ptr()
+            self.set_theta(None)
 
     def __call__(self, z: np.ndarray) -> np.ndarray:
         """
@@ -1008,6 +1052,15 @@ class Kernel:
             polynomial_regressor = self.get_polynomial_regressor(z)
             knm += polynomial_regressor
 
+        if not hasattr(self, "set_clustering"):
+            return knm
+        if not hasattr(self, "kernels") or len(self.kernels) <= 1:
+            return knm
+        mapped_indices = self.clustering(z)
+        mapped_indices = map_invertion(mapped_indices)
+        for key in mapped_indices.keys():
+            indices = list(mapped_indices[key])
+            knm[indices] += self.kernels[key](z[indices])
         return knm
 
 
