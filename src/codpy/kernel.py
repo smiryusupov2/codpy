@@ -14,7 +14,6 @@ from codpy.permutation import lsap
 from codpy.clustering import MiniBatchkmeans, BalancedClustering
 from codpy.permutation import map_invertion
 
-
 class Kernel:
     """
     A class to manipulate datas for various kernel-based operations, such as interpolations or extrapolations of functions, or mapping between distributions.
@@ -40,19 +39,18 @@ class Kernel:
             - Fitting is done just-in-time (at first prediction), and means computing the parameters $\\theta = K(X, Y)^{-1} f(X)$, together with $\sigma$ for distributions. The function :func:`get_theta()` performs those computations and corresponds to fit in others frameworks.
 
     """
-
     def __init__(
         self,
         x=None,
         y=None,
         fx=None,
-        max_nystrom: int = sys.maxsize,
-        reg: float = 1e-9,
-        order: int = None,
-        n_batch: int = sys.maxsize,
-        set_kernel: callable = None,
-        set_clustering: callable = None,
-        **kwargs: dict,
+        max_nystrom:    int = sys.maxsize,
+        reg:            float = 1e-9,
+        order:          int = None,
+        n_batch:        int = sys.maxsize,
+        set_kernel:     callable = None,
+        set_clustering: callable = None, 
+        **kwargs: dict
     ) -> None:
         """
         Initializes the Kernel class with default or user-defined parameters.
@@ -99,7 +97,9 @@ class Kernel:
         :rtype: :class:`callable`
         """
         return lambda x, N, **kwargs: BalancedClustering(
-            MiniBatchkmeans(x=x, N=N, **kwargs)
+            MiniBatchkmeans,
+            x=x, 
+            N=N
         )
 
     def default_kernel_functor(self) -> callable:
@@ -553,11 +553,11 @@ class Kernel:
         if not hasattr(self, "theta") or self.theta is None:
             # If a polynomial order is defined and the function values `fx` are available,
             # compute the residual `fx` by subtracting the polynomial regressor's contribution.
-            if self.get_order() is not None and self.get_fx() is not None:
+            if self.get_order() is not None and self.fx is not None:
                 fx = self.fx - self.get_polynomial_regressor(z=self.get_x())
             else:
                 ##
-                fx = self.get_fx()
+                fx = self.fx
             # If `fx` is still `None`, it means there's no data to compute `theta` from, so set `theta` to `None`.
             if fx is None:
                 self.theta = None
@@ -645,7 +645,7 @@ class Kernel:
             # Apply hybrid greedy Nystrom with error between ||f .-f_{k,\theta}||_A and  wrt a given norm
             # udefined by user
             # to compute Y
-            theta, indices = Alg.HybridGreedyNystroem(
+            theta, indices = Alg.hybrid_greedy_nystroem(
                 x=self.get_x(),
                 fx=fx,
                 N=N,
@@ -672,8 +672,7 @@ class Kernel:
             if self.fx is not None:
                 self.fx = self.fx[indices]
             # test = self.get_theta()-theta
-            if theta is not None:
-                self.set_theta(theta)
+            self.set_theta(theta)
         return self
 
     def set(
@@ -719,7 +718,7 @@ class Kernel:
             self.rescale()
             pass
 
-        if self.n_batch is None or self.n_batch > self.x.shape[0]:
+        if self.n_batch is None or self.n_batch >= self.x.shape[0]:
             return self
         self.N = int(self.x.shape[0] / self.n_batch + 1)
         self.clustering = self.set_clustering(
@@ -730,7 +729,7 @@ class Kernel:
         self.set_y(y)
         self.labels = map_invertion(labels)
         self.kernels = {}
-        fx_proj = self.get_fx() - super().__call__(z=x)
+        fx_proj = self.get_fx() - self(z=x)
         for key in self.labels.keys():
             indices = list(self.labels[key])
             if len(indices) > self.n_batch:
@@ -740,7 +739,7 @@ class Kernel:
                     fx=fx_proj[indices],
                     n_batch=self.n_batch,
                     clustering=self.clustering,
-                    **kwargs,
+                    **kwargs
                 )
             else:
                 self.kernels[key] = Kernel(x=x[indices], fx=fx_proj[indices], **kwargs)
@@ -749,9 +748,9 @@ class Kernel:
 
     def map(
         self,
-        x: np.ndarray,
         y: np.ndarray,
         distance: str = "norm2",
+        x: np.ndarray = None,
         sub: bool = False,
         **kwargs,
     ) -> None:
@@ -784,9 +783,14 @@ class Kernel:
             - This permutation can be used to transform the input data $x$ to approximate the target data $y$.
         """
         # Set the internal state with input data points `x` and function values `y`
-        self.set_x(x), self.set_fx(y)
+        self.set_kernel_ptr()
+        if x is None:
+            x = self.get_x()
+        else:
+            self.set_x(x)
+            self.rescale()
+        self.set_fx(y)
         # Rescale the input data `x` using the current kernel configuration
-        self.rescale()
 
         # Check if the dimensionality of `x` and `y` is the same
         if x.shape[1] != y.shape[1]:
@@ -1039,6 +1043,7 @@ class Kernel:
 
             $$P_{k,\\theta}(z) = K(Z, K) K(X, X)^{-1}$$
         """
+        if z is None: return None
         z = core.get_matrix(z)
 
         # Don't forget to set the kernel

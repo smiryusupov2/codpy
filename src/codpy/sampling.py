@@ -1,6 +1,6 @@
 import math
 import warnings
-
+import functools
 import numpy as np
 from codpydll import *
 from sklearn.cluster import KMeans, MiniBatchKMeans
@@ -138,12 +138,14 @@ def rejection_sampling(proposed_sample, probas, acceptance_ratio=0.0):
     return samples
 
 
+@functools.cache
 def get_normals(N, D, nmax=10):
     out = cd.alg.get_normals(N=N, D=D, nmax=nmax)
     # mean,var = np.mean(out,axis=0),np.var(out,axis=0)
     return out
 
 
+@functools.cache
 def get_uniforms(N, D, nmax=10):
     """
     Generate uniformly distributed random samples from normally distributed samples.

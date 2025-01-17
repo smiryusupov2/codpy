@@ -3,6 +3,7 @@ import sklearn.cluster
 
 import codpy
 import codpy.core as core
+from codpydll import *
 
 class MiniBatchkmeans(sklearn.cluster.MiniBatchKMeans):
     def __init__(
@@ -15,6 +16,8 @@ class MiniBatchkmeans(sklearn.cluster.MiniBatchKMeans):
         verbose=False,
         **kwargs,
     ):
+        if x.shape[0] <= N:
+            N = x.shape[0]
         super().__init__(
             n_clusters=N,
             init="k-means++",
