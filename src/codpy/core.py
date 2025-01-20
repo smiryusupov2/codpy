@@ -567,7 +567,7 @@ class DiffOps:
         return cd.op.nabla_Knm(get_matrix(x), get_matrix(y), get_matrix(fy))
 
     @staticmethod
-    def nabla(x: np.array, z: np.array, y=None, fx=None, **kwargs):
+    def nabla(x: np.array, z: np.array, y=None, fx=None,reg = None, **kwargs):
         """
         Compute the kernel-induced gradient of a function.
 
@@ -591,7 +591,7 @@ class DiffOps:
         """
         fx = fx if fx is not None else []
         y = x if y is None else y
-        return cd.op.nabla(get_matrix(x), get_matrix(y), get_matrix(z), get_matrix(fx))
+        return cd.op.nabla(get_matrix(x), get_matrix(y), get_matrix(z), get_matrix(fx), get_matrix(reg))
 
     @staticmethod
     def nabla_inv(x, z, y=None, fz=None, **kwargs):
