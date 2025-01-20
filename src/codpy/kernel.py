@@ -328,9 +328,10 @@ class Kernel:
             >>> y_data = np.array([...])
             >>> kernel_matrix = Kernel(x=x_data,y=y_data).knm()
         """
+        if self.get_map() is not None:
+            x,y = self.get_map()(x), self.get_map()(y)
 
-        self.set_kernel_ptr()
-        return core.KerOp.knm(x=x, y=y, fy=fy)
+        return core.KerOp.knm(x=x, y=y, fy=fy, kernel_ptr = self.get_kernel())
 
     def dnm(
         self, x: np.ndarray, y: np.ndarray, fy: np.ndarray = [], **kwargs
@@ -353,9 +354,10 @@ class Kernel:
             >>> y_data = np.array([...])
             >>> kernel_matrix = Kernel(x=x_data,y=y_data).knm()
         """
+        if self.get_map() is not None:
+            x,y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
 
-        self.set_kernel_ptr()
-        return core.KerOp.dnm(x=x, y=y, fy=fy)
+        return core.KerOp.dnm(x=x, y=y, fy=fy, kernel_ptr = self.get_kernel())
 
     def get_knm_inv(
         self, epsilon: float = None, epsilon_delta: np.ndarray = None, **kwargs
@@ -396,12 +398,17 @@ class Kernel:
                 epsilon_delta = []
             else:
                 epsilon_delta = epsilon_delta * self.get_Delta()
+            if self.get_map() is not None:
+                x,y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
+            else:         
+                x,y = self.get_x(), self.get_y()
             self._set_knm_inv(
                 core.KerOp.knm_inv(
-                    x=self.get_x(),
-                    y=self.get_y(),
+                    x=x,
+                    y=y,
                     epsilon=epsilon,
                     reg_matrix=epsilon_delta,
+                    kernel_ptr=self.get_kernel()
                 ),
                 **kwargs,
             )
@@ -414,8 +421,12 @@ class Kernel:
         :returns: The Gram matrix $K(x,y)$.
         :rtype: :class:`numpy.ndarray`
         """
+        if self.get_map() is not None:
+            x,y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
+        else:         
+            x,y = self.get_x(), self.get_y()
         if not hasattr(self, "knm_") or self.knm_ is None:
-            self._set_knm(core.KerOp.knm(x=self.x, y=self.y))
+            self._set_knm(core.KerOp.knm(x=x, y=y,kernel_ptr=self.get_kernel()))
         return self.knm_
 
     def _set_knm_inv(self, k):
@@ -783,7 +794,6 @@ class Kernel:
             - This permutation can be used to transform the input data $x$ to approximate the target data $y$.
         """
         # Set the internal state with input data points `x` and function values `y`
-        self.set_kernel_ptr()
         if x is None:
             x = self.get_x()
         else:
@@ -796,10 +806,11 @@ class Kernel:
         if x.shape[1] != y.shape[1]:
             # If the dimensionalities differ, use an encoder to map data into latent space
             # and find the optimal permutation (descent-based method)
+            self.set_kernel_ptr()
             self.permutation = cd.alg.encoder(self.get_x(), self.get_fx())
         else:
             # If the dimensionalities are the same, use the LSAP algorithm to compute the permutation
-            D = core.KerOp.dnm(x=x, y=y, distance=distance)
+            D = core.KerOp.dnm(x=x, y=y, distance=distance, kernel_ptr=self.get_kernel())
             self.permutation = lsap(D, bool(sub))  # Solve LSAP to find permutation
         # Update `x` based on the computed permutation
         self.set_x(self.get_x()[self.permutation])
@@ -996,9 +1007,20 @@ class Kernel:
         function, sets the polynomial order to zero, and applies the regularization
         parameter defined in the object.
         """
-        core.KerInterface.set_kernel_ptr(self.get_kernel())
-        core.KerInterface.set_polynomial_order(0)
-        core.KerInterface.set_regularization(self.reg)
+        core.KerInterface.set_kernel_ptr(self.get_kernel(),0,self.reg)
+    def set_map(self,map_) -> callable:
+        self.map_=map_
+        return self
+    def get_map(self) -> callable:
+        """
+        Retrieve the current mapping function for the input data.
+
+        :returns: The mapping function used by the current model.
+        :rtype: callable
+        """
+        if not hasattr(self, "map_"):
+            self.map_ = None
+        return self.map_
 
     def rescale(self) -> None:
         """
@@ -1011,12 +1033,13 @@ class Kernel:
         If ``x`` is set, the rescaling is applied to ``x`` with a maximum number of
         points defined by ``max_nystrom``.
         """
-        # instructs to set kernel
-        self.set_kernel_ptr()
         if self.get_x() is not None:
             # instructs to set the map parameter
             # applied to the data
-            core.KerInterface.rescale(self.get_x(), max=self.max_nystrom)
+            if self.get_map() is not None:
+                core.KerInterface.rescale(self.get_map()(self.get_x()), max=self.max_nystrom, kernel_ptr=self.get_kernel())  
+            else:
+                core.KerInterface.rescale(self.get_x(), max=self.max_nystrom, kernel_ptr=self.get_kernel())
             # retrives the kernel
             self.kernel = core.KerInterface.get_kernel_ptr()
             self.set_theta(None)
@@ -1043,12 +1066,11 @@ class Kernel:
 
             $$P_{k,\\theta}(z) = K(Z, K) K(X, X)^{-1}$$
         """
+        self.set_kernel_ptr()
         if z is None: return None
         z = core.get_matrix(z)
 
         # Don't forget to set the kernel
-        self.set_kernel_ptr()
-
         fy = self.get_theta()
 
         if fy is None:

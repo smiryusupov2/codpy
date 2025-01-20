@@ -6,7 +6,7 @@ from codpydll import *
 from sklearn.cluster import KMeans, MiniBatchKMeans
 
 import codpy.algs
-from codpy.core import _requires_rescale
+from codpy.core import _requires_rescale,KerInterface,kernel_setter
 from codpy.data_conversion import get_matrix
 from codpy.selection import column_selector
 
@@ -139,14 +139,18 @@ def rejection_sampling(proposed_sample, probas, acceptance_ratio=0.0):
 
 
 @functools.cache
-def get_normals(N, D, nmax=10):
+def get_normals(N, D, nmax=10,kernel_ptr=None):
+    if kernel_ptr is not None:
+        KerInterface.set_kernel_ptr(kernel_ptr)
+    else:
+        kernel_setter("maternnorm", "standardmean", 0, 1e-9)()
     out = cd.alg.get_normals(N=N, D=D, nmax=nmax)
     # mean,var = np.mean(out,axis=0),np.var(out,axis=0)
     return out
 
 
 @functools.cache
-def get_uniforms(N, D, nmax=10):
+def get_uniforms(N, D, nmax=10,kernel_ptr=None):
     """
     Generate uniformly distributed random samples from normally distributed samples.
 
@@ -167,17 +171,17 @@ def get_uniforms(N, D, nmax=10):
 
         >>> uniform_samples = get_uniforms(100, 2)
     """
-    out = get_normals(N, D, nmax=nmax)
+    out = get_normals(N, D, nmax=nmax,kernel_ptr=kernel_ptr)
     out = np.vectorize(math.erf)(out) / 2.0 + 0.5
     return out
 
 
-def get_uniforms_like(x, **kwargs):
-    return get_uniforms(N=x.shape[0], D=x.shape[1])
+def get_uniforms_like(x, kernel_ptr=None,**kwargs):
+    return get_uniforms(N=x.shape[0], D=x.shape[1],kernel_ptr=kernel_ptr)
 
 
-def get_normals_like(x, **kwargs):
-    return get_normals(N=x.shape[0], D=x.shape[1])
+def get_normals_like(x, kernel_ptr=None,**kwargs):
+    return get_normals(N=x.shape[0], D=x.shape[1],kernel_ptr=kernel_ptr)
 
 
 def get_random_normals_like(x, **kwargs):

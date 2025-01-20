@@ -28,7 +28,7 @@ class MiniBatchkmeans(sklearn.cluster.MiniBatchKMeans):
         )
         self.fit(x)
         self.x = x
-        self.indices = self.distance(self.cluster_centers_, self.x).argmin(axis=1)
+        self.indices = self.distance(self.x, self.cluster_centers_).argmin(axis=1)
 
     def get_labels(self):
         return self(self.x)
