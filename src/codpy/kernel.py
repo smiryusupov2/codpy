@@ -14,6 +14,7 @@ from codpy.permutation import lsap
 from codpy.clustering import MiniBatchkmeans, BalancedClustering
 from codpy.permutation import map_invertion
 
+
 class Kernel:
     """
     A class to manipulate datas for various kernel-based operations, such as interpolations or extrapolations of functions, or mapping between distributions.
@@ -39,18 +40,19 @@ class Kernel:
             - Fitting is done just-in-time (at first prediction), and means computing the parameters $\\theta = K(X, Y)^{-1} f(X)$, together with $\sigma$ for distributions. The function :func:`get_theta()` performs those computations and corresponds to fit in others frameworks.
 
     """
+
     def __init__(
         self,
         x=None,
         y=None,
         fx=None,
-        max_nystrom:    int = sys.maxsize,
-        reg:            float = 1e-9,
-        order:          int = None,
-        n_batch:        int = sys.maxsize,
-        set_kernel:     callable = None,
-        set_clustering: callable = None, 
-        **kwargs: dict
+        max_nystrom: int = sys.maxsize,
+        reg: float = 1e-9,
+        order: int = None,
+        n_batch: int = sys.maxsize,
+        set_kernel: callable = None,
+        set_clustering: callable = None,
+        **kwargs: dict,
     ) -> None:
         """
         Initializes the Kernel class with default or user-defined parameters.
@@ -96,11 +98,7 @@ class Kernel:
         :returns: A clustering of the set x into N clusters.
         :rtype: :class:`callable`
         """
-        return lambda x, N, **kwargs: BalancedClustering(
-            MiniBatchkmeans,
-            x=x, 
-            N=N
-        )
+        return lambda x, N, **kwargs: BalancedClustering(MiniBatchkmeans, x=x, N=N)
 
     def default_kernel_functor(self) -> callable:
         """
@@ -329,9 +327,9 @@ class Kernel:
             >>> kernel_matrix = Kernel(x=x_data,y=y_data).knm()
         """
         if self.get_map() is not None:
-            x,y = self.get_map()(x), self.get_map()(y)
+            x, y = self.get_map()(x), self.get_map()(y)
 
-        return core.KerOp.knm(x=x, y=y, fy=fy, kernel_ptr = self.get_kernel())
+        return core.KerOp.knm(x=x, y=y, fy=fy, kernel_ptr=self.get_kernel())
 
     def dnm(
         self, x: np.ndarray, y: np.ndarray, fy: np.ndarray = [], **kwargs
@@ -355,9 +353,9 @@ class Kernel:
             >>> kernel_matrix = Kernel(x=x_data,y=y_data).knm()
         """
         if self.get_map() is not None:
-            x,y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
+            x, y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
 
-        return core.KerOp.dnm(x=x, y=y, fy=fy, kernel_ptr = self.get_kernel())
+        return core.KerOp.dnm(x=x, y=y, fy=fy, kernel_ptr=self.get_kernel())
 
     def get_knm_inv(
         self, epsilon: float = None, epsilon_delta: np.ndarray = None, **kwargs
@@ -399,16 +397,16 @@ class Kernel:
             else:
                 epsilon_delta = epsilon_delta * self.get_Delta()
             if self.get_map() is not None:
-                x,y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
-            else:         
-                x,y = self.get_x(), self.get_y()
+                x, y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
+            else:
+                x, y = self.get_x(), self.get_y()
             self._set_knm_inv(
                 core.KerOp.knm_inv(
                     x=x,
                     y=y,
                     epsilon=epsilon,
                     reg_matrix=epsilon_delta,
-                    kernel_ptr=self.get_kernel()
+                    kernel_ptr=self.get_kernel(),
                 ),
                 **kwargs,
             )
@@ -422,11 +420,11 @@ class Kernel:
         :rtype: :class:`numpy.ndarray`
         """
         if self.get_map() is not None:
-            x,y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
-        else:         
-            x,y = self.get_x(), self.get_y()
+            x, y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
+        else:
+            x, y = self.get_x(), self.get_y()
         if not hasattr(self, "knm_") or self.knm_ is None:
-            self._set_knm(core.KerOp.knm(x=x, y=y,kernel_ptr=self.get_kernel()))
+            self._set_knm(core.KerOp.knm(x=x, y=y, kernel_ptr=self.get_kernel()))
         return self.knm_
 
     def _set_knm_inv(self, k):
@@ -750,7 +748,7 @@ class Kernel:
                     fx=fx_proj[indices],
                     n_batch=self.n_batch,
                     clustering=self.clustering,
-                    **kwargs
+                    **kwargs,
                 )
             else:
                 self.kernels[key] = Kernel(x=x[indices], fx=fx_proj[indices], **kwargs)
@@ -810,7 +808,9 @@ class Kernel:
             self.permutation = cd.alg.encoder(self.get_x(), self.get_fx())
         else:
             # If the dimensionalities are the same, use the LSAP algorithm to compute the permutation
-            D = core.KerOp.dnm(x=x, y=y, distance=distance, kernel_ptr=self.get_kernel())
+            D = core.KerOp.dnm(
+                x=x, y=y, distance=distance, kernel_ptr=self.get_kernel()
+            )
             self.permutation = lsap(D, bool(sub))  # Solve LSAP to find permutation
         # Update `x` based on the computed permutation
         self.set_x(self.get_x()[self.permutation])
@@ -1007,10 +1007,12 @@ class Kernel:
         function, sets the polynomial order to zero, and applies the regularization
         parameter defined in the object.
         """
-        core.KerInterface.set_kernel_ptr(self.get_kernel(),0,self.reg)
-    def set_map(self,map_) -> callable:
-        self.map_=map_
+        core.KerInterface.set_kernel_ptr(self.get_kernel(), 0, self.reg)
+
+    def set_map(self, map_) -> callable:
+        self.map_ = map_
         return self
+
     def get_map(self) -> callable:
         """
         Retrieve the current mapping function for the input data.
@@ -1037,9 +1039,15 @@ class Kernel:
             # instructs to set the map parameter
             # applied to the data
             if self.get_map() is not None:
-                core.KerInterface.rescale(self.get_map()(self.get_x()), max=self.max_nystrom, kernel_ptr=self.get_kernel())  
+                core.KerInterface.rescale(
+                    self.get_map()(self.get_x()),
+                    max=self.max_nystrom,
+                    kernel_ptr=self.get_kernel(),
+                )
             else:
-                core.KerInterface.rescale(self.get_x(), max=self.max_nystrom, kernel_ptr=self.get_kernel())
+                core.KerInterface.rescale(
+                    self.get_x(), max=self.max_nystrom, kernel_ptr=self.get_kernel()
+                )
             # retrives the kernel
             self.kernel = core.KerInterface.get_kernel_ptr()
             self.set_theta(None)
@@ -1067,7 +1075,8 @@ class Kernel:
             $$P_{k,\\theta}(z) = K(Z, K) K(X, X)^{-1}$$
         """
         self.set_kernel_ptr()
-        if z is None: return None
+        if z is None:
+            return None
         z = core.get_matrix(z)
 
         # Don't forget to set the kernel
@@ -1091,6 +1100,24 @@ class Kernel:
         for key in mapped_indices.keys():
             indices = list(mapped_indices[key])
             knm[indices] += self.kernels[key](z[indices])
+        return knm
+
+    def grad(self, z: np.ndarray) -> np.ndarray:
+
+        self.set_kernel_ptr()
+        if z is None:
+            return None
+        z = core.get_matrix(z)
+
+        # Don't forget to set the kernel
+        fy = self.get_theta()
+
+        if fy is None:
+            fy = self.get_knm_inv()
+
+        fx = self.get_fx()
+        knm = core.DiffOps.nabla(x=self.get_x(), z=z, y=self.get_y(), fx=fx)
+
         return knm
 
 
