@@ -113,8 +113,20 @@ class Alg:
         out = cd.tools.greedy_algorithm(get_matrix(x), N, start_indices)
         return out
 
-    def proportional_fitting(probs, iter=100, **kwargs):
-        return cd.alg.proportional_fitting(probs, iter)
+    def probas_projection(probs, axis=1,**kwargs):
+        if axis==1:
+            out = probs / probs.sum(axis=1).reshape(-1, 1)
+        else:
+            out = Alg.probas_projection(probs.T,axis=1).T
+        return out
+
+    def proportional_fitting(probs, iter=100, axis=0,**kwargs):
+        if axis==1:
+            out = cd.alg.proportional_fitting(probs.T, iter).T
+            out = out / out.sum(axis=1).reshape(-1, 1)
+        else:
+            out = cd.alg.proportional_fitting(probs, iter)
+        return out
 
 
 if __name__ == "__main__":

@@ -234,15 +234,17 @@ class GamesKernelClassifier(GamesKernel):
         self,
         fx: np.ndarray,
         set_polynomial_regressor: bool = True,
-        clip=Alg.proportional_fitting,
+        clip=Alg.probas_projection,
         **kwargs,
     ) -> None:
+        fx_=fx
         if fx is not None:
             if clip is not None:
-                fx = clip(fx)
-            debug = np.where(fx < 1e-9, 1e-9, fx)
-            fx = np.log(debug)
-        super().set_fx(fx, set_polynomial_regressor=set_polynomial_regressor, **kwargs)
+                fx_ = clip(fx,axis=1)
+            debug = np.where(fx_ < 1e-9, 1e-9, fx)
+            fx_ = np.log(debug)
+        super().set_fx(fx_, set_polynomial_regressor=set_polynomial_regressor, **kwargs)
+        
     
 
     
@@ -262,8 +264,8 @@ def Verhulst(probs, advantages):
     # d/dt pi(t) = pi(t)(1-pi(t)) A(t) (Verhulst)
     # pi(t^{n+1}) = 1/ ( 1.+ (1 / pi(t^{n} - 1) \exp(-A(t^n)(t^{n+1}-t^{n})) )
     # advantages = advantages-core.get_matrix(advantages.mean(1))
-    probs = np.log(probs) + advantages
-    out = softmax(probs, axis=1)
+    out = np.log(probs) + advantages
+    out = softmax(out, axis=1)
     return out
 
 
@@ -361,19 +363,19 @@ class KACAgent:
         return GamesKernelClassifier(x=states, fx=interpolated_policy,**params)
 
     def get_state_action_value_function(
-        self, states, actions, next_states, rewards, policy
+        self, states, actions, next_states, rewards, policy,**kwargs
     ):
         states_actions = np.concatenate([states, actions], axis=1)
         next_states_actions = self.all_states_actions(next_states)
-        value_function = Kernel()
+        value_function = GamesKernel(**kwargs['KActor'])
         value_function.set(x=states_actions)
-        knm = value_function.knm(x=states_actions, y=states_actions)
+        knm = value_function.knm(x=states_actions, y=value_function.get_x())
         projection_op = value_function.knm(
-            x=next_states_actions, y=states_actions
-        ).reshape([states_actions.shape[0], self.actions_dim, states_actions.shape[0]])
+            x=next_states_actions, y=value_function.get_x()
+        ).reshape([states_actions.shape[0], self.actions_dim, value_function.get_x().shape[0]])
         sum_policy = np.einsum("...ji,...j", projection_op, policy)
-        projection_op = LAlg.lstsq(knm - sum_policy * self.gamma)
-        thetas = LAlg.prod(projection_op, rewards)
+        thetas = LAlg.lstsq(knm - sum_policy * self.gamma, rewards)
+        # thetas = LAlg.prod(projection_op, rewards)
         value_function.set_theta(thetas)
 
         # check
@@ -556,13 +558,13 @@ class KActorCritic(KACAgent):
         done = core.get_matrix(done, dtype=bool)
         return state, action, next_state, reward, done
 
-    def get_advantages(self, states, actions, next_states, rewards, dones, policy):
+    def get_advantages(self, states, actions, next_states, rewards, dones, policy,**kwargs):
         value_function = self.get_state_action_value_function(
-            states, actions, next_states, rewards, policy
+            states, actions, next_states, rewards, policy,**kwargs
         )
         advantages = value_function(self.all_states_actions(next_states)).reshape(actions.shape)*self.gamma + rewards
-        # advantages -= value_function(np.concatenate([states, actions], axis=1))
-        advantages -= core.get_matrix((advantages).mean(1))
+        advantages -= value_function(np.concatenate([states, actions], axis=1))
+        # advantages -= core.get_matrix((advantages).mean(1))
         return advantages
 
     def train(self, game, **kwargs):
@@ -583,15 +585,25 @@ class KActorCritic(KACAgent):
             last_policy = np.full(
                 [states.shape[0], self.actions_dim], 1.0 / self.actions_dim
             )
+        count,error = 0,sys.float_info.max
         # compute advantages
+        # while error > 1e-6 and count < 5:
         advantages = self.get_advantages(
-            states, actions, next_states, rewards, dones, last_policy
+            states, actions, next_states, rewards, dones, last_policy,**kwargs
         )
-        ### update probabilities
-        self.actor = self.update_probabilities(
+        # update probabilities
+        kernel = self.update_probabilities(
             advantages, states, actions, next_states, rewards, dones, last_policy,**kwargs
         )
-        pass
+        # new_policy = kernel(states)
+        # new_error = (advantages**2).mean()
+        # if (new_error>error):
+        #     break
+        
+        # last_policy,error = new_policy,new_error
+        self.actor = kernel
+        count += 1
+        # pass
 
 
 class KQLearning(KActorCritic):
