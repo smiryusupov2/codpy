@@ -65,7 +65,8 @@ class ReplayBuffer(object):
             self.memory = [helper(i) for i in range(len(sarsd))]
         self.update()
         pass
-    def last(self): 
+
+    def last(self):
         return self.last_game
 
     def sample(self, batch_size):
@@ -87,38 +88,44 @@ class ReplayBuffer(object):
 
 
 class GamesClustering:
-    def __init__(self, x, N, k, D,**kwargs):
+    def __init__(self, x, N, k, D, **kwargs):
         self.k = k
         self.x = x
         self.D = D
-        N = x.shape[0] // k.n_batch +1
+        N = x.shape[0] // k.n_batch + 1
         indices = list(range(k.get_x().shape[0]))
         random.shuffle(indices)
-        avg = x.shape[0] // N+1
+        avg = x.shape[0] // N + 1
         self.cluster_centers_ = np.zeros([N, x.shape[1]])
-        self.labels_ = np.zeros([x.shape[0]],dtype=int)
+        self.labels_ = np.zeros([x.shape[0]], dtype=int)
         for i in range(N):
-            local_indices = indices[i*avg:(i+1)*avg]
+            local_indices = indices[i * avg : (i + 1) * avg]
             self.cluster_centers_[i] = x[local_indices].mean(0)
             self.labels_[local_indices] = i
 
+    def get_labels(self):
+        return self(self.k.get_x())
+
+    def __call__(self, z, **kwargs):
+        return self.labels_[
+            core.KerOp.dnm(
+                z[:, : self.D], self.x[:, : self.D], distance="norm2"
+            ).argmin(1)
+        ]
 
     def get_labels(self):
         return self(self.k.get_x())
 
     def __call__(self, z, **kwargs):
-        return self.labels_[core.KerOp.dnm(z[:,:self.D], self.x[:,:self.D], distance="norm2").argmin(1)]
+        return self.labels_[
+            core.KerOp.dnm(
+                z[:, : self.D], self.x[:, : self.D], distance="norm2"
+            ).argmin(1)
+        ]
 
 
-
-    def get_labels(self):
-        return self(self.k.get_x())
-
-    def __call__(self, z, **kwargs):
-        return self.labels_[core.KerOp.dnm(z[:,:self.D], self.x[:,:self.D], distance="norm2").argmin(1)]
-    
 class GamesKernel(Kernel):
-    def __init__(self, latent_distribution = None,max_size = None,**kwargs):
+    def __init__(self, latent_distribution=None, max_size=None, **kwargs):
 
         if kwargs.get("latent_shape", None) is None:
             self.latent_distribution = None
@@ -127,12 +134,11 @@ class GamesKernel(Kernel):
             self.latent_distribution = get_normals(shape[0], shape[1])
 
         self.max_size = max_size
-        self.map_=None
+        self.map_ = None
         super().__init__(**kwargs)
 
     def default_clustering_functor(self) -> callable:
-        return lambda x, N, **kwargs: GamesClustering(x,N,self,**kwargs)
-
+        return lambda x, N, **kwargs: GamesClustering(x, N, self, **kwargs)
 
     def __call__(self, z, **kwargs):
         z = core.get_matrix(z)
@@ -142,9 +148,9 @@ class GamesKernel(Kernel):
 
             if fy is None:
                 fy = self.get_knm_inv()
-            knm = self.knm(x=z, y=self.get_y(), fy=fy,**kwargs)
+            knm = self.knm(x=z, y=self.get_y(), fy=fy, **kwargs)
             return knm
-        
+
         knm = np.zeros([z.shape[0], self.get_fx().shape[1]])
 
         mapped_indices = self.clustering(z)
@@ -153,50 +159,55 @@ class GamesKernel(Kernel):
             indices = list(mapped_indices[key])
             knm[indices] += self.kernels[key](z[indices])
         return knm
-    def add(self, x,fx,**kwargs) -> None:
+
+    def add(self, x, fx, **kwargs) -> None:
         if self.get_x() is None:
-            self.set(x = x,fx = fx,**kwargs)
+            self.set(x=x, fx=fx, **kwargs)
         else:
-            x = np.concatenate([self.get_x(),x],axis=0)
-            fx = np.concatenate([self.get_fx(),fx],axis=0)
-            self.set(x = x, fx = fx,**kwargs)
+            x = np.concatenate([self.get_x(), x], axis=0)
+            fx = np.concatenate([self.get_fx(), fx], axis=0)
+            self.set(x=x, fx=fx, **kwargs)
 
     def knm(
         self, x: np.ndarray, y: np.ndarray, fy: np.ndarray = [], on_y=False, **kwargs
     ) -> np.ndarray:
         if not hasattr(self, "kernels") or len(self.kernels) == 0:
             return super().knm(x, y, fy, **kwargs)
-            
+
         self.set_kernel_ptr()
         out = np.zeros([x.shape[0], y.shape[0]])
         if on_y == True:
             map_y_kernel = self.clustering(y)
-            map_kernel_y =  map_invertion(map_y_kernel)
+            map_kernel_y = map_invertion(map_y_kernel)
             for i in map_kernel_y.keys():
-                k= self.kernels[i]
+                k = self.kernels[i]
                 indices = list(map_kernel_y[i])
-                knm_loc = k.knm(x=x,y=y[indices])
-                out[:,indices] = knm_loc
+                knm_loc = k.knm(x=x, y=y[indices])
+                out[:, indices] = knm_loc
         else:
             map_x_kernel = self.clustering(x)
-            map_kernel_x =  map_invertion(map_x_kernel)
+            map_kernel_x = map_invertion(map_x_kernel)
             for i in map_kernel_x.keys():
-                k= self.kernels[i]
+                k = self.kernels[i]
                 indices = list(map_kernel_x[i])
-                knm_loc = k.knm(x=x[indices],y=y)
-                out[indices,:] = knm_loc
+                knm_loc = k.knm(x=x[indices], y=y)
+                out[indices, :] = knm_loc
 
         if fy is not None and len(fy) > 0:
-            out = LAlg.prod(out,fy)
+            out = LAlg.prod(out, fy)
         return out
 
     def set(
-        self, x: np.ndarray = None, fx: np.ndarray = None,   y: np.ndarray = None,**kwargs,
+        self,
+        x: np.ndarray = None,
+        fx: np.ndarray = None,
+        y: np.ndarray = None,
+        **kwargs,
     ) -> None:
         if self.max_size is not None and x.shape[0] > self.max_size:
-            selected = Kernel(x=x).greedy_select(N= self.max_size,fx=fx)
+            selected = Kernel(x=x).greedy_select(N=self.max_size, fx=fx)
             self.indices = selected.indices
-            x,fx= selected.get_x(),selected.get_fx()
+            x, fx = selected.get_x(), selected.get_fx()
             # clusters = MiniBatchkmeans(x=x,N=self.max_size)
             # x,indices = clusters.cluster_centers_,clusters.indices
             # temp = np.zeros([x.shape[0],fx.shape[1]])
@@ -206,30 +217,43 @@ class GamesKernel(Kernel):
             # [helper(i) for i in indices.keys()]
             # fx = temp
 
-
         if self.latent_distribution is not None:
             if self.latent_distribution.shape[0] > x.shape[0]:
                 self.set_map(None)
             else:
-                N,D = min(self.latent_distribution.shape[0],x.shape[0]), self.latent_distribution.shape[1]
+                N, D = (
+                    min(self.latent_distribution.shape[0], x.shape[0]),
+                    self.latent_distribution.shape[1],
+                )
                 # if self.get_map() is None:
-                selected = Kernel(x=x).greedy_select(N= N,fx=fx)
+                selected = Kernel(x=x).greedy_select(N=N, fx=fx)
                 # selected = Kernel(x=x).greedy_select(N= N)
-                map_ = Kernel(x=selected.get_x(),order=1).map(y=self.latent_distribution)
+                map_ = Kernel(x=selected.get_x(), order=1).map(
+                    y=self.latent_distribution
+                )
                 # map_ = Kernel(x=self.latent_distribution).map(y=selected.get_x())
                 # map_ = Kernel(x=map_.get_fx(),fx=map_.get_x(),order=2)
                 self.set_map(map_)
                 # test = self.map_(self.map_.get_x()) - self.map_.get_fx()
-        super().set(x,fx,y,**kwargs)
+        super().set(x, fx, y, **kwargs)
 
 
 class GamesKernelClassifier(GamesKernel):
-    def __init__(self, latent_distribution = None,max_size = None,clip=Alg.proportional_fitting,**kwargs):
-        super().__init__(latent_distribution = latent_distribution,max_size = max_size,**kwargs)
+    def __init__(
+        self,
+        latent_distribution=None,
+        max_size=None,
+        clip=Alg.proportional_fitting,
+        **kwargs,
+    ):
+        super().__init__(
+            latent_distribution=latent_distribution, max_size=max_size, **kwargs
+        )
 
     def __call__(self, z, **kwargs):
         knm = super().__call__(z, **kwargs)
         return softmax(knm, axis=1)
+
     def set_fx(
         self,
         fx: np.ndarray,
@@ -237,18 +261,17 @@ class GamesKernelClassifier(GamesKernel):
         clip=Alg.probas_projection,
         **kwargs,
     ) -> None:
-        fx_=fx
+        fx_ = fx
         if fx is not None:
             if clip is not None:
-                fx_ = clip(fx,axis=1)
+                fx_ = clip(fx, axis=1)
             debug = np.where(fx_ < 1e-9, 1e-9, fx)
             fx_ = np.log(debug)
         super().set_fx(fx_, set_polynomial_regressor=set_polynomial_regressor, **kwargs)
-        
-    
 
-    
+
 def rl_hot_encoder(actions, actions_dim):
+    actions = actions.astype(np.float64)
     out = hot_encoder(pd.DataFrame(actions), cat_cols_include=[0])
     if out.shape[1] != actions_dim:
         for i in range(actions_dim):
@@ -353,26 +376,28 @@ class KACAgent:
         dones,
         last_policy,
         dt=None,
-        **kwargs
+        **kwargs,
     ):  ##this function assumes that advantages[i,j]=KCritic([states[i],j])
         if dt is None:
             dt = 1.0 / (advantages * advantages).mean()
         interpolated_policy = Verhulst(last_policy, advantages * dt)
         params = kwargs.get("KActor", {})
 
-        return GamesKernelClassifier(x=states, fx=interpolated_policy,**params)
+        return GamesKernelClassifier(x=states, fx=interpolated_policy, **params)
 
     def get_state_action_value_function(
-        self, states, actions, next_states, rewards, policy,**kwargs
+        self, states, actions, next_states, rewards, policy, **kwargs
     ):
         states_actions = np.concatenate([states, actions], axis=1)
         next_states_actions = self.all_states_actions(next_states)
-        value_function = GamesKernel(**kwargs['KActor'])
+        value_function = GamesKernel(**kwargs["KActor"])
         value_function.set(x=states_actions)
         knm = value_function.knm(x=states_actions, y=value_function.get_x())
         projection_op = value_function.knm(
             x=next_states_actions, y=value_function.get_x()
-        ).reshape([states_actions.shape[0], self.actions_dim, value_function.get_x().shape[0]])
+        ).reshape(
+            [states_actions.shape[0], self.actions_dim, value_function.get_x().shape[0]]
+        )
         sum_policy = np.einsum("...ji,...j", projection_op, policy)
         thetas = LAlg.lstsq(knm - sum_policy * self.gamma, rewards)
         # thetas = LAlg.prod(projection_op, rewards)
@@ -521,7 +546,7 @@ class KACAgent:
 
 
 class KActorCritic(KACAgent):
-    def __init__(self, actions_dim, state_dim, gamma=0.99,**kwargs):
+    def __init__(self, actions_dim, state_dim, gamma=0.99, **kwargs):
         self.actions_dim = actions_dim
         self.state_dim = state_dim
         self.gamma = gamma
@@ -550,19 +575,23 @@ class KActorCritic(KACAgent):
             return np.random.randint(0, self.actions_dim)
 
     def format(self, sarsd, **kwargs):
-        state, action, next_state, reward, done = [
-            core.get_matrix(e) for e in sarsd
-        ]
+        state, action, next_state, reward, done = [core.get_matrix(e) for e in sarsd]
 
         action = rl_hot_encoder(action, self.actions_dim)
         done = core.get_matrix(done, dtype=bool)
         return state, action, next_state, reward, done
 
-    def get_advantages(self, states, actions, next_states, rewards, dones, policy,**kwargs):
+    def get_advantages(
+        self, states, actions, next_states, rewards, dones, policy, **kwargs
+    ):
         value_function = self.get_state_action_value_function(
-            states, actions, next_states, rewards, policy,**kwargs
+            states, actions, next_states, rewards, policy, **kwargs
         )
-        advantages = value_function(self.all_states_actions(next_states)).reshape(actions.shape)*self.gamma + rewards
+        advantages = (
+            value_function(self.all_states_actions(next_states)).reshape(actions.shape)
+            * self.gamma
+            + rewards
+        )
         advantages -= value_function(np.concatenate([states, actions], axis=1))
         # advantages -= core.get_matrix((advantages).mean(1))
         return advantages
@@ -585,21 +614,28 @@ class KActorCritic(KACAgent):
             last_policy = np.full(
                 [states.shape[0], self.actions_dim], 1.0 / self.actions_dim
             )
-        count,error = 0,sys.float_info.max
+        count, error = 0, sys.float_info.max
         # compute advantages
         # while error > 1e-6 and count < 5:
         advantages = self.get_advantages(
-            states, actions, next_states, rewards, dones, last_policy,**kwargs
+            states, actions, next_states, rewards, dones, last_policy, **kwargs
         )
         # update probabilities
         kernel = self.update_probabilities(
-            advantages, states, actions, next_states, rewards, dones, last_policy,**kwargs
+            advantages,
+            states,
+            actions,
+            next_states,
+            rewards,
+            dones,
+            last_policy,
+            **kwargs,
         )
         # new_policy = kernel(states)
         # new_error = (advantages**2).mean()
         # if (new_error>error):
         #     break
-        
+
         # last_policy,error = new_policy,new_error
         self.actor = kernel
         count += 1
@@ -763,12 +799,16 @@ class KQLearning2(KQLearning):
             return np.argmax(q_values)
         return np.random.randint(0, self.actions_dim)
 
-    def optimal_bellman_solver(self,thetas,next_states_projection,knm,rewards,maxiter):
+    def optimal_bellman_solver(
+        self, thetas, next_states_projection, knm, rewards, maxiter
+    ):
         theta = thetas.copy()
-        shape = [rewards.shape[0],self.actions_dim]
-        error,count = sys.maxsize,0
+        shape = [rewards.shape[0], self.actions_dim]
+        error, count = sys.maxsize, 0
         while error > 0.01 and count < maxiter:
-            max_indices = LAlg.prod(next_states_projection, theta).reshape(shape).argmax(1)                
+            max_indices = (
+                LAlg.prod(next_states_projection, theta).reshape(shape).argmax(1)
+            )
             indices = [
                 self.actions_dim * i + max_indices[i] for i in range(len(max_indices))
             ]
@@ -776,32 +816,33 @@ class KQLearning2(KQLearning):
             next_theta = LAlg.lstsq(max_projection, rewards)
 
             def f(x):
-                interpolated_thetas = theta * x + next_theta * (
-                    1.0 - x
-                )
-                bellmann_error = LAlg.prod(next_states_projection, interpolated_thetas).reshape(shape)
-                bellmann_error = core.get_matrix(bellmann_error.max(1))*self.gamma
+                interpolated_thetas = theta * x + next_theta * (1.0 - x)
+                bellmann_error = LAlg.prod(
+                    next_states_projection, interpolated_thetas
+                ).reshape(shape)
+                bellmann_error = core.get_matrix(bellmann_error.max(1)) * self.gamma
                 bellmann_error += rewards
                 bellmann_error -= LAlg.prod(knm, interpolated_thetas)
-                out = np.fabs(bellmann_error).mean()            
+                out = np.fabs(bellmann_error).mean()
                 return out
+
             # return next_theta,f(0.)
             xmin, fval, iter, funcalls = optimize.brent(
-                f, brack=(0.0, 1.), maxiter=maxiter, full_output=True
-            )  
+                f, brack=(0.0, 1.0), maxiter=maxiter, full_output=True
+            )
             if fval >= error:
                 break
-            error,count = fval,count+1       
+            error, count = fval, count + 1
             theta = theta * xmin + next_theta * (1.0 - xmin)
         return theta, fval
 
     def bellman_solver(
-        self, states, actions, next_states, rewards, returns, dones, verbose= False
+        self, states, actions, next_states, rewards, returns, dones, verbose=False
     ):
         # if self.actor.max_size is not None and states.shape[0] > self.actor.max_size:
         #     indices = Kernel(x=np.concatenate([states, actions], axis=1),fx=rewards).greedy_select(N= self.actor.max_size).indices
         #     states, actions, next_states, rewards, returns, dones = states[indices], actions[indices], next_states[indices], rewards[indices], returns[indices], dones[indices]
-        
+
         states_actions = np.concatenate([states, actions], axis=1)
         next_states_actions = self.all_states_actions(next_states)
         if not hasattr(self.actor, "clustering"):
@@ -809,51 +850,65 @@ class KQLearning2(KQLearning):
         else:
             labels_state_action = self.actor.clustering(states_actions)
         if labels_state_action is None:
-            _projection_ = self.actor.knm(x=next_states_actions, y=self.actor.get_x())
-            _knm_ = self.actor.knm(x=states_actions, y=self.actor.get_x())
-            thetas,bellman_error = self.optimal_bellman_solver(
-                thetas = self.actor.get_theta(),
-                next_states_projection = _projection_,
-                knm = _knm_,
-                rewards = rewards,
-                maxiter=5)
+            _projection_ = self.actor.knm(
+                x=next_states_actions, y=self.actor.get_x()
+            )  # Kernel between next states and states ?
+            _knm_ = self.actor.knm(
+                x=states_actions, y=self.actor.get_x()
+            )  # self k(x,x) ?
+            thetas, bellman_error = self.optimal_bellman_solver(
+                thetas=self.actor.get_theta(),
+                next_states_projection=_projection_,
+                knm=_knm_,
+                rewards=rewards,
+                maxiter=5,
+            )
             self.actor.set_theta(thetas)
             if verbose:
-                print(
-                    "Computed global error Bellman mean: ",
-                    bellman_error
-                )            
+                print("Computed global error Bellman mean: ", bellman_error)
 
         else:
-            map_labels =  map_invertion(labels_state_action)
+            map_labels = map_invertion(labels_state_action)
             for label in map_labels.keys():
                 k = self.actor.kernels[label]
                 local_indices = list(map_labels[label])
                 local_actions = actions[local_indices]
                 local_states = states[local_indices]
-                local_states_actions = np.concatenate([local_states, local_actions], axis=1)
+                local_states_actions = np.concatenate(
+                    [local_states, local_actions], axis=1
+                )
                 local_rewards = rewards[local_indices]
-                local_next_states_actions = self.all_states_actions(next_states[local_indices])
-                local_projection = k.knm(x=local_next_states_actions, y=self.actor.get_x())
+                local_next_states_actions = self.all_states_actions(
+                    next_states[local_indices]
+                )
+                local_projection = k.knm(
+                    x=local_next_states_actions, y=self.actor.get_x()
+                )
                 local_knm = k.knm(x=local_states_actions, y=local_states_actions)
-                thetas,bellman_error = self.optimal_bellman_solver(
-                    thetas = k.get_theta(),
-                    next_states_projection = local_projection,
-                    knm = local_knm,
-                    rewards = local_rewards,
-                    maxiter=5)
+                thetas, bellman_error = self.optimal_bellman_solver(
+                    thetas=k.get_theta(),
+                    next_states_projection=local_projection,
+                    knm=local_knm,
+                    rewards=local_rewards,
+                    maxiter=5,
+                )
                 k.set_theta(thetas)
                 if verbose:
                     print(
                         "Kernel num: ",
                         label,
                         ", local error Bellman mean: ",
-                        bellman_error
-                    )            
-        
+                        bellman_error,
+                    )
+
         if verbose:
             bellmann_error = self.actor(states_actions)
-            bellmann_error -= core.get_matrix(self.actor(next_states_actions).reshape(actions.shape).max(1)) * self.gamma
+            bellmann_error -= (
+                core.get_matrix(
+                    self.actor(next_states_actions).reshape(actions.shape).max(1)
+                )
+                * self.gamma
+            )
             bellmann_error -= rewards
             # bellmann_error = bellmann_error[[not d for d in dones.flatten()]]
 
@@ -861,7 +916,7 @@ class KQLearning2(KQLearning):
                 "Global error Bellman max: ",
                 np.fabs(bellmann_error).max(),
                 ", global Bellman mean: ",
-                np.fabs(bellmann_error).mean()
+                np.fabs(bellmann_error).mean(),
             )
             pass
 
@@ -881,15 +936,20 @@ class KQLearning2(KQLearning):
         )
         params = kwargs.get("Actor", {})
 
-        states, actions, next_states, rewards, states_values, dones = self.replay_buffer.memory
+        states, actions, next_states, rewards, states_values, dones = (
+            self.replay_buffer.memory
+        )
         states_actions = np.concatenate([states, actions], axis=1)
 
-        self.actor.set(x=states_actions, fx=states_values,**{**kwargs,**params})
+        self.actor.set(
+            x=states_actions, fx=states_values, **{**kwargs, **params}
+        )  # Q(s,a) value estimator
         params = kwargs.get("NextStates", {})
-        self.next_states.set(x=states_actions, fx=next_states,**{**kwargs,**params})
+        self.next_states.set(
+            x=states_actions, fx=next_states, **{**kwargs, **params}
+        )  # Q(s,a)->s' estimator
         params = kwargs.get("Rewards", {})
-        self.rewards.set(x=states_actions, fx=rewards,**{**kwargs,**params})
-
+        self.rewards.set(x=states_actions, fx=rewards, **{**kwargs, **params})
 
         # if hasattr(self.actor, "indices"):
         #     states, actions, next_states, rewards, states_values, dones = (
