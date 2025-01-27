@@ -6,23 +6,20 @@ from codpydll import *
 from sklearn.cluster import KMeans, MiniBatchKMeans
 
 import codpy.algs
-from codpy.core import _requires_rescale,KerInterface,kernel_setter
+from codpy.core import _requires_rescale,KerInterface,kernel_setter,get_matrix
 from codpy.data_conversion import get_matrix
 from codpy.selection import column_selector
-
+from codpy.kernel import Kernel
+from codpy.lalg import LAlg
 
 def kernel_density_estimator(
     x,
     y,
-    kernel_fun="gaussian",
-    map=None,
-    bandwidth=1.0,
-    rescale=True,
-    rescale_params: dict = {"max": 2000, "seed": 42},
-    verbose=False,
+    kernel=None,
+    **kwargs
 ):
     """
-     Estimate the kernel density of a distribution.
+     Estimate the kernel density of a distribution x at points y.
 
      This function implements a kernel density estimator (KDE), a non-parametric method to estimate
      the probability density function of a random variable. It evaluates the density estimate based on
@@ -48,26 +45,18 @@ def kernel_density_estimator(
 
          >>> density = kernel_density_estimator(x=x, y=y)
     """
-
-    params = {
-        "set_codpykernel": kernel_helper2(
-            kernel=kernel_fun, map=map, bandwidth=bandwidth
-        )
-    }
-    if rescale == True or _requires_rescale(map_name=map):
-        params["rescale"] = True
-        params["rescalekernel"] = rescale_params
-        if verbose:
-            warnings.warn(
-                "Rescaling is set to True as it is required for the chosen map."
-            )
-        kernel.init(x, y, None, **params)
-    return cd.tools.density_estimator(x, y)
+    if kernel is None:
+        kernel = Kernel(x=np.concatenate((x, y), axis=0),**kwargs)
+    kernel.set_kernel_ptr()
+    out = kernel.knm(x, y)
+    out /= get_matrix(out.sum(axis=1))
+    return out
 
 
-def kernel_conditional_density_estimator(X, Y, **kwargs):
+def kernel_conditional_density_estimator(x, y, kernel_x=None,kernel_y=None,**kwargs):
     """
     Estimate the conditional density of 'Y' given 'X' using Nadaraya-Watson kernel conditional density estimator.
+    that is the matrix of conditional probabilities p(y|x) for each x in X and y in Y.
 
     This function calculates the conditional density of values based on a joint distribution ('X', 'Y').
     It uses KDE method for the estimation.
@@ -92,12 +81,55 @@ def kernel_conditional_density_estimator(X, Y, **kwargs):
 
         >>> conditional_density = kernel_conditional_density_estimator(X, Y)
     """
-    # given a joint distribution (X, Y), return the density y_val | x_val using the Nadaraya-Watson estimate
-    marginal_x = KerOp.knm(x=X, y=X)
-    marginal_y = KerOp.knm(x=Y, y=Y)
-    out = marginal_x * marginal_y
-    return codpy.algs.alg.proportional_fitting(out, **kwargs)
+    # given a joint distribution (X, Y), return the density Y | X using the Nadaraya-Watson estimate
+    if kernel_x is None:
+        kernel_x = Kernel(x=x,**kwargs)
+    kernel_x.set_kernel_ptr()
+    marginal_x = kernel_x.knm(x=x, y=kernel_x.get_x())
 
+    if kernel_y is None:
+        kernel_y = Kernel(x=y,**kwargs)
+    kernel_y.set_kernel_ptr()
+    marginal_y = kernel_y.knm(x=y, y=kernel_y.get_x())
+    out = np.zeros([x.shape[0], y.shape[0]])
+    def helper(i,j):
+        out[i,j] = (marginal_x[i] * marginal_y[j]).sum() / (marginal_x[i].sum())
+    [helper(i,j) for i in range(x.shape[0]) for j in range(y.shape[0])]
+    return out
+
+class NWKernel(Kernel):
+    def __init__(self, x,y, **kwargs):
+        """
+        Base class to handle Nadaraya-Watson kernel conditional estimators of the law y | x.
+        """
+        super().__init__(x=x,fx=y, **kwargs)
+
+    def __call__(self, z, **kwargs):
+        """
+        Return the Nadaraya-Watson kernel conditional mean estimator at each points z.
+        """
+
+        probas = kernel_density_estimator(x=z, y=self.get_x(), kernel=self, **kwargs)
+        out = LAlg.prod(probas, self.get_fx())
+        return out
+    def var(self, z, **kwargs):
+        """
+        Return the Nadaraya-Watson kernel conditional var estimator at each points z.
+        """
+        probas = kernel_density_estimator(x=z, y=self.get_x(), kernel=self, **kwargs)
+        expectations = LAlg.prod(probas, self.get_fx())
+        vars = np.zeros([z.shape[0],self.get_fx().shape[1],self.get_fx().shape[1]])
+        def helper(i):
+            temp = self.get_fx() - expectations[i]
+            proba = get_matrix(probas[i])
+            temp = temp * np.sqrt(proba) #not sure here
+            temp = temp.T @ temp
+            vars[i,:] = temp.mean(axis=0)
+
+        [helper(i) for i in range(z.shape[0])]
+
+        return vars
+    
 
 def rejection_sampling(proposed_sample, probas, acceptance_ratio=0.0):
     """
@@ -197,112 +229,3 @@ def match(x, N, **kwargs):
         return x
     out = cd.alg.match(get_matrix(x), N)
     return out
-
-
-def kmeans(x, **kwargs):
-    """
-    Perform K-means clustering on a dataset.
-
-    This function applies the K-means clustering algorithm to partition the input data into 'Ny' clusters.
-    It uses the KMeans implementation from Scikit-Learn. The number of clusters, initialization method, and
-    other parameters of the KMeans algorithm can be specified via keyword arguments.
-
-    Args:
-        x (array-like or DataFrame): Input data for clustering. Should be in a suitable format for clustering (e.g., numerical).
-        **kwargs: Arbitrary keyword arguments, which may include:
-            Ny (int, optional): The number of clusters to form. Default is the number of rows in 'x'.
-            init (str, optional): Method for initialization ('k-means++', 'random', or an ndarray). Default is 'k-means++'.
-            max_iter (int, optional): Maximum number of iterations of the k-means algorithm. Default is 300.
-            random_state (int, optional): Determines random number generation for centroid initialization.
-            Use an int for reproducibility. Default is 42.
-
-    Returns:
-        array-like or DataFrame: Cluster centers if 'Ny' is less than the number of rows in 'x', otherwise returns 'x' as is.
-
-    Example:
-        Example with NumPy array
-
-        >>> from sklearn.datasets import make_blobs
-        >>> X, _ = make_blobs(n_samples=100, centers=3, n_features=2, random_state=42)
-        >>> clusters = kmeans(X, Ny=3)
-
-        Example with pandas DataFrame
-
-        >>> import pandas as pd
-        >>> df = pd.DataFrame(X, columns=['feature1', 'feature2'])
-        >>> clusters = kmeans(df, Ny=3)
-
-        Note:
-        This function requires Scikit-Learn's KMeans implementation. Ensure that sklearn.cluster.KMeans is imported.
-    """
-    x = column_selector(x, **kwargs)
-    Ny = kwargs.get("Ny", x.shape[0])
-    if Ny >= x.shape[0]:
-        return x
-    return KMeans(
-        n_clusters=Ny,
-        init=kwargs.get("init", "k-means++"),
-        n_init=Ny,
-        max_iter=kwargs.get("max_iter", 300),
-        random_state=kwargs.get("random_state", 42),
-    ).fit(x)
-
-
-def mini_batch_kmeans(x, **kwargs):
-    """
-    Perform mini-batch K-means clustering on a dataset.
-
-    This function applies the mini-batch K-means clustering algorithm, an efficient variant of
-    the standard K-means algorithm, to partition the input data into 'Ny' clusters. It is particularly
-    useful for large datasets. The function uses the MiniBatchKMeans implementation from Scikit-Learn.
-    The number of clusters, batch size, and other parameters of the MiniBatchKMeans algorithm can be
-    specified via keyword arguments.
-
-    Args:
-        x (array-like or DataFrame): Input data for clustering. Should be in a format suitable for clustering (e.g., numerical).
-        **kwargs: Arbitrary keyword arguments, which may include:
-            Ny (int, optional): The number of clusters to form. Default is the number of rows in 'x'.
-            max_iter (int, optional): Maximum number of iterations of the mini-batch k-means algorithm. Default is 300.
-            random_state (int, optional): Determines random number generation for centroid initialization. Use an int for reproducibility. Default is 42.
-            batch_size (int, optional): Size of the mini-batches. Default is 4352 (256*17).
-
-    Returns:
-        array-like or DataFrame: Cluster centers if 'Ny' is less than the number of rows in 'x', otherwise returns 'x' as is.
-
-    Example:
-        Example with NumPy array
-
-        >>> from sklearn.datasets import make_blobs
-        >>> X, _ = make_blobs(n_samples=10000, centers=5, n_features=2, random_state=42)
-        >>> clusters = MiniBatchkmeans(X, Ny=5)
-
-        Example with pandas DataFrame
-
-        >>> import pandas as pd
-        >>> df = pd.DataFrame(X, columns=['feature1', 'feature2'])
-        >>> clusters = MiniBatchkmeans(df, Ny=5)
-
-        Note:
-        This function requires Scikit-Learn's MiniBatchKMeans implementation. Ensure that sklearn.cluster.MiniBatchKMeans is imported.
-    """
-    max_iter, random_state, batch_size = (
-        kwargs.get("max_iter", 300),
-        kwargs.get("random_state", 42),
-        256 * 17,
-    )
-    x = column_selector(x, **kwargs)
-    Ny = kwargs.get("Ny", x.shape[0])
-    if Ny >= x.shape[0]:
-        return x
-    return (
-        MiniBatchKMeans(
-            n_clusters=Ny,
-            init="k-means++",
-            batch_size=batch_size,
-            verbose=1,
-            max_iter=max_iter,
-            random_state=random_state,
-        )
-        .fit(x)
-        .cluster_centers_
-    )

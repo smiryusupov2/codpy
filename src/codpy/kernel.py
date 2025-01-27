@@ -332,7 +332,7 @@ class Kernel:
         return core.KerOp.knm(x=x, y=y, fy=fy, kernel_ptr=self.get_kernel())
 
     def dnm(
-        self, x: np.ndarray, y: np.ndarray, fy: np.ndarray = [], **kwargs
+        self, x: np.ndarray = None, y: np.ndarray = None, fy: np.ndarray = [], **kwargs
     ) -> np.ndarray:
         """
         Compute the kernel matrix $D(X, Y)=k(x^i, y^j)_{i,j}$, where the kernel function $k$ is defined at class initialization, see :attr:`self.set_kernel`.
@@ -352,6 +352,8 @@ class Kernel:
             >>> y_data = np.array([...])
             >>> kernel_matrix = Kernel(x=x_data,y=y_data).knm()
         """
+        if x is None: x = self.get_x()
+        if y is None: y = self.get_y()
         if self.get_map() is not None:
             x, y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
 
@@ -390,8 +392,7 @@ class Kernel:
         if not hasattr(self, "knm_inv"):
             self.knm_inv = None
         if self.knm_inv is None:
-            epsilon = kwargs.get("epsilon", self.reg)
-            epsilon_delta = kwargs.get("epsilon_delta", None)
+            if epsilon is None: epsilon = self.reg
             if epsilon_delta is None:
                 epsilon_delta = []
             else:
@@ -572,7 +573,7 @@ class Kernel:
                 self.theta = None
             else:
                 # Compute the regression coefficient `theta` using the kernel matrix inverse and the function values.
-                self.theta = LAlg.prod(self.get_knm_inv(), fx)
+                self.theta = LAlg.prod(self.get_knm_inv(**kwargs), fx)
         return self.theta
 
     def get_Delta(self) -> np.ndarray:
@@ -583,7 +584,7 @@ class Kernel:
         :rtype: :class:`numpy.ndarray`
         """
 
-        if self.Delta is None:
+        if not hasattr(self,"Deltas") or self.Delta is None:
             self.Delta = DiffOps.nabla_t_nabla(self.y, self.x)
         return self.Delta
 
@@ -1052,7 +1053,7 @@ class Kernel:
             self.kernel = core.KerInterface.get_kernel_ptr()
             self.set_theta(None)
 
-    def __call__(self, z: np.ndarray) -> np.ndarray:
+    def __call__(self, z: np.ndarray,**kwargs) -> np.ndarray:
         """
         Predict the output using the kernel for input data ``z``.
 
@@ -1080,7 +1081,7 @@ class Kernel:
         z = core.get_matrix(z)
 
         # Don't forget to set the kernel
-        fy = self.get_theta()
+        fy = self.get_theta(**kwargs)
 
         if fy is None:
             fy = self.get_knm_inv()
@@ -1102,7 +1103,7 @@ class Kernel:
             knm[indices] += self.kernels[key](z[indices])
         return knm
 
-    def grad(self, z: np.ndarray) -> np.ndarray:
+    def grad(self, z: np.ndarray,**kwargs) -> np.ndarray:
 
         self.set_kernel_ptr()
         if z is None:
@@ -1110,10 +1111,10 @@ class Kernel:
         z = core.get_matrix(z)
 
         # Don't forget to set the kernel
-        fy = self.get_theta()
+        fy = self.get_theta(**kwargs)
 
         if fy is None:
-            fy = self.get_knm_inv()
+            fy = self.get_knm_inv(**kwargs)
 
         fx = self.get_fx()
         knm = core.DiffOps.nabla(x=self.get_x(), z=z, y=self.get_y(), fx=fx)
