@@ -1105,19 +1105,17 @@ class Kernel:
 
     def grad(self, z: np.ndarray,**kwargs) -> np.ndarray:
 
-        self.set_kernel_ptr()
         if z is None:
             return None
         z = core.get_matrix(z)
 
         # Don't forget to set the kernel
-        fy = self.get_theta(**kwargs)
+        theta = self.get_theta(**kwargs)
 
-        if fy is None:
-            fy = self.get_knm_inv(**kwargs)
-
-        fx = self.get_fx()
-        knm = core.DiffOps.nabla(x=self.get_x(), z=z, y=self.get_y(), fx=fx)
+        if theta is None:
+            theta = self.get_knm_inv(**kwargs)
+        #might not work for all kernels, as it supposes that k(x,y) = f(x-y)
+        knm = core.DiffOps.nabla_knm(x=z, y=self.get_x(), theta=theta, kernel = self.get_kernel())
 
         return knm
 
