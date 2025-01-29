@@ -12,45 +12,6 @@ from codpy.selection import column_selector
 from codpy.kernel import Kernel
 from codpy.lalg import LAlg
 
-def kernel_density_estimator(
-    x,
-    y,
-    kernel=None,
-    **kwargs
-):
-    """
-     Estimate the kernel density of a distribution x at points y.
-
-     This function implements a kernel density estimator (KDE), a non-parametric method to estimate
-     the probability density function of a random variable. It evaluates the density estimate based on
-     two input distributions using a specified kernel function.
-
-    Args:
-         **kwargs: Arbitrary keyword arguments, including:
-             x (array-like): The first input distribution for which the density estimate is to be computed.
-             y (array-like): The second input distribution used in the density estimation process.
-             kernel (optional): The kernel function to be used for density estimation. This can be specified
-                             as part of the kwargs. If not specified, a default kernel is used.
-
-     Returns:
-         array-like: The estimated density values based on the kernel density estimation.
-
-     Example:
-         Two sample distributions
-
-         >>> x = np.array([...])
-         >>> y = np.array([...])
-
-         Compute the kernel density estimation
-
-         >>> density = kernel_density_estimator(x=x, y=y)
-    """
-    if kernel is None:
-        kernel = Kernel(x=np.concatenate((x, y), axis=0),**kwargs)
-    kernel.set_kernel_ptr()
-    out = kernel.knm(x, y)
-    out /= get_matrix(out.sum(axis=1))
-    return out
 
 
 def kernel_conditional_density_estimator(x, y, kernel_x=None,kernel_y=None,**kwargs):
@@ -96,40 +57,6 @@ def kernel_conditional_density_estimator(x, y, kernel_x=None,kernel_y=None,**kwa
         out[i,j] = (marginal_x[i] * marginal_y[j]).sum() / (marginal_x[i].sum())
     [helper(i,j) for i in range(x.shape[0]) for j in range(y.shape[0])]
     return out
-
-class NWKernel(Kernel):
-    def __init__(self, x,y, **kwargs):
-        """
-        Base class to handle Nadaraya-Watson kernel conditional estimators of the law y | x.
-        """
-        super().__init__(x=x,fx=y, **kwargs)
-
-    def __call__(self, z, **kwargs):
-        """
-        Return the Nadaraya-Watson kernel conditional mean estimator at each points z.
-        """
-
-        probas = kernel_density_estimator(x=z, y=self.get_x(), kernel=self, **kwargs)
-        out = LAlg.prod(probas, self.get_fx())
-        return out
-    def var(self, z, **kwargs):
-        """
-        Return the Nadaraya-Watson kernel conditional var estimator at each points z.
-        """
-        probas = kernel_density_estimator(x=z, y=self.get_x(), kernel=self, **kwargs)
-        expectations = LAlg.prod(probas, self.get_fx())
-        vars = np.zeros([z.shape[0],self.get_fx().shape[1],self.get_fx().shape[1]])
-        def helper(i):
-            temp = self.get_fx() - expectations[i]
-            proba = get_matrix(probas[i])
-            temp = temp * np.sqrt(proba) #not sure here
-            temp = temp.T @ temp
-            vars[i,:] = temp.mean(axis=0)
-
-        [helper(i) for i in range(z.shape[0])]
-
-        return vars
-    
 
 def rejection_sampling(proposed_sample, probas, acceptance_ratio=0.0):
     """
