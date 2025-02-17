@@ -3,8 +3,6 @@ from typing import Tuple
 import numpy as np
 from codpydll import *
 from scipy.special import softmax
-from sklearn import linear_model
-from sklearn.preprocessing import PolynomialFeatures
 
 import codpy.core as core
 from codpy.algs import Alg
@@ -13,7 +11,6 @@ from codpy.lalg import LAlg
 from codpy.permutation import lsap
 from codpy.clustering import MiniBatchkmeans, BalancedClustering
 from codpy.permutation import map_invertion
-
 
 class Kernel:
     """
@@ -74,6 +71,7 @@ class Kernel:
         """
         self.order = order
         self.reg = reg
+        self.dim_ = None
         self.max_nystrom = int(max_nystrom)
         self.n_batch = n_batch
 
@@ -91,6 +89,18 @@ class Kernel:
             self.set(x=x, y=y, fx=fx, **kwargs)
         else:
             self.x, self.y, self.fx = None, None, None
+
+    def dim(self) -> int:
+        """
+        return the dimension of the training set
+        """
+        return self.dim_
+    def __set_dim(self,dim):
+        """
+        return the dimension of the training set
+        """
+        self.dim_ = dim
+        return self
 
     def default_clustering_functor(self) -> callable:
         """
@@ -116,7 +126,23 @@ class Kernel:
         Example:
             >>> default_kernel = kernel.default_kernel_functor()
         """
-        return core.kernel_setter("maternnorm", "standardmean", 0, 1e-9)
+        out = core.kernel_setter("maternnorm", "standardmean", 0, 1e-9)
+        if self.get_order() is None:
+            return out
+        else:
+            class piped:
+                def __init__(self,fun,order,reg):
+                    self.fun, self.order,self.reg = fun,order,reg
+                def __call__(self):
+                    self.fun()
+                    linearkernel = core.KernelSetters.kernel_helper(
+                        setter=core.KernelSetters.set_linear_regressor_kernel,
+                        polynomial_order=self.order+1,
+                        regularization=self.reg,
+                        set_map=None
+                    )
+                    KerInterface.pipe_kernel_fun(linearkernel, self.reg)
+            return piped(out,self.get_order(),self.reg)
 
     def set_custom_kernel(
         self,
@@ -163,147 +189,6 @@ class Kernel:
         if not hasattr(self, "order"):
             self.order = None
         return self.order
-
-    def _set_polynomial_regressor(
-        self, x: np.ndarray = None, fx: np.ndarray = None, **kwargs
-    ) -> None:
-        """
-        Set up the polynomial regressor for the input data ``x`` and function values ``fx``.
-
-        This method fits a polynomial regression model based on the current polynomial order.
-        If the order is not defined, or if either ``x`` or ``fx`` is not provided, the polynomial
-        variables, kernel, and values are set to ``None``.
-
-        :param x: Input data points.
-        :type x: :class:`numpy.ndarray`, optional
-        :param fx: Function values corresponding to the input data ``x``.
-        :type fx: :class:`numpy.ndarray`, optional
-        :param kwargs: Additional keyword arguments for flexibility (not used directly).
-
-        Note:
-            - The polynomial order is retrieved using :meth:`get_order`.
-            - If the polynomial order, ``x``, or ``fx`` are not provided, the internal polynomial attributes
-            (``polyvariables``, ``polynomial_kernel``, and ``polynomial_values``) are reset to ``None``.
-
-        Example:
-            >>> kernel._set_polynomial_regressor(x_data, fx_data)
-        """
-        if x is None or fx is None or self.get_order() is None:
-            self.polyvariables, self.polynomial_kernel, self.polynomial_values = (
-                None,
-                None,
-                None,
-            )
-            return
-        order = self.get_order()
-        if order is not None and fx is not None and x is not None:
-            self.polyvariables = PolynomialFeatures(order).fit_transform(x)
-            self.polynomial_kernel = linear_model.LinearRegression().fit(
-                self.polyvariables, fx
-            )
-            self.polynomial_values = self.polynomial_kernel.predict(self.polyvariables)
-            self.set_theta(None)
-
-    def get_polynomial_values(self, **kwargs) -> np.ndarray:
-        """
-        Retrieve the predicted polynomial values based on the current input data.
-
-        This method returns the values obtained from the polynomial regression model.
-        If the polynomial values are not yet computed, it calls :meth:`_set_polynomial_regressor`
-        to set up the polynomial regressor using the current input data ``x`` and function values ``fx``.
-
-        :param kwargs: Additional keyword arguments for flexibility (not used directly).
-
-        :returns: The predicted polynomial values or ``None`` if the polynomial order is not set.
-        :rtype: :class:`numpy.ndarray` or :class:`None`
-
-        Example:
-            >>> poly_values = kernel.get_polynomial_values()
-        """
-        if self.get_order() is None:
-            return None
-        if not hasattr(self, "polynomial_values") or self.polynomial_values is None:
-            self._set_polynomial_regressor(self.get_x(), self.get_fx())
-        return self.polynomial_values
-
-    def _get_polyvariables(self, **kwargs) -> np.ndarray:
-        """
-        Retrieve the polynomial variables transformed from the input data.
-
-        This method returns the polynomial features (variables) created based on the polynomial order.
-        If the polynomial variables are not yet set, it calls :meth:`_set_polynomial_regressor` to
-        fit the polynomial features using the current input data ``x`` and function values ``fx``.
-
-        :param kwargs: Additional keyword arguments for flexibility (not used directly).
-
-        :returns: The polynomial variables transformed from the input data or ``None`` if the polynomial order is not set.
-        :rtype: :class:`numpy.ndarray` or :class:`None`
-
-        Example:
-            >>> poly_vars = kernel._get_polyvariables()
-        """
-        if self.get_order() is None:
-            return None
-        if not hasattr(self, "polyvariables") or self.polyvariables is None:
-            self._set_polynomial_regressor(self.get_x(), self.get_fx())
-        return self.polyvariables
-
-    def _get_polynomial_kernel(self, **kwargs) -> linear_model.LinearRegression:
-        """
-        Retrieve the polynomial kernel (regression model) used for fitting the polynomial features.
-
-        This method returns the polynomial kernel (linear regression model) fitted on the input data.
-        If the polynomial kernel is not yet set, it calls :meth:`_set_polynomial_regressor` to
-        fit the polynomial regression model using the current input data ``x`` and function values ``fx``.
-
-        :param kwargs: Additional keyword arguments for flexibility (not used directly).
-
-        :returns: The polynomial kernel (linear regression model) or ``None`` if the polynomial order is not set.
-        :rtype: :class:`linear_model.LinearRegression` or :class:`None`
-
-        Example:
-            >>> poly_kernel = kernel._get_polynomial_kernel()
-        """
-        if self.get_order() is None:
-            return None
-        if not hasattr(self, "polynomial_kernel") or self.polynomial_kernel is None:
-            self._set_polynomial_regressor(self.get_x(), self.get_fx())
-        return self.polynomial_kernel
-
-    def get_polynomial_regressor(
-        self, z: np.ndarray, x: np.ndarray = None, fx: np.ndarray = None, **kwargs
-    ) -> np.ndarray:
-        """
-        Set up the polynomial regressor based on the input data and the polynomial order.
-
-        :param z: New input data points for the regressor.
-        :type z: :class:`numpy.ndarray`
-        :param x: Input data points.
-        :type x: :class:`numpy.ndarray`, optional
-        :param fx: Function values corresponding to the input data.
-        :type fx: :class:`numpy.ndarray`, optional
-
-        :returns: The predicted polynomial values or `None` if unavailable.
-        :rtype: :class:`numpy.ndarray` or :class:`None`
-
-        Example:
-            >>> z_data = np.random.rand(100, 10)
-            >>> pred = kernel.get_polynomial_regressor(z_data)
-        """
-        if self.get_order() is None:
-            return None
-        if x is None:
-            polyvariables = self._get_polyvariables()
-        else:
-            polyvariables = PolynomialFeatures(self.order).fit_transform(x)
-        if fx is None:
-            polynomial_kernel = self._get_polynomial_kernel()
-        else:
-            polynomial_kernel = linear_model.LinearRegression().fit(polyvariables, fx)
-        z_polyvariables = PolynomialFeatures(self.order).fit_transform(z)
-        if polynomial_kernel is not None:
-            return polynomial_kernel.predict(z_polyvariables)
-        return None
 
     def knm(
         self, x: np.ndarray, y: np.ndarray, fy: np.ndarray = [], **kwargs
@@ -408,8 +293,8 @@ class Kernel:
                     epsilon=epsilon,
                     reg_matrix=epsilon_delta,
                     kernel_ptr=self.get_kernel(),
-                ),
-                **kwargs,
+                    **kwargs
+                )
             )
         return self.knm_inv
 
@@ -445,25 +330,35 @@ class Kernel:
         if not hasattr(self, "x"):
             self.x = None
         return self.x
+    def density(self, x,**kwargs):
+        """
+        Return an unnormalized model of the density of the law $p_k(x | X)$, $X=(x^1,\cdots,x^N)$ being the training set and $k$ the kernel.
+        This model comes from the kernel extrapolation operator $f_k(x)=k(x,X)k(X,X)^{-1}f(X)$
+        $\int f(x) dp(x | X) = \int f(x) p_k(x | X) dx$
+        The output is a distribution having input size $(x.shape[0])$.
+
+        This distribution is valued as $\sum_X k(x,X)k(X,X)^{-1}$,  
+        Take care that this quantity can be negative, and might lead to biaised estimations, depending on the used kernels. 
+        For unbiaised densities estimations, use NadarayaWatson instead.
+        """
+        out = LAlg.prod(self.knm(x,self.get_x()), self.get_knm_inv())
+        out = out.sum(axis=1)
+        return out
 
     def set_x(
-        self, x: np.ndarray, set_polynomial_regressor: bool = True, **kwargs
+        self, x: np.ndarray, **kwargs
     ) -> None:
         """
         Set the input data ``x`` for the kernel and update related internal states.
 
-        This method sets the input data and optionally recalculates the polynomial regressor and kernel matrices.
+        This method sets the input data and optionally recalculates the kernel matrices.
 
         :param x: Input data points to be set.
         :type x: :class:`numpy.ndarray`
-        :param set_polynomial_regressor: Whether to recalculate the polynomial regressor after setting the data.
-                                        Defaults to ``True``.
-        :type set_polynomial_regressor: :class:`bool`, optional
         """
         self.x = x.copy()
+        self.__set_dim(x.shape[1])
         self.set_y()
-        if set_polynomial_regressor:
-            self._set_polynomial_regressor()
         self._set_knm_inv(None)
         self._set_knm(None)
         self.rescale()
@@ -513,23 +408,18 @@ class Kernel:
         return self.fx
 
     def set_fx(
-        self, fx: np.ndarray, set_polynomial_regressor: bool = True, **kwargs
+        self, fx: np.ndarray, **kwargs
     ) -> None:
         """
         Set the function values ``fx`` for the input data.
 
         :param fx: Function values corresponding to the input data.
         :type fx: :class:`numpy.ndarray`
-        :param set_polynomial_regressor: Whether to recalculate the polynomial regressor after setting the function values.
-                                        Defaults to ``True``.
-        :type set_polynomial_regressor: :class:`bool`, optional
         """
         if fx is not None:
             self.fx = fx.copy()
         else:
             self.fx = None
-        if set_polynomial_regressor:
-            self._set_polynomial_regressor()
         self.set_theta(None)
 
     def set_theta(self, theta: np.ndarray, **kwargs) -> None:
@@ -546,34 +436,19 @@ class Kernel:
         """
         self.theta = theta
         return self
-        # self.fx = None
-        # self.fx =  LAlg.prod(self.get_knm(),self.theta)
-        # if self.get_order() is not None :
-        #     self.fx += self.get_polynomial_regressor(z=self.get_x())
 
     def get_theta(self, **kwargs) -> np.ndarray:
         """
         Retrieve the coefficient ``theta`` for kernel regression.
-
-        If ``fx`` is not defined, the polynomial regressor is used to adjust the function values.
-
         :returns: The regression coefficient ``theta``.
         :rtype: :class:`numpy.ndarray`
         """
         if not hasattr(self, "theta") or self.theta is None:
-            # If a polynomial order is defined and the function values `fx` are available,
-            # compute the residual `fx` by subtracting the polynomial regressor's contribution.
-            if self.get_order() is not None and self.fx is not None:
-                fx = self.fx - self.get_polynomial_regressor(z=self.get_x())
-            else:
-                ##
-                fx = self.fx
-            # If `fx` is still `None`, it means there's no data to compute `theta` from, so set `theta` to `None`.
-            if fx is None:
+            if self.fx is None:
                 self.theta = None
             else:
                 # Compute the regression coefficient `theta` using the kernel matrix inverse and the function values.
-                self.theta = LAlg.prod(self.get_knm_inv(**kwargs), fx)
+                self.theta = LAlg.prod(self.get_knm_inv(**kwargs), self.fx)
         return self.theta
 
     def get_Delta(self) -> np.ndarray:
@@ -643,15 +518,7 @@ class Kernel:
             self.set_fx(fx)
         self.rescale()
         theta = None
-        # If function values (fx) are provided, apply polynomial regression to `x`
         if fx is not None:
-            if self.get_polynomial_values() is not None:
-                # If polynomial values are available, compute polynomial regression error
-                polynomial_values = self.get_polynomial_regressor(z=self.get_x())
-                # Subtract polynomial values from `fx` to get the residual error
-                fx = self.fx - polynomial_values
-            else:
-                fx = self.fx
             # Apply hybrid greedy Nystrom with error between ||f .-f_{k,\theta}||_A and  wrt a given norm
             # udefined by user
             # to compute Y
@@ -728,7 +595,9 @@ class Kernel:
             self.rescale()
             pass
 
-        if self.n_batch is None or self.n_batch >= self.x.shape[0]:
+        if not hasattr(self, "x"): 
+            return self
+        if self.n_batch is None or self.n_batch >= self.get_x().shape[0]:
             return self
         self.N = int(self.x.shape[0] / self.n_batch + 1)
         self.clustering = self.set_clustering(
@@ -808,7 +677,7 @@ class Kernel:
             self.set_kernel_ptr()
             self.permutation = cd.alg.encoder(self.get_x(), self.get_fx())
         else:
-            # If the dimensionalities are the same, use the LSAP algorithm to compute the permutation
+            # If the d imensionalities are the same, use the LSAP algorithm to compute the permutation
             D = core.KerOp.dnm(
                 x=x, y=y, distance=distance, kernel_ptr=self.get_kernel()
             )
@@ -868,16 +737,6 @@ class Kernel:
 
         # Compute the kernel matrix `K(z, X)` where `X` is the current input dataset
         knm = core.KerOp.knm(x=z, y=self.get_y())
-
-        # If a polynomial order is defined, remove the polynomial regression component from `fz`
-        if self.order is not None:
-            # Compute the residual by subtracting the polynomial regressor's prediction from `fz`
-            fzz = fz - self.get_polynomial_regressor(z)
-        else:
-            fzz = fz
-        # err = self(z)-fz
-        # err= (err**2).sum()
-
         # At this point, we are trying to solve the following least squares problem:
         #
         # $$ \theta = \text{argmin} \| K(z, X)\theta - f(z) \|^2 + \text{reg} \|\theta\|^2 $$
@@ -885,19 +744,11 @@ class Kernel:
         # `eps` (regularization) controls the trade-off between fitting the data and controlling the magnitude of `theta`.
 
         if eps is None:
-            # Use the default regularization value if none is provided
             eps = self.reg
         # if self.theta is not None: fzz += eps*LAlg.prod(knm,self.theta)
         # Solve the least-squares problem with regularization:
         # $$ \theta = \left( K(z, X)^\top K(z, X) + \text{eps} \cdot I \right)^{-1} K(z, X)^\top fzz $$
-        self.set_theta(LAlg.lstsq(knm, fzz, eps=eps))
-        # err = self(z)-fz
-        # err= (err**2).sum()
-
-        # If polynomial regression is involved, update the kernel's internal function approximation
-        if self.order is not None:
-            # Update `fx` by adding the contribution of the polynomial regressor
-            self.fx += self.get_polynomial_regressor(z=self.get_x())
+        self.set_theta(LAlg.lstsq(knm, fz, eps=eps))
 
         return self
 
@@ -947,7 +798,6 @@ class Kernel:
         else:
             self.set_fx(fx)
 
-        self._set_polynomial_regressor()
         return self
 
     def kernel_distance(self, y: np.ndarray, x=None) -> np.ndarray:
@@ -995,7 +845,7 @@ class Kernel:
         :rtype: callable
         """
         if not hasattr(self, "kernel"):
-            self.set_kernel()
+            self.kernel = self.default_kernel_functor()()
             # self.order= None
             self.kernel = core.KerInterface.get_kernel_ptr()
         return self.kernel
@@ -1005,10 +855,12 @@ class Kernel:
         Set the Codpy interface to use the current kernel function.
 
         This method updates the Codpy kernel interface with the current kernel
-        function, sets the polynomial order to zero, and applies the regularization
+        function, sets the polynomial order+1 (according to the C++ core convention), and applies the regularization
         parameter defined in the object.
         """
-        core.KerInterface.set_kernel_ptr(self.get_kernel(), 0, self.reg)
+        if self.order is None: order = 0
+        else: order = self.order+1
+        core.KerInterface.set_kernel_ptr(self.get_kernel(), order, self.reg)
 
     def set_map(self, map_) -> callable:
         self.map_ = map_
@@ -1017,7 +869,6 @@ class Kernel:
     def get_map(self) -> callable:
         """
         Retrieve the current mapping function for the input data.
-
         :returns: The mapping function used by the current model.
         :rtype: callable
         """
@@ -1088,10 +939,6 @@ class Kernel:
 
         knm = core.KerOp.knm(x=z, y=self.get_y(), fy=fy)
 
-        if self.order is not None:
-            polynomial_regressor = self.get_polynomial_regressor(z)
-            knm += polynomial_regressor
-
         if not hasattr(self, "set_clustering"):
             return knm
         if not hasattr(self, "kernels") or len(self.kernels) <= 1:
@@ -1099,7 +946,7 @@ class Kernel:
         mapped_indices = self.clustering(z)
         mapped_indices = map_invertion(mapped_indices)
         for key in mapped_indices.keys():
-            indices = list(mapped_indices[key])
+            indic7es = list(mapped_indices[key])
             knm[indices] += self.kernels[key](z[indices])
         return knm
 
@@ -1114,23 +961,23 @@ class Kernel:
 
         if theta is None:
             theta = self.get_knm_inv(**kwargs)
-        #might not work for all kernels, as it supposes that k(x,y) = f(x-y)
         knm = core.DiffOps.nabla_knm(x=z, y=self.get_x(), theta=theta, kernel = self.get_kernel())
 
         return knm
 
+    def __and__(self, other):
+        return BitwiseANDKernel(self, other)
+    
 
-def clip_probs(probs, min=None, max=None):
-    if min == None:
-        min = 1e-9
-    if max == None:
-        max = 1 - 1e-9
-    out = np.where(probs < min, min, probs)
-    out = np.where(out > max, max, out)
-    out /= core.get_matrix(out.sum(1))
-    return out
+def get_tensor_probas(policy):
+    @np.vectorize
+    def fun(i, j, k):
+        return policy[i, j] * (float(j == k) - policy[i, k])
 
-
+    return np.fromfunction(
+        fun, shape=[policy.shape[0], policy.shape[1], policy.shape[1]], dtype=int
+    )
+    
 class KernelClassifier(Kernel):
     """
     A simple overload of the kernel :class:`Kernel` for proabability handling.
@@ -1139,20 +986,17 @@ class KernelClassifier(Kernel):
 
                 $$\text{softmax} (\log(f)_{k,\\theta})(\cdot)$$
     """
-
     def set_fx(
         self,
         fx: np.ndarray,
-        set_polynomial_regressor: bool = True,
         clip=Alg.proportional_fitting,
         **kwargs,
     ) -> None:
         if fx is not None:
-            if clip is not None:
-                fx = clip(fx)
+            fx = fx / get_matrix(fx.sum(axis=1))
             debug = np.where(fx < 1e-9, 1e-9, fx)
             fx = np.log(debug)
-        super().set_fx(fx, set_polynomial_regressor=set_polynomial_regressor, **kwargs)
+        super().set_fx(fx, **kwargs)
 
     def __call__(self, z, **kwargs):
         z = core.get_matrix(z)
@@ -1166,3 +1010,28 @@ class KernelClassifier(Kernel):
         self, N, x=None, fx=None, all=False, norm_="classifier", **kwargs
     ):
         return super().greedy_select(N=N, x=x, fx=fx, all=all, norm_=norm_, **kwargs)
+
+    def grad(self, z: np.ndarray,**kwargs) -> np.ndarray:
+
+        out = super().grad(z)
+        if out is None:
+            return None
+        out = LAlg.prod_vector_matrix(out,get_tensor_probas(softmax(self.get_fx(),axis=1)))
+        return out
+    
+from codpy.kengineering import *
+
+if __name__ == "__main__":
+    codpy.core.KerInterface.set_verbose()
+    # test derivative with polynomial regression
+    # test = Kernel(x=get_matrix([[0.,1.,2.]]).T,fx=get_matrix([[1.,3.,5.]]).T, order=1)
+    # print(test(z=[0.,1.,2.,3]))
+    # print(test.grad(z=0))
+
+    # test derivative of classifier, that regressor to probabilites
+    y = np.random.rand(100,10)
+    x = np.random.rand(100,15)
+    k = KernelClassifier(x=x,fx=y)
+    print(k(z=np.random.rand(2,15)))
+    print(k.grad(z=np.random.rand(2,15)))
+    pass

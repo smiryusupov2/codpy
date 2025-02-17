@@ -5,99 +5,116 @@ import numpy as np
 import abc
 
 import codpy.algs
+import itertools
 from codpy.core import _requires_rescale, KerInterface, kernel_setter, get_matrix
 from codpy.data_conversion import get_matrix
 from codpy.selection import column_selector
 from codpy.kernel import Kernel
+from codpy.sampling import rejection_sampling
 from codpy.lalg import LAlg
 from codpy.plot_utils import multi_plot
+from codpy.utils import cartesian_outer_product
 import pandas as pd
 
 
-def NWkernel_density_estimator(x, y, kernel=None, **kwargs):
-    """
-     Estimate the kernel density of a distribution x at points y.
-
-     This function implements a kernel density estimator (KDE), a non-parametric method to estimate
-     the probability density function of a random variable. It evaluates the density estimate based on
-     two input distributions using a specified kernel function.
-
-    Args:
-         **kwargs: Arbitrary keyword arguments, including:
-             x (array-like): The first input distribution for which the density estimate is to be computed.
-             y (array-like): The second input distribution used in the density estimation process.
-             kernel (optional): The kernel function to be used for density estimation. This can be specified
-                             as part of the kwargs. If not specified, a default kernel is used.
-
-     Returns:
-         array-like: The estimated density values based on the kernel density estimation.
-
-     Example:
-         Two sample distributions
-
-         >>> x = np.array([...])
-         >>> y = np.array([...])
-
-         Compute the kernel density estimation
-
-         >>> density = kernel_density_estimator(x=x, y=y)
-    """
-    if kernel is None:
-        kernel = Kernel(x=np.concatenate((x, y), axis=0), **kwargs)
-    kernel.set_kernel_ptr()
-    out = kernel.knm(x, y)
-    out /= get_matrix(out.sum(axis=1))
-    return out
-
-
 class Conditionner:
+    """
+    Base class to handle conditioned probability.
 
+    This class is intended to standardized conditioned probability handling exhibiting the basic functionalities to implement.
+    """
     def __init__(self, x: np.ndarray, y: np.ndarray, **kwargs):
+        """
+        The constructor takes both distributions x and y in order to model $y|x$.
+        """
+        x,y = get_matrix(x), get_matrix(y)
         assert x.shape[0] == y.shape[0]
         self.x, self.y = x, y
+    def get_x(self):
+        return self.x
+    def get_y(self):
+        return self.y
 
     def __call__(self, x: np.ndarray, **kwargs):
+        """
+        A shortcut to the conditional expectation $\mathbb{E}(y|x)$.
+        """
         assert x.shape[1] == self.x.shape[1]
         return self.expectation(x)
 
     def expectation(self, x, **kwargs):
+        """
+        Return the estimator of the conditional expectation $\mathbb{E}(y|x)$
+        The output is expected to have size $(x.shape[0],y.shape[1])$.
+        """
+        probas = self.joint_density(x=x,y=self.y, **kwargs)
+        probas /= get_matrix(probas.sum(axis=1))
+        out = LAlg.prod(probas, self.y)
+        return out
+    
+    def sample(self, x, n,**kwargs):
+        """
+        Return $n$ i i d samples of the conditional law $y|x$.
+        The output is expected to be a three-dimensional array having size $(n,x.shape[0],y.shape[1])$ 
+        """
         raise NotImplementedError
 
-    def sample(self, x, n):
+    def var(self, x,**kwargs):
+        """
+        Return the estimator of the conditional variance $\mathbb{E}(y|x)$
+        The output is expected to have size $(x.shape[0],y.shape[1]**2)$.
+        """
         raise NotImplementedError
 
-    def var(self, x):
+    def density(self, x,**kwargs):
+        """
+        Return the estimation of the density of the law $p(x^i)$
+        The output is expected to have size $x.shape[0]$.
+        """
+        raise NotImplementedError
+    def joint_density(self, x,y,**kwargs):
+        """
+        Return the estimation of the density of the law $p(x^i,y^j)$
+        The output is expected to have size $(x.shape[0],y.shape[0])$.
+        """
         raise NotImplementedError
 
-    def density(self, y, x):
-        raise NotImplementedError
 
-
-class NadarayaWatsonKernel(Kernel):
+class NadarayaWatsonKernel(Conditionner):
+    class KDE:
+        def __init__(self,k):
+            self.kernel = k
+        def __call__(self,x):
+            out = self.kernel.knm(x=self.kernel.get_x(),y=x).sum(axis=0)
+            return out
+    class joint_KDE:
+        def __init__(self,kx,ky):
+            self.kernelx = kx
+            self.kernely = ky
+        def __call__(self,x,y):
+            out = np.zeros([x.shape[0],y.shape[0]])
+            kxx = self.kernelx.knm(x=x,y=self.kernelx.get_x())
+            kyy = self.kernely.knm(x=self.kernely.get_x(),y=y)
+            out = LAlg.prod(kxx,kyy)
+            return out
     def __init__(self, x, y, **kwargs):
         """
         Base class to handle Nadaraya-Watson kernel conditional estimators of the law y | x.
         """
-        super().__init__(x=x, fx=y, **kwargs)
-
-    def __call__(self, z, **kwargs):
-        """
-        Return the Nadaraya-Watson kernel conditional mean estimator at each points z.
-        """
-        probas = NWkernel_density_estimator(x=z, y=self.get_x(), kernel=self, **kwargs)
-        out = LAlg.prod(probas, self.get_fx())
-        return out
+        super().__init__(x=x, y=y, **kwargs)
+        self.density_x=NadarayaWatsonKernel.KDE(Kernel(x=x))
+        self.density_xy=NadarayaWatsonKernel.joint_KDE(Kernel(x=x),Kernel(x=y))
 
     def var(self, z, **kwargs):
         """
         Return the Nadaraya-Watson kernel conditional var estimator at each points z.
         """
-        probas = NWkernel_density_estimator(x=z, y=self.get_x(), kernel=self, **kwargs)
-        expectations = LAlg.prod(probas, self.get_fx())
-        vars = np.zeros([z.shape[0], self.get_fx().shape[1], self.get_fx().shape[1]])
+        probas = NWkernel_density_estimator(x=z, y=self.x, kernel=self.kernel, **kwargs)
+        expectations = LAlg.prod(probas, self.y)
+        vars = np.zeros([z.shape[0], self.y.shape[1], self.y.shape[1]])
 
         def helper(i):
-            temp = self.get_fx() - expectations[i]
+            temp = self.y - expectations[i]
             proba = get_matrix(probas[i])
             temp = temp * np.sqrt(proba)  # not sure here
             temp = temp.T @ temp
@@ -106,59 +123,95 @@ class NadarayaWatsonKernel(Kernel):
         [helper(i) for i in range(z.shape[0])]
 
         return vars
+    def sample(self, x, n,**kwargs):
+        out = np.zeros([x.shape[0], n, self.y.shape[1]])
+        density_xy = LAlg.prod(self.density_xy.kernely.get_knm(),self.density_xy.kernelx.knm(x=self.x,y=x)).T
+        def helper(i):
+            temp = rejection_sampling(self.y, density_xy[i], size=[n])
+            out[i,:] = temp
+        [helper(i) for i in range(x.shape[0])]
+        return out
+    def density(self, x,**kwargs):
+        """
+        Return the estimation of the density of the law $p(x)$
+        The output is expected to have size $(y.shape[0],x.shape[0])$.
+        """
+        return self.density_x(x)
+    def joint_density(self, x,y,**kwargs):
+        """
+        Return the estimation of the density of the law $p(x,y)$
+        The output is expected to have size $(x.shape[0],y.shape[0])$.
+        """
+        return self.density_xy(x,y)
+    def dnm(self, x,y,**kwargs):
+        """
+        Return the kernel induced distance on the x-space $d(x,y)=k(x,x)+k(y,y)-2k(x,y)$
+        The output is expected to have size $(x.shape[0],y.shape[0])$.
+        """
+        return self.density_x.kernel.dnm(x,y)
 
 
-class ConditionerKernel(Kernel):
-    def __init__(self, x, y, latent_x=None, latent_y=None, **kwargs):
+
+class ConditionerKernel(Conditionner):
+    def __init__(self, x, y, latent_generator_x=None, latent_generator_y=None, **kwargs):
         """
         Base class to handle kernel conditional estimators of the law y | x using optimal transport
         """
-        super().__init__(x=get_matrix(x), fx=get_matrix(y), **kwargs)
-        if latent_x is None:
-            self.latentd_x = lambda N: np.random.normal(size=[N, self.get_x().shape[1]])
-        else:
-            self.latentd_x = latent_x
-        if latent_y is None:
-            self.latentd_y = lambda N: np.random.normal(
-                size=[N, self.get_fx().shape[1]]
-            )
-        else:
-            self.latent_y = latent_y
-        self.latent_x = self.latentd_x(self.get_x().shape[0])
-        self.latent_y = self.latentd_y(self.get_fx().shape[0])
+        x, y = get_matrix(x),get_matrix(y)
+        super().__init__(x=x, y=y, **kwargs)
+        xy = np.concatenate([x,y],axis=1)
+        self.cut_ = x.shape[1]
+        self.latent_generator_xy = lambda n : np.random.normal(size=[n,x.shape[1]+y.shape[1]])
+        self.latent_generator_x = lambda n : np.random.normal(size=[n,x.shape[1]])
+        self.latent_generator_y = lambda n : np.random.normal(size=[n,y.shape[1]])
+        self.latent_x,self.latent_y = self.latent_generator_x(x.shape[0]),self.latent_generator_y(x.shape[0])
+        self.latent_xy = np.concatenate([self.latent_x,self.latent_y],axis=1)
 
-        latent_xy = np.concatenate((self.latent_x, self.latent_y), axis=1)
-        xy = np.concatenate((x, y), axis=1)
-        self.map_xy = Kernel(x=latent_xy).map(y=xy, **kwargs)
-        self.map_xy_inv = Kernel(
-            x=self.map_xy.get_fx(), fx=self.map_xy.get_x(), **kwargs
-        )
-        self.map_x = Kernel(x=self.latent_x).map(y=self.get_x(), **kwargs)
-        self.map_x_inv = Kernel(x=self.map_x.get_fx(), fx=self.map_x.get_x(), **kwargs)
-
-    def __call__(self, z, **kwargs):
+        self.map_xy_inv = Kernel(x=self.latent_xy, **kwargs).map(y=xy)
+        self.map_xy = Kernel(x=self.map_xy_inv.get_fx(),fx=self.map_xy_inv.get_x(), **kwargs)
+        latent_x = self.map_xy_inv.get_x()[:,:x.shape[1]]
+        im_x = self.map_xy_inv.get_fx()[:,:x.shape[1]]
+        self.map_x = Kernel(x=im_x,fx=latent_x, **kwargs)
+    def expectation(self, x, **kwargs):
         """
-        Return the kernel conditional mean estimator at each points z.
+        Return the estimator of the conditional expectation $\mathbb{E}(y|x)$
+        The output is expected to have size $(x.shape[0],y.shape[1])$.
         """
-        probas = NWkernel_density_estimator(x=z, y=self.get_x(), kernel=self, **kwargs)
-        out = LAlg.prod(probas, self.get_fx())
-        return out
-
-    def samples(self, z, N, **kwargs):
+        latent_x = self.map_x(x, **kwargs)
+        latent_y = self.map_xy.get_fx()[:,self.cut_:]
+        latent_xy = cartesian_outer_product(latent_x, latent_y).reshape(latent_x.shape[0]*latent_y.shape[0],self.map_xy.get_fx().shape[1])
+        mapped = self.map_xy_inv(latent_xy).reshape(latent_x.shape[0],latent_y.shape[0],self.map_xy_inv.get_fx().shape[1])
+        mapped = mapped[:,:,self.cut_:].mean(axis=1)
+        return mapped
+    
+    def sample(self, x, n,**kwargs):
         """
         Return N sampling for each z of the estimated law y | z.
+        output is of size (x.shape[0],n,y.shape[1])
         """
-        probas = NWkernel_density_estimator(x=z, y=self.get_x(), kernel=self, **kwargs)
-        expectations = LAlg.prod(probas, self.get_fx())
-        vars = np.zeros([z.shape[0], self.get_fx().shape[1], self.get_fx().shape[1]])
+        latent_x = self.map_x(x, **kwargs)
+        latent_y = self.latent_generator_y(n)
+        latent_xy = cartesian_outer_product(latent_x, latent_y).reshape(latent_x.shape[0]*latent_y.shape[0],self.map_xy.get_fx().shape[1])
+        mapped = self.map_xy_inv(latent_xy).reshape(latent_x.shape[0],latent_y.shape[0],self.map_xy_inv.get_fx().shape[1])
+        mapped = mapped[:,:,self.cut_:]
+        return mapped
 
+        # return out+self.meany
+    def density(self, x,**kwargs):
+        """
+        Return the estimation of the density of the law $p(x)$
+        The output is expected to have size $(y.shape[0],x.shape[0])$.
+        """
+        return self.density_x(x)
+    def joint_density(self, x,y,**kwargs):
+        """
+        Return the estimation of the density of the law $p(x,y)$
+        The output is expected to have size $(x.shape[0],y.shape[0])$.
+        """
+        out = np.zeros([x.shape[0],y.shape[0]])
         def helper(i):
-            temp = self.get_fx() - expectations[i]
-            proba = get_matrix(probas[i])
-            temp = temp * np.sqrt(proba)  # not sure here
-            temp = temp.T @ temp
-            vars[i, :] = temp.mean(axis=0)
-
-        [helper(i) for i in range(z.shape[0])]
-
-        return vars
+            latent = cartesian_outer_product(x,y[[i],:]).reshape([x.shape[0],x.shape[1]+y.shape[1]])
+            latent = self.map_xy(latent)
+            out[:,i] = self.map_xy_inv.density(latent)
+        [helper(i) for i in range(y.shape[0])]
+        return out

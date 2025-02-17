@@ -2,9 +2,26 @@ import functools
 import operator
 
 import numpy as np
+import itertools
+from codpydll import *
+from sklearn import linear_model
+from sklearn.preprocessing import PolynomialFeatures
+
 
 from codpy.data_conversion import get_matrix
 
+def cartesian_outer_product(x:np.array,y:np.array) -> np.array:
+    #perform the commented code but parallel and C++
+    out = cd.tools.cartesian_outer_product(x,y)
+    return out
+    # out = np.zeros([x.shape[0],y.shape[0],x.shape[1]+y.shape[1]])
+    # def helper(u):
+    #     i,j= u
+    #     out[i,j,:] = np.concatenate([x[i],y[j]])
+
+    # iterable = itertools.product(range(x.shape[0]),range(y.shape[0]))
+    # list(map(helper, iterable))
+    # return out
 
 def pad_axis(x, y, axis=1):
     if x.shape[axis] == y.shape[axis]:
@@ -175,8 +192,172 @@ def fill(matrix, values, indices=None, op=None):
 
         [helper(i) for i in range(matrix.shape[0])]
 
+class LinearRegression:
+    """
+    Polynomial Regression based on scikit learn with a similar interface to Kernel class.
+    This class fits a polynomial regression model based on the current polynomial order.
+    Basic usage : LinearRegression(x,fx,order)(z) provides a polynomial expansion of $f(z) = \beta^0 + \sum_d \beta^1_d z_d+\sum_{d_1,d_2} \beta^2_{d_1,d_2} z_{d_1}z_{d_2}$ + ..
+    where the coefficients $\beta^0, \beta^1, ...$ are fitted to $X,f(X)$.
+    The gradient is not available (use Kernel class with a linear regressor if needed)
+    """
+    def __init__(
+        self,
+        x,
+        fx,
+        order = 1
+    ) -> None:
+        self.x, self.fx, self.order = x,fx,order
+    def get_order(self):
+        return self.order
+    def get_x(self):
+        return self.x
+    def get_fx(self):
+        return self.fx
+    
+    def _set_polynomial_regressor(
+        self, x: np.ndarray = None, fx: np.ndarray = None, **kwargs
+    ) -> None:
+        """
+        Set up the polynomial regressor for the input data ``x`` and function values ``fx``.
+
+        This method fits a polynomial regression model based on the current polynomial order.
+        If the order is not defined, or if either ``x`` or ``fx`` is not provided, the polynomial
+        variables, kernel, and values are set to ``None``.
+
+        :param x: Input data points.
+        :type x: :class:`numpy.ndarray`, optional
+        :param fx: Function values corresponding to the input data ``x``.
+        :type fx: :class:`numpy.ndarray`, optional
+        :param kwargs: Additional keyword arguments for flexibility (not used directly).
+
+        Note:
+            - The polynomial order is retrieved using :meth:`get_order`.
+            - If the polynomial order, ``x``, or ``fx`` are not provided, the internal polynomial attributes
+            (``polyvariables``, ``polynomial_kernel``, and ``polynomial_values``) are reset to ``None``.
+
+        Example:
+            >>> kernel._set_polynomial_regressor(x_data, fx_data)
+        """
+        if x is None or fx is None or self.get_order() is None:
+            self.polyvariables, self.polynomial_kernel, self.polynomial_values = (
+                None,
+                None,
+                None,
+            )
+            return
+        order = self.get_order()
+        if order is not None and fx is not None and x is not None:
+            self.polyvariables = PolynomialFeatures(order).fit_transform(x)
+            self.polynomial_kernel = linear_model.LinearRegression().fit(
+                self.polyvariables, fx
+            )
+            self.polynomial_values = self.polynomial_kernel.predict(self.polyvariables)
+
+    def get_polynomial_values(self, **kwargs) -> np.ndarray:
+        """
+        Retrieve the predicted polynomial values based on the current input data.
+
+        This method returns the values obtained from the polynomial regression model.
+        If the polynomial values are not yet computed, it calls :meth:`_set_polynomial_regressor`
+        to set up the polynomial regressor using the current input data ``x`` and function values ``fx``.
+
+        :param kwargs: Additional keyword arguments for flexibility (not used directly).
+
+        :returns: The predicted polynomial values or ``None`` if the polynomial order is not set.
+        :rtype: :class:`numpy.ndarray` or :class:`None`
+
+        Example:
+            >>> poly_values = kernel.get_polynomial_values()
+        """
+        if self.get_order() is None:
+            return None
+        if not hasattr(self, "polynomial_values") or self.polynomial_values is None:
+            self._set_polynomial_regressor(self.get_x(), self.get_fx())
+        return self.polynomial_values
+
+    def _get_polyvariables(self, **kwargs) -> np.ndarray:
+        """
+        Retrieve the polynomial variables transformed from the input data.
+
+        This method returns the polynomial features (variables) created based on the polynomial order.
+        If the polynomial variables are not yet set, it calls :meth:`_set_polynomial_regressor` to
+        fit the polynomial features using the current input data ``x`` and function values ``fx``.
+
+        :param kwargs: Additional keyword arguments for flexibility (not used directly).
+
+        :returns: The polynomial variables transformed from the input data or ``None`` if the polynomial order is not set.
+        :rtype: :class:`numpy.ndarray` or :class:`None`
+
+        Example:
+            >>> poly_vars = kernel._get_polyvariables()
+        """
+        if self.get_order() is None:
+            return None
+        if not hasattr(self, "polyvariables") or self.polyvariables is None:
+            self._set_polynomial_regressor(self.get_x(), self.get_fx())
+        return self.polyvariables
+
+    def _get_polynomial_kernel(self, **kwargs) -> linear_model.LinearRegression:
+        """
+        Retrieve the polynomial kernel (regression model) used for fitting the polynomial features.
+
+        This method returns the polynomial kernel (linear regression model) fitted on the input data.
+        If the polynomial kernel is not yet set, it calls :meth:`_set_polynomial_regressor` to
+        fit the polynomial regression model using the current input data ``x`` and function values ``fx``.
+
+        :param kwargs: Additional keyword arguments for flexibility (not used directly).
+
+        :returns: The polynomial kernel (linear regression model) or ``None`` if the polynomial order is not set.
+        :rtype: :class:`linear_model.LinearRegression` or :class:`None`
+
+        Example:
+            >>> poly_kernel = kernel._get_polynomial_kernel()
+        """
+        if self.get_order() is None:
+            return None
+        if not hasattr(self, "polynomial_kernel") or self.polynomial_kernel is None:
+            self._set_polynomial_regressor(self.get_x(), self.get_fx())
+        return self.polynomial_kernel
+
+    def __call__(
+        self, z: np.ndarray, x: np.ndarray = None, fx: np.ndarray = None, **kwargs
+    ) -> np.ndarray:
+        """
+        Set up the polynomial regressor based on the input data and the polynomial order.
+
+        :param z: New input data points for the regressor.
+        :type z: :class:`numpy.ndarray`
+        :param x: Input data points.
+        :type x: :class:`numpy.ndarray`, optional
+        :param fx: Function values corresponding to the input data.
+        :type fx: :class:`numpy.ndarray`, optional
+
+        :returns: The predicted polynomial values or `None` if unavailable.
+        :rtype: :class:`numpy.ndarray` or :class:`None`
+
+        Example:
+            >>> z_data = np.random.rand(100, 10)
+            >>> pred = kernel.get_polynomial_regressor(z_data)
+        """
+        if self.get_order() is None:
+            return None
+        if x is None:
+            polyvariables = self._get_polyvariables()
+        else:
+            polyvariables = PolynomialFeatures(self.order).fit_transform(x)
+        if fx is None:
+            polynomial_kernel = self._get_polynomial_kernel()
+        else:
+            polynomial_kernel = linear_model.LinearRegression().fit(polyvariables, fx)
+        z_polyvariables = PolynomialFeatures(self.order).fit_transform(z)
+        if polynomial_kernel is not None:
+            return polynomial_kernel.predict(z_polyvariables)
+        return None
 
 if __name__ == "__main__":
+    test = LinearRegression(x=get_matrix([[0.,1.,2.]]).T,fx=get_matrix([[1.,3.,5.]]).T, order=1)
+    print(test(z=get_matrix([0.,1.,2.,3.])))
+
     import matplotlib.pyplot as plt
     import scipy.special
     delta_t = .1

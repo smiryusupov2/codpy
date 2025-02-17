@@ -58,7 +58,7 @@ def kernel_conditional_density_estimator(x, y, kernel_x=None,kernel_y=None,**kwa
     [helper(i,j) for i in range(x.shape[0]) for j in range(y.shape[0])]
     return out
 
-def rejection_sampling(proposed_sample, probas, acceptance_ratio=0.0):
+def rejection_sampling(proposed_sample, densities,size=None):
     """
     Perform rejection sampling on a set of proposed samples.
 
@@ -89,13 +89,11 @@ def rejection_sampling(proposed_sample, probas, acceptance_ratio=0.0):
         Note:
         The function assumes that the proposed samples and their probabilities are of the same length.
     """
-    samples = []
-    for n in range(proposed_sample.shape[0]):
-        acceptance_ratio = max(acceptance_ratio, probas[n])
-        if np.random.uniform(0, acceptance_ratio) < probas[n]:
-            samples.append(proposed_sample[n])
-    return samples
-
+    assert densities.min() >=0
+    probas = densities/densities.sum()
+    indices = range(proposed_sample.shape[0])
+    chosen_indices=np.random.choice(indices, size=size, replace=True, p=probas)
+    return proposed_sample[chosen_indices]
 
 @functools.cache
 def get_normals(N, D, nmax=10,kernel_ptr=None):

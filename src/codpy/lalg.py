@@ -69,6 +69,20 @@ class LAlg:
         """
         return cd.lalg.prod(get_matrix(x), get_matrix(y))
 
+    def prod_vector_matrix(x, y):
+        """
+        Compute the inner product of two vector of matrices.
+
+        This method computes the matrix product of two input field of matrices, x and y.
+
+        Args:
+            x: The first field of matrix.
+            y: The second field of  matrix.
+
+        Returns:
+            The product of the two matrices.
+        """
+        return cd.lalg.prod_vector_matrix(np.array(x), np.array(y))
     def transpose(x):
         """
         Transpose a matrix.

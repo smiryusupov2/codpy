@@ -77,7 +77,7 @@ show_confusion_matrix(z, fz, predictor,cm=False)
 
 
 # %% [markdown]
-# Select a multi scale kernel where the centers are given by a greedy search algorithm.
+# Select a multi scale kernel where the centers are given by a sharp discrepancy algorithm.
 predictor = MultiScaleKernelClassifier(x=x,fx=fx,N=N_partition,method=SharpDiscrepancy)
 print("Reproductibility test:")
 show_confusion_matrix(x, fx, predictor,cm=False)
