@@ -14,7 +14,7 @@ import codpy.core as core
 from codpy.core import get_matrix
 import codpy.selection as selection
 from codpy.data_processing import hot_encoder
-from codpy.kernel import Kernel, KernelClassifier
+from codpy.kernel import Kernel, KernelClassifier, get_tensor_probas
 from codpy.lalg import LAlg
 from codpy.algs import Alg
 from codpy.sampling import get_normals
@@ -335,7 +335,9 @@ def Verhulst(probs, advantages):
 
 
 class KAgent:
-    def __init__(self, actions_dim, state_dim, gamma=0.99, kernel_type = GamesKernel,**kwargs):
+    def __init__(
+        self, actions_dim, state_dim, gamma=0.99, kernel_type=GamesKernel, **kwargs
+    ):
         self.kernel_type = kernel_type
         self.actions_dim = actions_dim
         self.state_dim = state_dim
@@ -452,7 +454,7 @@ class KAgent:
             projection_op = projection_op.reshape(
                 [
                     states_actions.shape[0],
-                    projection_op.shape[0]//states_actions.shape[0],
+                    projection_op.shape[0] // states_actions.shape[0],
                     value_function.get_x().shape[0],
                 ]
             )
@@ -520,7 +522,6 @@ class KAgent:
         action = rl_hot_encoder(action, self.actions_dim)
         done = core.get_matrix(done, dtype=bool)
         return state, action, next_state, reward, done
-
 
     def get_derivatives_policy_state_value_function(
         self,
@@ -753,10 +754,18 @@ class KActorCritic(KAgent):
             return np.random.randint(0, self.actions_dim)
 
     def get_advantages(
-        self, states, actions, next_states, rewards, returns, dones, policy=None, **kwargs
+        self,
+        states,
+        actions,
+        next_states,
+        rewards,
+        returns,
+        dones,
+        policy=None,
+        **kwargs,
     ):
         value_function = self.get_state_action_value_function(
-            states, actions, next_states, rewards, returns, policy = policy, **kwargs
+            states, actions, next_states, rewards, returns, policy=policy, **kwargs
         )
         advantages = (
             value_function(self.all_states_actions(next_states)).reshape(actions.shape)
@@ -767,13 +776,20 @@ class KActorCritic(KAgent):
         advantages -= core.get_matrix((advantages).mean(1))
         return advantages
 
-    def train(self, game, max_training_game_size=None,**kwargs):
+    def train(self, game, max_training_game_size=None, **kwargs):
         states, actions, next_states, rewards, dones = self.format(game, **kwargs)
         returns = self.compute_returns(
             states, actions, next_states, rewards, dones, **kwargs
         )
         if max_training_game_size is not None:
-            states, actions, next_states, rewards, returns, dones = states[0:max_training_game_size], actions[0:max_training_game_size], next_states[0:max_training_game_size], rewards[0:max_training_game_size], returns[0:max_training_game_size], dones[0:max_training_game_size]
+            states, actions, next_states, rewards, returns, dones = (
+                states[0:max_training_game_size],
+                actions[0:max_training_game_size],
+                next_states[0:max_training_game_size],
+                rewards[0:max_training_game_size],
+                returns[0:max_training_game_size],
+                dones[0:max_training_game_size],
+            )
             game = (states, actions, next_states, rewards, dones)
         self.replay_buffer.push(states, actions, next_states, rewards, returns, dones)
         states, actions, next_states, rewards, returns, dones = (
@@ -791,7 +807,14 @@ class KActorCritic(KAgent):
         count, error = 0, sys.float_info.max
         # compute advantages
         advantages = self.get_advantages(
-            states, actions, next_states, rewards, returns, dones, policy = last_policy, **kwargs
+            states,
+            actions,
+            next_states,
+            rewards,
+            returns,
+            dones,
+            policy=last_policy,
+            **kwargs,
         )
         # update probabilities
         kernel = self.update_probabilities(
@@ -821,14 +844,22 @@ class KQLearning(KActorCritic):
         params = kwargs.get("Actor", {})
         states, actions, next_states, rewards, dones = self.format(game, **kwargs)
         if max_training_game_size is not None:
-            states, actions, next_states, rewards, dones = states[0:max_training_game_size], actions[0:max_training_game_size], next_states[0:max_training_game_size], rewards[0:max_training_game_size], dones[0:max_training_game_size]
+            states, actions, next_states, rewards, dones = (
+                states[0:max_training_game_size],
+                actions[0:max_training_game_size],
+                next_states[0:max_training_game_size],
+                rewards[0:max_training_game_size],
+                dones[0:max_training_game_size],
+            )
             game = (states, actions, next_states, rewards, dones)
 
         returns = self.compute_returns(
             states, actions, next_states, rewards, dones, **kwargs
         )
         self.replay_buffer.push(states, actions, next_states, rewards, returns, dones)
-        states, actions, next_states, rewards, returns,dones = self.replay_buffer.memory.copy()
+        states, actions, next_states, rewards, returns, dones = (
+            self.replay_buffer.memory.copy()
+        )
         kernel = self.optimal_states_values_function(
             states,
             actions,
@@ -846,18 +877,20 @@ class PolicyGradient(KActorCritic):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         params = kwargs.get("KCritic", {})
-        self.critic = KActor(**params)
+        self.actor = GamesKernelClassifier(**params)
 
     def __call__(self, state, **kwargs):
-        action_probs = self.actor(core.get_matrix(state).T)
-        if action_probs is not None:
+        if self.actor.get_x() is not None and self.actor.get_x().shape[0] > 1:
+            action_probs = self.actor(core.get_matrix(state).T)
             action_probs = action_probs.squeeze()
             action = np.random.choice(len(action_probs), p=action_probs)
             return action
         else:
             return np.random.randint(0, self.actions_dim)
 
-    def get_advantages(self, states, actions, next_states, rewards, dones, policy):
+    def get_advantages(
+        self, states, actions, next_states, rewards, returns, dones, policy, **kwargs
+    ):
         # advantage taken as A = \nabla_\pi \pi Q^{pi}(S_T,A_T), so that the overall gradient policy can be written as
         #  d/di \pi(t) = d/d\pi Q^{pi}(S_T,A_T)
         #  Thus formally d/dt  Q^{pi}(S_T,A_T) = < \nabla_\pi \pi Q^{pi}(S_T,A_T), d/dt \pi> = | \nabla_\pi \pi Q^{pi}(S_T,A_T)|^2
@@ -868,45 +901,61 @@ class PolicyGradient(KActorCritic):
         derivative_estimations = derivative_estimator(states_actions)
         return derivative_estimations
 
+
 class KController(KAgent):
-    def __init__(self,state_dim,actions_dim, controller, **kwargs):
+    def __init__(self, state_dim, actions_dim, controller, **kwargs):
         self.controller = controller
-        self.x,self.y = None,None
-        super().__init__(state_dim=state_dim,actions_dim=actions_dim,**kwargs)
+        self.x, self.y = None, None
+        super().__init__(state_dim=state_dim, actions_dim=actions_dim, **kwargs)
+
     def __call__(self, z, **kwargs):
         return self.controller(z, **kwargs)
+
     def get_reward(self, game, **kwargs):
         states, actions, next_states, rewards, dones = game
-        return get_matrix(rewards).mean() 
-    def get_expectation_estimator(self, x,y, **kwargs):
+        return get_matrix(rewards).mean()
+
+    def get_expectation_estimator(self, x, y, **kwargs):
         class explore_kernel(Kernel):
-            def distance(self,z,**kwargs):
-                out = get_matrix(self.dnm(x=self.get_x(),y=z).min(axis=0))
+            def distance(self, z, **kwargs):
+                out = get_matrix(self.dnm(x=self.get_x(), y=z).min(axis=0))
                 return out
-        self.expectation_kernel = explore_kernel(x=x, y=y,**kwargs)
+
+        self.expectation_kernel = explore_kernel(x=x, y=y, **kwargs)
         return self.expectation_kernel
 
-    def train(self, game, env,**kwargs):
+    def train(self, game, env, **kwargs):
         states, actions, next_states, rewards, dones = self.format(game, **kwargs)
-        self.replay_buffer.push(states, actions, next_states, rewards,  dones)
+        self.replay_buffer.push(states, actions, next_states, rewards, dones)
         reward = get_matrix(reward)
         last_theta = get_matrix(self.controller.get_thetas()).T
         if self.x is None:
             self.x = get_matrix(last_theta)
             self.y = get_matrix(reward)
         else:
-            self.x = np.concatenate([self.x,last_theta])
-            self.y = np.concatenate([self.y,reward])
+            self.x = np.concatenate([self.x, last_theta])
+            self.y = np.concatenate([self.y, reward])
 
         if self.x.shape[0] > 2:
-            expectation_estimator = self.get_expectation_estimator(self.x,self.y,call_back = self,**kwargs)
+            expectation_estimator = self.get_expectation_estimator(
+                self.x, self.y, call_back=self, **kwargs
+            )
             last_vals = expectation_estimator(expectation_estimator.get_x())
             last_val = last_vals.max()
             last_max_theta = expectation_estimator.get_x()[last_vals.argmax()]
-            function = lambda x :expectation_estimator(x)+expectation_estimator.distance(x) #to cope with exploration
-            max_val,new_theta = codpy.optimization.continuous_optimizer(function,self.controller.get_distribution(), include=expectation_estimator.get_x(), **kwargs)
+            function = lambda x: expectation_estimator(
+                x
+            ) + expectation_estimator.distance(
+                x
+            )  # to cope with exploration
+            max_val, new_theta = codpy.optimization.continuous_optimizer(
+                function,
+                self.controller.get_distribution(),
+                include=expectation_estimator.get_x(),
+                **kwargs,
+            )
             new_theta = get_matrix(new_theta).T
-            if expectation_estimator.distance(new_theta) > 1e-9 :
+            if expectation_estimator.distance(new_theta) > 1e-9:
                 self.controller.set_thetas(new_theta)
         else:
             self.controller.set_thetas(self.controller.get_distribution()(1))
