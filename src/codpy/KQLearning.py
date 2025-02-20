@@ -922,7 +922,7 @@ class KController(KAgent):
                 out = get_matrix(self.dnm(x=self.get_x(), y=z).min(axis=0))
                 return out
 
-        self.expectation_kernel = explore_kernel(x=x, fx=y, order=1, reg=0.1, **kwargs)
+        self.expectation_kernel = explore_kernel(x=x, fx=y, order=1, reg=0.0, **kwargs)
         return self.expectation_kernel
 
     def train(self, game, env, **kwargs):
@@ -934,25 +934,26 @@ class KController(KAgent):
             self.x = get_matrix(last_theta)
             self.y = get_matrix(reward)
         else:
-            # if (
-            #     self.expectation_estimator is not None
-            #     and self.expectation_estimator.distance(last_theta) > 1e-9
-            # ):
-            self.x = np.concatenate([self.x, last_theta])
-            self.y = np.concatenate([self.y, reward])
+            if (
+                self.expectation_estimator is None
+                or self.expectation_estimator.distance(last_theta) > 1e-9
+            ):
+                self.x = np.concatenate([self.x, last_theta])
+                self.y = np.concatenate([self.y, reward])
 
-        if self.x.shape[0] > 20:
+        if self.x.shape[0] > 2:
             self.expectation_estimator = self.get_expectation_estimator(
                 self.x, self.y, call_back=self, **kwargs
             )
             last_vals = self.expectation_estimator(self.expectation_estimator.get_x())
             last_val = last_vals.max()
+            last_val_max_min = last_val-last_vals.min()
             last_max_theta = self.expectation_estimator.get_x()[last_vals.argmax()]
             function = lambda x: self.expectation_estimator(
                 x
             ) + self.expectation_estimator.distance(
                 x
-            )  # to cope with exploration
+            )*last_val_max_min  # to cope with exploration
             max_val, new_theta = codpy.optimization.continuous_optimizer(
                 function,
                 self.controller.get_distribution(),
@@ -960,7 +961,9 @@ class KController(KAgent):
                 **kwargs,
             )
             new_theta = get_matrix(new_theta).T
-            # if expectation_estimator.distance(new_theta) > 1e-9:
+            if self.expectation_estimator.distance(new_theta) > 1e-9:
+                tot=1
+                pass
             self.controller.set_thetas(new_theta)
         else:
             self.controller.set_thetas(self.controller.get_distribution()(1))
