@@ -906,6 +906,7 @@ class KController(KAgent):
     def __init__(self, state_dim, actions_dim, controller, **kwargs):
         self.controller = controller
         self.x, self.y = None, None
+        self.expectation_estimator = None
         super().__init__(state_dim=state_dim, actions_dim=actions_dim, **kwargs)
 
     def __call__(self, z, **kwargs):
@@ -921,42 +922,46 @@ class KController(KAgent):
                 out = get_matrix(self.dnm(x=self.get_x(), y=z).min(axis=0))
                 return out
 
-        self.expectation_kernel = explore_kernel(x=x, y=y, **kwargs)
+        self.expectation_kernel = explore_kernel(x=x, fx=y, order=1, reg=0.1, **kwargs)
         return self.expectation_kernel
 
     def train(self, game, env, **kwargs):
         states, actions, next_states, rewards, dones = self.format(game, **kwargs)
         self.replay_buffer.push(states, actions, next_states, rewards, dones)
-        reward = get_matrix(reward)
+        reward = get_matrix(rewards)
         last_theta = get_matrix(self.controller.get_thetas()).T
         if self.x is None:
             self.x = get_matrix(last_theta)
             self.y = get_matrix(reward)
         else:
+            # if (
+            #     self.expectation_estimator is not None
+            #     and self.expectation_estimator.distance(last_theta) > 1e-9
+            # ):
             self.x = np.concatenate([self.x, last_theta])
             self.y = np.concatenate([self.y, reward])
 
-        if self.x.shape[0] > 2:
-            expectation_estimator = self.get_expectation_estimator(
+        if self.x.shape[0] > 20:
+            self.expectation_estimator = self.get_expectation_estimator(
                 self.x, self.y, call_back=self, **kwargs
             )
-            last_vals = expectation_estimator(expectation_estimator.get_x())
+            last_vals = self.expectation_estimator(self.expectation_estimator.get_x())
             last_val = last_vals.max()
-            last_max_theta = expectation_estimator.get_x()[last_vals.argmax()]
-            function = lambda x: expectation_estimator(
+            last_max_theta = self.expectation_estimator.get_x()[last_vals.argmax()]
+            function = lambda x: self.expectation_estimator(
                 x
-            ) + expectation_estimator.distance(
+            ) + self.expectation_estimator.distance(
                 x
             )  # to cope with exploration
             max_val, new_theta = codpy.optimization.continuous_optimizer(
                 function,
                 self.controller.get_distribution(),
-                include=expectation_estimator.get_x(),
+                include=self.expectation_estimator.get_x(),
                 **kwargs,
             )
             new_theta = get_matrix(new_theta).T
-            if expectation_estimator.distance(new_theta) > 1e-9:
-                self.controller.set_thetas(new_theta)
+            # if expectation_estimator.distance(new_theta) > 1e-9:
+            self.controller.set_thetas(new_theta)
         else:
             self.controller.set_thetas(self.controller.get_distribution()(1))
         # print("thetas :",self.controller.get_thetas().reshape([8,4]))
