@@ -23,6 +23,18 @@ def cartesian_outer_product(x:np.array,y:np.array) -> np.array:
     # list(map(helper, iterable))
     # return out
 
+def cartesian_sum(x:np.array,y:np.array) -> np.array:
+    #perform the commented code but parallel and C++
+    out = np.zeros([x.shape[0],y.shape[0],x.shape[1]])
+    def helper(u):
+        i,j= u
+        out[i,j,:] = x[i]+y[j]
+
+    iterable = itertools.product(range(x.shape[0]),range(y.shape[0]))
+    list(map(helper, iterable))
+    return out.reshape(out.shape[0]*out.shape[1],out.shape[2])
+
+
 def pad_axis(x, y, axis=1):
     if x.shape[axis] == y.shape[axis]:
         return x, y

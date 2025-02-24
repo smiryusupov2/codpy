@@ -9,11 +9,12 @@ import itertools
 from codpy.core import _requires_rescale, KerInterface, kernel_setter, get_matrix
 from codpy.data_conversion import get_matrix
 from codpy.selection import column_selector
-from codpy.kernel import Kernel
+from codpy.kernel import Kernel,KernelClassifier
 from codpy.sampling import rejection_sampling
 from codpy.lalg import LAlg
 from codpy.plot_utils import multi_plot
 from codpy.utils import cartesian_outer_product
+import codpy.algs
 import pandas as pd
 
 
@@ -172,17 +173,25 @@ class ConditionerKernel(Conditionner):
         latent_x = self.map_xy_inv.get_x()[:,:x.shape[1]]
         im_x = self.map_xy_inv.get_fx()[:,:x.shape[1]]
         self.map_x = Kernel(x=im_x,fx=latent_x, **kwargs)
-    def expectation(self, x, **kwargs):
+        self.pi = None
+        self.expectation_kernel = None
+    def get_pi(self):
+        if self.pi is None and self.x is not None:
+            self.pi = codpy.algs.Alg.pi(self.get_x(),self.get_y(),self.map_x.get_kernel())
+            self.pi = KernelClassifier(x=self.get_x(),fx=self.pi.copy())
+        return self.pi
+
+    def get_expectation_kernel(self):
+        if self.expectation_kernel is None and self.x is not None:
+            self.expectation_kernel = Kernel(x=self.get_x(),fx=self.get_y(),reg=1e-9)
+        return self.expectation_kernel
+
+    def expectation(self, x=None, **kwargs):
         """
-        Return the estimator of the conditional expectation $\mathbb{E}(y|x)$
+        Return the estimator of the conditional expectation $\mathbb{E}(f(y)|x)$
         The output is expected to have size $(x.shape[0],y.shape[1])$.
         """
-        latent_x = self.map_x(x, **kwargs)
-        latent_y = self.map_xy.get_fx()[:,self.cut_:]
-        latent_xy = cartesian_outer_product(latent_x, latent_y).reshape(latent_x.shape[0]*latent_y.shape[0],self.map_xy.get_fx().shape[1])
-        mapped = self.map_xy_inv(latent_xy).reshape(latent_x.shape[0],latent_y.shape[0],self.map_xy_inv.get_fx().shape[1])
-        mapped = mapped[:,:,self.cut_:].mean(axis=1)
-        return mapped
+        return self.get_expectation_kernel()(x)
     
     def sample(self, x, n,**kwargs):
         """
@@ -202,7 +211,7 @@ class ConditionerKernel(Conditionner):
         Return the estimation of the density of the law $p(x)$
         The output is expected to have size $(y.shape[0],x.shape[0])$.
         """
-        return self.density_x(x)
+        return self.map_x.density(x)
     def joint_density(self, x,y,**kwargs):
         """
         Return the estimation of the density of the law $p(x,y)$

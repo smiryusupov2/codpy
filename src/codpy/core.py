@@ -682,7 +682,7 @@ class DiffOps:
         )
 
     @staticmethod
-    def nabla_t_nabla(x, y, fx=None, **kwargs):
+    def nabla_t_nabla(x, y, fx=None, kernel=None,**kwargs):
         """
         Compute the kernel-induced discrete Laplace operator.
 
@@ -709,6 +709,8 @@ class DiffOps:
             >>> fx_data = np.array([...])
             >>> laplace_operator = nabla_t_nabla(x_data, y_data, fx_data)
         """
+        if kernel is not None:
+            KerInterface.set_kernel_ptr(kernel)
         fx = fx if fx is not None else []
         return cd.op.nablaT_nabla(x=get_matrix(x), y=get_matrix(y), fx=get_matrix(fx))
 

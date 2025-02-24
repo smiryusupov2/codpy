@@ -460,7 +460,7 @@ class Kernel:
         """
 
         if not hasattr(self,"Deltas") or self.Delta is None:
-            self.Delta = DiffOps.nabla_t_nabla(self.y, self.x)
+            self.Delta = DiffOps.nabla_t_nabla(self.y, self.x,kernel=self.get_kernel())
         return self.Delta
 
     def greedy_select(

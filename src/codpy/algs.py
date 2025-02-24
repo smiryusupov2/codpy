@@ -63,14 +63,15 @@ class Alg:
         )
         return out[:, 0:Dx], out[:, Dx:], permutation
 
-    def pi(x, y, z=None, fz=None, nmax=5, **kwargs):
+    def pi(x, y, z=None, fz=None, nmax=5, kernel_ptr=None,**kwargs):
         # print('######','Pi','######')
         from codpy.kernel import KernelClassifier
+        if kernel_ptr is not None:
+            KerInterface.set_kernel_ptr(kernel_ptr)
 
         out = cd.alg.Pi(x=x, y=y, nmax=nmax)
         if z is not None and fz is not None:
             out = LAlg.prod(KernelClassifier(x=x, fx=out, **kwargs), fz)
-        # else: out = k(x)
         return out
 
     def hybrid_greedy_nystroem(
