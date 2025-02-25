@@ -178,7 +178,7 @@ class ConditionerKernel(Conditionner):
     def get_pi(self):
         if self.pi is None and self.x is not None:
             self.pi = codpy.algs.Alg.pi(self.get_x(),self.get_y(),self.map_x.get_kernel())
-            self.pi = KernelClassifier(x=self.get_x(),fx=self.pi.copy())
+            self.pi = Kernel(x=self.get_x(),fx=self.pi.copy(),order=0)
         return self.pi
 
     def get_expectation_kernel(self):

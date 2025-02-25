@@ -18,7 +18,7 @@ from codpy.kernel import Kernel, KernelClassifier, get_tensor_probas
 from codpy.lalg import LAlg
 from codpy.algs import Alg
 from codpy.sampling import get_normals
-from codpy.utils import gather,cartesian_sum,cartesian_outer_product
+from codpy.utils import gather,cartesian_sum,cartesian_outer_product,fit_to_cov
 import codpy.conditioning
 from codpy.permutation import map_invertion
 from codpy.clustering import MiniBatchkmeans, BalancedClustering
@@ -105,33 +105,6 @@ class ReplayBuffer(object):
             return out[indices]
 
         return [helper(i) for i in range(len(self.memory))]
-
-
-class GamesClustering:
-    def __init__(self, x, N, k, D, **kwargs):
-        self.k = k
-        self.x = x
-        self.D = D
-        N = x.shape[0] // k.n_batch + 1
-        indices = list(range(k.get_x().shape[0]))
-        random.shuffle(indices)
-        avg = x.shape[0] // N + 1
-        self.cluster_centers_ = np.zeros([N, x.shape[1]])
-        self.labels_ = np.zeros([x.shape[0]], dtype=int)
-        for i in range(N):
-            local_indices = indices[i * avg : (i + 1) * avg]
-            self.cluster_centers_[i] = x[local_indices].mean(0)
-            self.labels_[local_indices] = i
-
-    def get_labels(self):
-        return self(self.k.get_x())
-
-    def __call__(self, z, **kwargs):
-        return self.labels_[
-            core.KerOp.dnm(
-                z[:, : self.D], self.x[:, : self.D], distance="norm2"
-            ).argmin(1)
-        ]
 
 
 class GamesClustering:
@@ -1011,6 +984,11 @@ class KQHJB(KQLearning):
             states_actions = np.concatenate([states, actions], axis=1)
             params = kwargs.get("HJBModel",kwargs)
             self.expectation_kernel = expectation_kernel(x=states_actions,fx=next_states-states,**params)
+            noise = next_states-self.expectation_kernel(states_actions)
+            self.expectation_kernel.set_fx(self.expectation_kernel.get_fx()+noise.mean(axis=0))
+            noise = next_states-self.expectation_kernel(states_actions)
+            pass
+
         return self.expectation_kernel
 
     
@@ -1028,7 +1006,6 @@ class KQHJB(KQLearning):
         **kwargs,
     ):
         states_actions = np.concatenate([states, actions], axis=1)
-        next_states_actions = self.all_states_actions(next_states)
         if kernel is None:
             kernel = self.kernel_type(x=states_actions, fx=returns, **kwargs)
         if not hasattr(kernel, "clustering"):
@@ -1037,16 +1014,22 @@ class KQHJB(KQLearning):
             labels_state_action = kernel.clustering(states_actions)
         # noise = get_normals(noise_size,next_states_actions.shape[1],kernel_ptr= kernel.get_kernel())*1e-8
         
+        
+        # get_normals(noise_size,next_states_actions.shape[1],kernel_ptr= kernel.get_kernel())*1e-8
+        # next_states_actions = cartesian_sum(next_states,noise)
 
         expectation_kernel_ = self.get_expectation_kernel(states,actions,next_states,rewards,returns,dones,**kwargs)
         conditioned_kernel_ = self.get_conditioned_kernel(states,actions,next_states,rewards,returns,dones,**kwargs)
-        noise = expectation_kernel_(states_actions)-states-conditioned_kernel_.get_y()
-        noise = get_normals(N=20,D=next_states.shape[1])
+        next_states_actions = self.all_states_actions(next_states)
+        all_states_actions = self.all_states_actions(states)
 
-        next_states_actions = cartesian_sum(next_states,noise)
-        next_states_actions = self.all_states_actions(next_states_actions)
+        noise = next_states_actions[:,:self.state_dim]-all_states_actions[:,:self.state_dim] - expectation_kernel_(all_states_actions)
 
-        _projection_ = kernel.knm(x=next_states_actions, y=kernel.get_x())/noise.shape[0]
+        _probas = conditioned_kernel_.joint_density(x=next_states_actions, y=states_actions)
+        _probas /= get_matrix(_probas.sum(axis=1))
+        _projection_ = kernel.knm(x=next_states_actions, y=kernel.get_x())
+        _projection_ = _projection_.reshape(states_actions.shape[0],-1,states_actions.shape[0])
+        _projection_ = _projection_*_probas
         _knm_ = kernel.knm(x=states_actions, y=kernel.get_x())
         thetas, bellman_error = self.optimal_bellman_solver(
             thetas=kernel.get_theta(),

@@ -4,6 +4,7 @@ import operator
 import numpy as np
 import itertools
 from codpydll import *
+import codpy.lalg
 from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
 
@@ -365,6 +366,22 @@ class LinearRegression:
         if polynomial_kernel is not None:
             return polynomial_kernel.predict(z_polyvariables)
         return None
+
+
+def fit_to_cov(datas,cov_matrix):
+    from scipy.linalg import sqrtm
+    import numpy as np
+    mean =   np.mean(datas, axis=0)  
+    datas -= mean
+    datas /= np.std(datas, axis=0)
+
+# Multiply by the Cholesky decomposition of the covariance matrix
+    sqrtm_ = sqrtm(cov_matrix)
+    transformed_data = datas@sqrtm_
+    transformed_data += mean
+    #check
+    # error = cov_matrix - np.cov(transformed_data.T)
+    return transformed_data
 
 if __name__ == "__main__":
     test = LinearRegression(x=get_matrix([[0.,1.,2.]]).T,fx=get_matrix([[1.,3.,5.]]).T, order=1)
