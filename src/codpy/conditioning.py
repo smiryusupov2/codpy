@@ -246,13 +246,8 @@ class ConditionerKernel(Conditionner):
 
     def get_var_kernel(self,**kwargs):
         class var_kernel(Kernel):
-            def __init__(
-                self, call_back,**kwargs
-            ):
-                super().__init__(**kwargs)
-                self.call_back = call_back
-            def __call__(z,**kwargs):
-                return super().__call__(z, **kwargs).reshape(z.shape[0],self.call_back.y.shape[1],self.call_back.y.shape[1])
+            def __call__(self,z,**kwargs):
+                return super().__call__(z, **kwargs).reshape(z.shape[0],self.get_fx().shape[1],self.get_fx().shape[1])
             
         if self.var_kernel is None and self.x is not None:
             vars = np.zeros([self.x.shape[0], self.y.shape[1], self.y.shape[1]])
@@ -274,8 +269,9 @@ class ConditionerKernel(Conditionner):
                 self.call_back = call_back
 
             def __call__(self,z,**kwargs):
+                mapped_z = self.call_back.map_x(z, **kwargs)
                 expectation_y = super().__call__(self.call_back.map_x(z, **kwargs))
-                return self.call_back.map_xy_inv(expectation_y)[:,self.call_back.cut:]
+                return self.call_back.map_xy_inv(np.concatenate([mapped_z,expectation_y],axis=1))[:,z.shape[1]:]
         if self.expectation_kernel is None and self.x is not None:
             self.expectation_kernel = expectation_kernel(call_back=self,x=self.latent_x, fx=self.latent_y, **kwargs)
         return self.expectation_kernel
