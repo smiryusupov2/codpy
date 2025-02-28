@@ -228,6 +228,7 @@ class ConditionerKernel(Conditionner):
         self.map_x = Kernel(x=im_x, fx=latent_x, **kwargs)
         self.pi = None
         self.expectation_kernel = None
+        self.var_kernel = None
 
     def get_pi(self):
         # Estime pi(y|x) avec y et x donnés comme exemple, matrice de transition, proba d'avoir couple y_j sachant x_j etc
@@ -239,29 +240,8 @@ class ConditionerKernel(Conditionner):
         return self.pi
 
     def var(self, z, **kwargs):
-        latent_z = self.map_x(z, **kwargs)
-        y = self.y
-        latent_x = self.map_x(self.x, **kwargs)
-        probas = self.density(z)
-        probas /= probas.sum()
-        vars = np.zeros([latent_x.shape[0], y.shape[1], y.shape[1]])
 
-        xy = np.concatenate([latent_x, self.expectation(z)], axis=1)
-        y_norm = y - self.map_xy_inv(xy)[:, self.cut_ :]
-
-        out = self.y-self.get_expectation_kernel()(self.x)
-
-        for i in range(self.x.shape[0]):
-            vars[i, :] = y_norm[i].T @ y_norm[i]
-
-        var_flat = vars.reshape((vars.shape[0], vars.shape[1] * vars.shape[2]))
-
-        var_estim = Kernel(x=self.x, fx=var_flat)
-        out = var_estim(z)
-
-        # latent_out_reshaped = latent_out.reshape(
-        #     [latent_z.shape[0], vars.shape[1], vars.shape[2]]
-        # )
+        out = self.get_var_kernel()(z)
         return out
 
     def get_var_kernel(self,**kwargs):
@@ -276,7 +256,7 @@ class ConditionerKernel(Conditionner):
             
         if self.var_kernel is None and self.x is not None:
             vars = np.zeros([self.x.shape[0], self.y.shape[1], self.y.shape[1]])
-            y_norm = self.y - self.call_back.get_expectation_kernel(**kwargs)(self.x)
+            y_norm = self.y - self.get_expectation_kernel(**kwargs)(self.x)
             def helper(i):
                 vars[i, :] = y_norm[i].T @ y_norm[i]
             [helper(i) for i in range(self.x.shape[0])]
@@ -293,11 +273,11 @@ class ConditionerKernel(Conditionner):
                 super().__init__(**kwargs)
                 self.call_back = call_back
 
-            def __call__(z,**kwargs):
+            def __call__(self,z,**kwargs):
                 expectation_y = super().__call__(self.call_back.map_x(z, **kwargs))
-                return self.map_xy_inv(expectation_y)[:,self.call_back.cut:]
+                return self.call_back.map_xy_inv(expectation_y)[:,self.call_back.cut:]
         if self.expectation_kernel is None and self.x is not None:
-            self.expectation_kernel = expectation_kernel(x=self.latent_x, fx=self.latent_y, **kwargs)
+            self.expectation_kernel = expectation_kernel(call_back=self,x=self.latent_x, fx=self.latent_y, **kwargs)
         return self.expectation_kernel
 
     def expectation(self, x=None, **kwargs):
