@@ -114,6 +114,28 @@ class NadarayaWatsonKernel(Conditionner):
         self.density_x = NadarayaWatsonKernel.KDE(Kernel(x=x))
         self.density_xy = NadarayaWatsonKernel.joint_KDE(Kernel(x=x), Kernel(x=y))
         self.expectation_kernel = None
+        self.var_kernel = None
+
+    def get_var_kernel(self, **kwargs):
+        class var_kernel:
+            def __init__(
+                self, call_back,**kwargs
+            ):
+                self.call_back = call_back
+                vars = np.zeros([self.call_back.x.shape[0], self.call_back.y.shape[1], self.call_back.y.shape[1]])
+                y_norm = self.call_back.y - self.call_back.get_expectation_kernel(**kwargs)(self.call_back.x)
+                def helper(i):
+                    vars[i, :] = y_norm[i].T @ y_norm[i]
+                [helper(i) for i in range(self.call_back.x.shape[0])]
+                self.var_kernel = NadarayaWatsonKernel(x=self.call_back.x, y=vars.reshape(vars.shape[0],vars.shape[1]*vars.shape[2]), **kwargs)
+
+            def __call__(self,z,**kwargs):
+                out = self.var_kernel(z).reshape(z.shape[0],self.call_back.y.shape[1],self.call_back.y.shape[1])
+                return out
+            
+        if self.var_kernel is None and self.x is not None:
+            self.var_kernel = var_kernel(self, **kwargs)
+        return self.var_kernel
 
     def var(self, z, **kwargs):
         """
@@ -156,7 +178,6 @@ class NadarayaWatsonKernel(Conditionner):
             def __init__(
                 self, call_back,**kwargs
             ):
-                super().__init__(**kwargs)
                 self.call_back = call_back
 
             def __call__(self,z,**kwargs):

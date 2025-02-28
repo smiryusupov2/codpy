@@ -944,7 +944,7 @@ class KController(KAgent):
                 **kwargs,
             )
             new_theta = get_matrix(new_theta).T
-            if last_val <= max_val: #debug to see if parameters are updated
+            if last_val < max_val: #debug to see if parameters are updated
                 tot=1
                 pass
             self.controller.set_thetas(new_theta)
