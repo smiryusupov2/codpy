@@ -113,6 +113,7 @@ class NadarayaWatsonKernel(Conditionner):
         super().__init__(x=x, y=y, **kwargs)
         self.density_x = NadarayaWatsonKernel.KDE(Kernel(x=x))
         self.density_xy = NadarayaWatsonKernel.joint_KDE(Kernel(x=x), Kernel(x=y))
+        self.expectation_kernel = None
 
     def var(self, z, **kwargs):
         """
@@ -148,6 +149,32 @@ class NadarayaWatsonKernel(Conditionner):
 
         [helper(i) for i in range(x.shape[0])]
         return out
+
+    def get_expectation_kernel(self,**kwargs):
+        # esp(y|x) - diff de proba de transition
+        class expectation_kernel:
+            def __init__(
+                self, call_back,**kwargs
+            ):
+                super().__init__(**kwargs)
+                self.call_back = call_back
+
+            def __call__(self,z,**kwargs):
+                density_x = self.call_back.density_x.kernel.knm(z,self.call_back.density_x.kernel.get_x())
+                density_x /= density_x.sum(axis=1)[:,None]
+                fx = self.call_back.get_y()
+                return density_x@fx
+        if self.expectation_kernel is None and self.x is not None:
+            self.expectation_kernel = expectation_kernel(self, **kwargs)
+        return self.expectation_kernel
+
+    def expectation(self, x=None, **kwargs):
+        """
+        Return the estimator of the conditional expectation $\mathbb{E}(f(y)|x)$
+        The output is expected to have size $(x.shape[0],y.shape[1])$.
+        """
+        return self.get_expectation_kernel()(x)
+
 
     def density(self, x, **kwargs):
         """
@@ -219,8 +246,10 @@ class ConditionerKernel(Conditionner):
         probas /= probas.sum()
         vars = np.zeros([latent_x.shape[0], y.shape[1], y.shape[1]])
 
-        xy = np.concatenate([latent_x, self.expectation(latent_x)], axis=1)
+        xy = np.concatenate([latent_x, self.expectation(z)], axis=1)
         y_norm = y - self.map_xy_inv(xy)[:, self.cut_ :]
+
+        out = self.y-self.get_expectation_kernel()(self.x)
 
         for i in range(self.x.shape[0]):
             vars[i, :] = y_norm[i].T @ y_norm[i]
@@ -235,10 +264,40 @@ class ConditionerKernel(Conditionner):
         # )
         return out
 
-    def get_expectation_kernel(self):
+    def get_var_kernel(self,**kwargs):
+        class var_kernel(Kernel):
+            def __init__(
+                self, call_back,**kwargs
+            ):
+                super().__init__(**kwargs)
+                self.call_back = call_back
+            def __call__(z,**kwargs):
+                return super().__call__(z, **kwargs).reshape(z.shape[0],self.call_back.y.shape[1],self.call_back.y.shape[1])
+            
+        if self.var_kernel is None and self.x is not None:
+            vars = np.zeros([self.x.shape[0], self.y.shape[1], self.y.shape[1]])
+            y_norm = self.y - self.call_back.get_expectation_kernel(**kwargs)(self.x)
+            def helper(i):
+                vars[i, :] = y_norm[i].T @ y_norm[i]
+            [helper(i) for i in range(self.x.shape[0])]
+            self.var_kernel = var_kernel(x=self.x, fx=vars.reshape(vars.shape[0],vars.shape[1]*vars.shape[2]), **kwargs)
+        return self.var_kernel
+
+
+    def get_expectation_kernel(self,**kwargs):
         # esp(y|x) - diff de proba de transition
+        class expectation_kernel(Kernel):
+            def __init__(
+                self, call_back,**kwargs
+            ):
+                super().__init__(**kwargs)
+                self.call_back = call_back
+
+            def __call__(z,**kwargs):
+                expectation_y = super().__call__(self.call_back.map_x(z, **kwargs))
+                return self.map_xy_inv(expectation_y)[:,self.call_back.cut:]
         if self.expectation_kernel is None and self.x is not None:
-            self.expectation_kernel = Kernel(x=self.get_x(), fx=self.get_y(), reg=1e-9)
+            self.expectation_kernel = expectation_kernel(x=self.latent_x, fx=self.latent_y, **kwargs)
         return self.expectation_kernel
 
     def expectation(self, x=None, **kwargs):
@@ -278,14 +337,4 @@ class ConditionerKernel(Conditionner):
         Return the estimation of the density of the law $p(x,y)$
         The output is expected to have size $(x.shape[0],y.shape[0])$.
         """
-        out = np.zeros([x.shape[0], y.shape[0]])
-
-        def helper(i):
-            latent = cartesian_outer_product(x, y[[i], :]).reshape(
-                [x.shape[0], x.shape[1] + y.shape[1]]
-            )
-            latent = self.map_xy(latent)
-            out[:, i] = self.map_xy_inv.density(latent)
-
-        [helper(i) for i in range(y.shape[0])]
-        return out
+        return self.map_xy.density(np.concatenate([x,y],axis=0))
