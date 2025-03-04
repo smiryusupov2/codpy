@@ -576,7 +576,7 @@ class Kernel:
             self.set_x(core.get_matrix(x.copy()))
             self.set_y(y=y)
             self.set_fx(None)
-            self.rescale()
+            #self.rescale() # rescaling already done in set_x()
 
         if x is None and fx is not None:
             if self.get_kernel() is None:
@@ -926,7 +926,6 @@ class Kernel:
 
             $$P_{k,\\theta}(z) = K(Z, K) K(X, X)^{-1}$$
         """
-        self.set_kernel_ptr()
         if z is None:
             return None
         z = core.get_matrix(z)
@@ -937,7 +936,7 @@ class Kernel:
         if fy is None:
             fy = self.get_knm_inv()
 
-        knm = core.KerOp.knm(x=z, y=self.get_y(), fy=fy)
+        knm = core.KerOp.knm(x=z, y=self.get_y(), fy=fy,kernel_ptr = self.get_kernel())
 
         if not hasattr(self, "set_clustering"):
             return knm

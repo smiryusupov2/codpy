@@ -156,13 +156,24 @@ class GamesKernel(Kernel):
             knm = self.knm(x=z, y=self.get_y(), fy=fy, **kwargs)
             return knm
 
-        knm = np.zeros([z.shape[0], self.get_fx().shape[1]])
+
+        # Don't forget to set the kernel
+        fy = self.get_theta(**kwargs)
+
+        if fy is None:
+            fy = self.get_knm_inv()
+
+        # knm = core.KerOp.knm(x=z, y=self.get_y(), fy=fy,kernel_ptr = self.get_kernel())
+        knm = np.zeros([z.shape[0],1])
 
         mapped_indices = self.clustering(z)
         mapped_indices = map_invertion(mapped_indices)
         for key in mapped_indices.keys():
             indices = list(mapped_indices[key])
             knm[indices] += self.kernels[key](z[indices])
+        
+        # for key in self.kernels.keys():
+        #     knm += self.kernels[key](z)
         return knm
 
     def add_kernel(self, k, **kwargs) -> None:
@@ -327,7 +338,7 @@ class KAgent:
         params = kwargs.get("Rewards", {})
         self.rewards = self.kernel_type(**params)
         self.replay_buffer = ReplayBuffer(**kwargs)
-        self.eps_threshold = kwargs.get("eps_threshold", 1.0)
+        self.eps_threshold = kwargs.get("eps_threshold", 0.0)
 
     def compute_returns(self, states, actions, next_states, rewards, dones, **kwargs):
         returns, next_return = [], 0.0
@@ -385,18 +396,8 @@ class KAgent:
 
         return error
 
-    def update_probabilities(
-        self,
-        advantages,
-        states,
-        actions,
-        next_states,
-        rewards,
-        dones,
-        last_policy,
-        dt=None,
-        **kwargs,
-    ):  ##this function assumes that advantages[i,j]=KCritic([states[i],j])
+    def update_probabilities(self,advantages,games,last_policy,dt=None,**kwargs):  ##this function assumes that advantages[i,j]=KCritic([states[i],j])
+        states, actions, next_states, rewards, returns, dones = games
         if dt is None:
             dt = 1.0 / (advantages * advantages).mean()
         interpolated_policy = Verhulst(last_policy, advantages * dt)
@@ -404,9 +405,9 @@ class KAgent:
 
         return GamesKernelClassifier(x=states, fx=interpolated_policy, **params)
 
-    def get_state_action_value_function(
-        self, states, actions, next_states, rewards, returns, dones,policy=None, **kwargs
-    ):
+    def get_state_action_value_function(self, games,policy, **kwargs):
+
+        states, actions, next_states, rewards, returns, dones = games
         states_actions = np.concatenate([states, actions], axis=1)
         next_states_actions = self.all_states_actions(next_states)
         value_function = self.kernel_type(**kwargs.get("KActor", {}))
@@ -415,25 +416,15 @@ class KAgent:
         projection_op = value_function.knm(
             x=next_states_actions, y=value_function.get_x()
         )
-        if policy is None:
-            thetas, bellman_error = self.optimal_bellman_solver(
-                thetas=value_function.get_theta(),
-                next_states_projection=projection_op,
-                knm=knm,
-                rewards=rewards,
-                maxiter=5,
-                reg=value_function.reg,
-            )
-        else:
-            projection_op = projection_op.reshape(
-                [
-                    states_actions.shape[0],
-                    projection_op.shape[0] // states_actions.shape[0],
-                    value_function.get_x().shape[0],
-                ]
-            )
-            sum_policy = np.einsum("...ji,...j", projection_op, policy)
-            thetas = LAlg.lstsq(knm - sum_policy * self.gamma, rewards)
+        projection_op = projection_op.reshape(
+            [
+                states_actions.shape[0],
+                projection_op.shape[0] // states_actions.shape[0],
+                value_function.get_x().shape[0],
+            ]
+        )
+        sum_policy = np.einsum("...ji,...j", projection_op, policy)
+        thetas = LAlg.lstsq(knm - sum_policy * self.gamma, rewards)
         # thetas = LAlg.prod(projection_op, rewards)
         value_function.set_theta(thetas)
 
@@ -441,13 +432,12 @@ class KAgent:
         # error = self.bellman_error(states,actions,next_states, rewards,policy, value_function)
         return value_function
 
-    def get_derivatives_policy_state_action_value_function(
-        self, states, actions, next_states, rewards, policy, output_value_function=False
-    ):
+    def get_derivatives_policy_state_action_value_function(self, games, policy, output_value_function=False,**kwargs):
         # return an estimator of \nabla_\pi V(\pi) where
         # - \pi is a policy, that is a probability distribution over actions
         # - V(\pi) is the value function of the policy \pi
         # - V(\pi) = E_{s,a} [ Q(s,a) | \pi ]
+        states, actions, next_states, rewards, returns, dones = games
         states_actions = np.concatenate([states, actions], axis=1)
         next_states_actions = self.all_states_actions(next_states)
         value_function = Kernel()
@@ -475,14 +465,15 @@ class KAgent:
         return derivative_estimator
 
     def get_state_value_function(
-        self, states, actions, next_states, rewards_matrix, policy
+        self, games, policy
     ):
+        states, actions, next_states, rewards, returns, dones = games
         value_function = Kernel(x=states)
         operator_inv = value_function.knm(
             x=states, y=states
         ) - self.gamma * value_function.knm(x=next_states, y=states)
         operator = LAlg.lstsq(operator_inv)
-        second_member = core.get_matrix((policy * rewards_matrix).sum(1))
+        second_member = core.get_matrix((policy * rewards).sum(1))
         value_function.set_theta(LAlg.prod(operator, second_member))
         # def check():
         #     test = value_function(states)-self.gamma*value_function(next_states)-second_member
@@ -490,23 +481,27 @@ class KAgent:
         # check()
         return value_function
 
-    def format(self, sarsd, **kwargs):
-        state, action, next_state, reward, done = [core.get_matrix(e) for e in sarsd]
+    def format(self, sarsd, max_training_game_size=None,**kwargs):
+        states, actions, next_states, rewards, dones = [core.get_matrix(e) for e in sarsd]
 
-        action = rl_hot_encoder(action, self.actions_dim)
-        done = core.get_matrix(done, dtype=bool)
-        return state, action, next_state, reward, done
+        actions = rl_hot_encoder(actions, self.actions_dim)
+        returns = self.compute_returns(states, actions, next_states, rewards, dones, **kwargs)
+        dones = core.get_matrix(dones, dtype=bool)
+        if max_training_game_size is not None:
+            states, actions, next_states, rewards, returns, dones = (
+                states[0:max_training_game_size],
+                actions[0:max_training_game_size],
+                next_states[0:max_training_game_size],
+                rewards[0:max_training_game_size],
+                returns[0:max_training_game_size],
+                dones[0:max_training_game_size],
+            )
 
-    def get_derivatives_policy_state_value_function(
-        self,
-        states,
-        actions,
-        next_states,
-        rewards_matrix,
-        policy,
-        output_value_function=False,
-    ):
+        return states, actions, next_states, rewards, returns, dones
+
+    def get_derivatives_policy_state_value_function(self,games,policy,output_value_function=False):
         ##begin get_state_value_function code
+        states, actions, next_states, rewards, returns, dones = games
         derivative_estimator = Kernel(x=states)
         operator = derivative_estimator.knm(
             x=states, y=states
@@ -516,11 +511,11 @@ class KAgent:
         ##end
         @np.vectorize
         def fun(i, j, k):
-            return rewards_matrix[i, j] * policy[i, j] * (float(j == k) - policy[i, k])
+            return rewards[i, j] * policy[i, j] * (float(j == k) - policy[i, k])
 
         coeffs = np.fromfunction(
             fun,
-            shape=[rewards_matrix.shape[0], self.actions_dim, self.actions_dim],
+            shape=[rewards.shape[0], self.actions_dim, self.actions_dim],
             dtype=int,
         )
 
@@ -549,7 +544,7 @@ class KAgent:
 
         if output_value_function:
             value_function = Kernel(x=states)
-            second_member = (policy * rewards_matrix).reshape(policy.shape).sum(1)
+            second_member = (policy * rewards).reshape(policy.shape).sum(1)
             value_function.set_theta(LAlg.prod(operator, second_member))
             return derivative_estimator, value_function
         return derivative_estimator
@@ -589,7 +584,7 @@ class KAgent:
         return test
 
     def optimal_bellman_solver(
-        self, thetas, next_states_projection, knm, rewards, maxiter, reg=1e-9
+        self, thetas, next_states_projection, knm, rewards, maxiter, reg=1e-9,**kwargs
     ):
         theta = thetas.copy()
         shape = [next_states_projection.shape[0]//self.actions_dim, self.actions_dim]
@@ -660,7 +655,7 @@ class KAgent:
                 knm=_knm_,
                 rewards=rewards,
                 maxiter=5,
-                reg=kernel.reg,
+                **kwargs                
             )
             kernel.set_theta(thetas)
             if verbose:
@@ -733,20 +728,9 @@ class KActorCritic(KAgent):
         else:
             return np.random.randint(0, self.actions_dim)
 
-    def get_advantages(
-        self,
-        states,
-        actions,
-        next_states,
-        rewards,
-        returns,
-        dones,
-        policy,
-        **kwargs,
-    ):
-        value_function = self.get_state_action_value_function(
-            states, actions, next_states, rewards, returns, dones,policy=policy, **kwargs
-        )
+    def get_advantages(self,games,policy,**kwargs):
+        states, actions, next_states, rewards, returns, dones = games
+        value_function = self.get_state_action_value_function(games,policy, **kwargs)
         advantages = (
             value_function(self.all_states_actions(next_states)).reshape(actions.shape)
             * self.gamma
@@ -757,26 +741,11 @@ class KActorCritic(KAgent):
         return advantages
 
     def train(self, game, max_training_game_size=None, **kwargs):
-        states, actions, next_states, rewards, dones = self.format(game, **kwargs)
-        returns = self.compute_returns(
-            states, actions, next_states, rewards, dones, **kwargs
-        )
-        if max_training_game_size is not None:
-            states, actions, next_states, rewards, returns, dones = (
-                states[0:max_training_game_size],
-                actions[0:max_training_game_size],
-                next_states[0:max_training_game_size],
-                rewards[0:max_training_game_size],
-                returns[0:max_training_game_size],
-                dones[0:max_training_game_size],
-            )
-            game = (states, actions, next_states, rewards, dones)
-        self.replay_buffer.push(states, actions, next_states, rewards, returns, dones)
-        states, actions, next_states, rewards, returns, dones = (
-            self.replay_buffer.memory.copy()
-        )
-        states_actions = np.concatenate([states, actions], axis=1)
-        self.rewards = Kernel(x=states_actions, fx=rewards, order=1)
+        params = kwargs.get("KCritic", {})
+        states, actions, next_states, rewards, returns, dones = self.format(game, max_training_game_size=max_training_game_size,**kwargs)
+        self.replay_buffer.push(states, actions, next_states, rewards, returns, dones, **kwargs)
+        states, actions, next_states, rewards, returns, dones  = self.replay_buffer.memory.copy()
+        games = [states, actions, next_states, rewards, returns, dones]
 
         if self.actor.get_x() is not None and self.actor.get_x().shape[0] > 1:
             last_policy = self.actor(states)
@@ -784,31 +753,10 @@ class KActorCritic(KAgent):
             last_policy = np.full(
                 [states.shape[0], self.actions_dim], 1.0 / self.actions_dim
             )
-        count, error = 0, sys.float_info.max
-        # compute advantages
-        advantages = self.get_advantages(
-            states,
-            actions,
-            next_states,
-            rewards,
-            returns,
-            dones,
-            policy=last_policy,
-            **kwargs,
-        )
+        advantages = self.get_advantages(games,policy=last_policy,**kwargs)
         # update probabilities
-        kernel = self.update_probabilities(
-            advantages,
-            states,
-            actions,
-            next_states,
-            rewards,
-            dones,
-            last_policy,
-            **kwargs,
-        )
-        self.actor = kernel
-
+        kernel = self.update_probabilities(advantages,games,last_policy=last_policy,**kwargs)
+        self.actor = kernel        
 
 class KQLearning(KActorCritic):
 
@@ -822,36 +770,13 @@ class KQLearning(KActorCritic):
         return np.random.randint(0, self.actions_dim)
 
     def train(self, game, max_training_game_size=None, **kwargs):
-        param = kwargs.get("KActor",None)
-        states, actions, next_states, rewards, dones = self.format(game, **kwargs)
-        if max_training_game_size is not None:
-            states, actions, next_states, rewards, dones = (
-                states[0:max_training_game_size],
-                actions[0:max_training_game_size],
-                next_states[0:max_training_game_size],
-                rewards[0:max_training_game_size],
-                dones[0:max_training_game_size],
-            )
-            game = (states, actions, next_states, rewards, dones)
+        params = kwargs.get("KCritic", {})
+        states, actions, next_states, rewards, returns, dones = self.format(game, max_training_game_size=max_training_game_size,**kwargs)
+        self.replay_buffer.push(states, actions, next_states, rewards, returns, dones,**kwargs)
+        games  = self.replay_buffer.memory.copy()
+        kernel = self.optimal_states_values_function(*games,verbose=True,**params)
+        self.critic =kernel
 
-        returns = self.compute_returns(
-            states, actions, next_states, rewards, dones, **kwargs
-        )
-        self.replay_buffer.push(states, actions, next_states, rewards, returns, dones)
-        states, actions, next_states, rewards, returns, dones = (
-            self.replay_buffer.memory.copy()
-        )
-        kernel = self.optimal_states_values_function(
-            states,
-            actions,
-            next_states,
-            rewards,
-            returns,
-            dones,
-            verbose=True,
-            **kwargs,
-        )
-        self.critic = kernel
 
 class PolicyGradient(KActorCritic):
     def __init__(self, **kwargs):
@@ -868,15 +793,12 @@ class PolicyGradient(KActorCritic):
         else:
             return np.random.randint(0, self.actions_dim)
 
-    def get_advantages(
-        self, states, actions, next_states, rewards, returns, dones, policy, **kwargs
-    ):
+    def get_advantages(self,games,policy,**kwargs):
         # advantage taken as A = \nabla_\pi \pi Q^{pi}(S_T,A_T), so that the overall gradient policy can be written as
         #  d/di \pi(t) = d/d\pi Q^{pi}(S_T,A_T)
         #  Thus formally d/dt  Q^{pi}(S_T,A_T) = < \nabla_\pi \pi Q^{pi}(S_T,A_T), d/dt \pi> = | \nabla_\pi \pi Q^{pi}(S_T,A_T)|^2
-        derivative_estimator = self.get_derivatives_policy_state_action_value_function(
-            states, actions, next_states, rewards, policy
-        )
+        states, actions, next_states, rewards, returns, dones = games
+        derivative_estimator = self.get_derivatives_policy_state_action_value_function(games,policy,**kwargs)
         states_actions = np.concatenate([states, actions], axis=1)
         derivative_estimations = derivative_estimator(states_actions)
         return derivative_estimations
@@ -918,7 +840,7 @@ class KController(KAgent):
 
     def train(self, game, env, **kwargs):
         states, actions, next_states, rewards, dones = self.format(game, **kwargs)
-        self.replay_buffer.push(states, actions, next_states, rewards, dones)
+        self.replay_buffer.push(states, actions, next_states, rewards, dones,**kwargs)
         reward = get_matrix(rewards)
         last_theta = get_matrix(self.controller.get_thetas()).T
         if self.x is None:
@@ -952,18 +874,18 @@ class KController(KAgent):
             self.controller.set_thetas(self.controller.get_distribution()(1))
 
 def get_conditioned_kernel(states,actions,next_states,rewards,returns,dones,expectation_kernel,**kwargs):
-    class ConditionerKernel(codpy.conditioning.NadarayaWatsonKernel):
+    class ConditionerKernel(codpy.conditioning.ConditionerKernel):
         def __init__(self, expectation_kernel,**kwargs):
             super().__init__(**kwargs)
             self.expectation_kernel = expectation_kernel
         def joint_density(self, x,y,**kwargs):
-            out = super().joint_density(x,y)
+            out = super().joint_density(y=y, x=x)
             return out
         
-    states_actions = np.concatenate([states, actions], axis=1)
-    noise = next_states-expectation_kernel(np.concatenate([states, actions], axis=1))
+    expected_states = expectation_kernel(np.concatenate([states, actions], axis=1))
+    noise = next_states-expected_states
     params = kwargs.get("HJBModel",kwargs)
-    out = ConditionerKernel(x=states_actions,y=noise,expectation_kernel=expectation_kernel,**params)
+    out = ConditionerKernel(x=np.concatenate([expected_states, actions], axis=1),y=noise,expectation_kernel=expectation_kernel,**params)
     return out
 
 def get_expectation_kernel(states,actions,next_states,rewards,returns,dones,**kwargs):
@@ -975,13 +897,11 @@ def get_expectation_kernel(states,actions,next_states,rewards,returns,dones,**kw
             out = super().__call__(z)+z[:,:self.state_dim]
             return out
     
-    # if self.expectation_kernel is None:
     states_actions = np.concatenate([states, actions], axis=1)
     params = kwargs.get("HJBModel",kwargs)
     out = expectation_kernel(x=states_actions,fx=next_states-states,**params)
     noise = next_states-out(states_actions)
     out.set_fx(out.get_fx()+noise.mean(axis=0))
-    # noise = next_states-out(states_actions)
     return out
 
 
@@ -1003,14 +923,15 @@ class KQLearningHJB(KQLearning):
         if kernel is None:
             kernel = self.kernel_type(x=states_actions, fx=returns, **kwargs)
 
-        expectation_kernel_ = get_expectation_kernel(states,actions,next_states,rewards,returns,dones,**kwargs)
-        conditioned_kernel_ = get_conditioned_kernel(states,actions,next_states,rewards,returns,dones,expectation_kernel=expectation_kernel_,**kwargs)
-        next_states_actions = self.all_states_actions(next_states)
-        noise = next_states- expectation_kernel_(states_actions)
-        _probas = conditioned_kernel_.conditional_density(x=states_actions, y=noise)
+        # expectation_kernel_ = get_expectation_kernel(states,actions,next_states,rewards,returns,dones,**kwargs)
+        # conditioned_kernel_ = get_conditioned_kernel(states,actions,next_states,rewards,returns,dones,expectation_kernel=expectation_kernel_,**kwargs)
+        # next_states_actions = self.all_states_actions(next_states)
+        # noise = next_states- expectation_kernel_(states_actions)
+        # _probas = conditioned_kernel_.conditional_density(x=states_actions, y=noise)
         
+        next_states_actions = self.all_states_actions(expectation_kernel_(states_actions))
         _projection_ = kernel.knm(x=next_states_actions, y=kernel.get_x())
-        _projection_ = LAlg.prod(_projection_,_probas)
+        # _projection_ = LAlg.prod(_projection_,_probas)
         _knm_ = kernel.knm(x=states_actions, y=kernel.get_x())
         thetas, bellman_error = self.optimal_bellman_solver(
             thetas=kernel.get_theta(),
@@ -1031,19 +952,8 @@ class KActorCriticHJB(KActorCritic):
         super().train(game, max_training_game_size, **kwargs)
         pass
 
-    def get_state_action_value_function(
-        self,
-        states,
-        actions,
-        next_states,
-        rewards,
-        returns,
-        dones,
-        policy,
-        kernel=None,
-        verbose=False,
-        **kwargs,
-    ):
+    def get_state_action_value_function(self, games,policy, verbose=False,kernel=None,**kwargs):
+        states, actions, next_states, rewards, returns, dones = games
         states_actions = np.concatenate([states, actions], axis=1)
         if kernel is None:
             kernel = self.kernel_type(x=states_actions, fx=returns, **kwargs)

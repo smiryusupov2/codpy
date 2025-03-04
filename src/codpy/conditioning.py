@@ -14,7 +14,7 @@ from codpy.sampling import rejection_sampling
 from codpy.lalg import LAlg
 from codpy.plot_utils import multi_plot
 from codpy.utils import cartesian_outer_product
-import codpy.algs
+import codpy.algs 
 import pandas as pd
 
 
@@ -100,7 +100,6 @@ class NadarayaWatsonKernel(Conditionner):
             self.kernely = ky
 
         def __call__(self, x, y):
-            out = np.zeros([x.shape[0], y.shape[0]])
             kxx = self.kernelx.knm(x=x, y=self.kernelx.get_x())
             kyy = self.kernely.knm(x=self.kernely.get_x(), y=y)
             out = LAlg.prod(kxx, kyy)
@@ -141,22 +140,7 @@ class NadarayaWatsonKernel(Conditionner):
         """
         Return the Nadaraya-Watson kernel conditional var estimator at each points z.
         """
-        probas = self.density_x(z)
-        probas /= probas.sum()
-        expectations = LAlg.prod(probas, self.y)
-        vars = np.zeros([self.x.shape[0], self.y.shape[1], self.y.shape[1]])
-
-        y_norm = self.y - self.expectation(self.x)  # n,D
-        for i in range(self.x.shape[0]):
-            vars[i, :] = y_norm[i].T @ y_norm[i]  # D,1 x 1,D => D,D
-
-        var_flat = vars.reshape((vars.shape[0], vars.shape[1] * vars.shape[2]))
-
-        var_estim = NadarayaWatsonKernel(self.x, var_flat)
-        out = var_estim(z).reshape(
-            [z.shape[0], vars.shape[1], vars.shape[2]]
-        )  # z.shape[0], D, D
-        return out
+        return self.get_var_kernel()(z)
 
     def sample(self, x, n, **kwargs):
         out = np.zeros([x.shape[0], n, self.y.shape[1]])
@@ -204,12 +188,12 @@ class NadarayaWatsonKernel(Conditionner):
         """
         return self.density_x(x)
 
-    def joint_density(self, x, y, **kwargs):
+    def joint_density(self, y, x, **kwargs):
         """
         Return the estimation of the density of the law $p(x,y)$
         The output is expected to have size $(x.shape[0],y.shape[0])$.
         """
-        return self.density_xy(x, y)
+        return self.density_xy(y, x)
 
     def dnm(self, x, y, **kwargs):
         """
@@ -218,6 +202,13 @@ class NadarayaWatsonKernel(Conditionner):
         """
         return self.density_x.kernel.dnm(x, y)
 
+    def get_transition(self, y, x, **kwargs):
+        """
+        Return the kernel induced transition probability $p(y^i | x^i)$
+        The output is expected to have size $(x.shape[0],y.shape[0])$.
+        """
+        out = self.joint_density(y, x) / self.density(x)
+        return out/out.sum(axis=1)[:,None]  
 
 class ConditionerKernel(Conditionner):
     def __init__(
@@ -251,15 +242,32 @@ class ConditionerKernel(Conditionner):
         self.expectation_kernel = None
         self.var_kernel = None
 
-    def get_pi(self):
-        # Estime pi(y|x) avec y et x donnés comme exemple, matrice de transition, proba d'avoir couple y_j sachant x_j etc
-        if self.pi is None and self.x is not None:
-            self.pi = codpy.algs.Alg.pi(
-                self.get_x(), self.get_y(), self.map_x.get_kernel()
-            )
-            self.pi = Kernel(x=self.get_x(), fx=self.pi.copy(), order=0)
-        return self.pi
 
+    def get_transition_kernel(self, **kwargs):
+        # Estime pi(y|x) avec y et x donnés comme exemple, matrice de transition, proba d'avoir couple y_j sachant x_j etc
+        """
+        Return the transition kernel, used to extrapolate the conditional probabilities $p(y|x)$.
+        """
+        class transition_kernel(Kernel):
+            def __init__(self, y, x, **kwargs):
+                self.density_x = Kernel(x=x, **kwargs)
+                self.density_y = Kernel(x=y, **kwargs)
+
+            def __call__(self, y, x, **kwargs):
+                left = self.density_y(y)
+                right = self.density_x(x).T
+                out = LAlg.prod(left,right).T
+                out /= out.sum()
+                return out
+        if self.pi is None and self.x is not None:
+            self.pi = transition_kernel(x=self.get_x(),y=self.get_y(),**kwargs)
+        return self.pi
+    def get_transition(self, y, x, **kwargs):
+        """
+        Return the kernel induced transition probability $p(y = \{y^1,..,y^N\} | x = x^i)$
+        The output is expected to have size $(x.shape[0],y.shape[0])$.
+        """
+        return self.get_transition_kernel()(y, x)
     def var(self, z, **kwargs):
 
         out = self.get_var_kernel()(z)
