@@ -831,13 +831,13 @@ class KController(KAgent):
     
     def get_function(self, **kwargs):
         self.expectation_estimator = self.get_expectation_estimator(self.x, self.y, **kwargs)
-        self.min_expectation_estimator = self.expectation_estimator(self.x).flatten()
-        self.min_expectation_estimator.sort()
-        self.min_expectation_estimator = self.min_expectation_estimator[int(self.x.shape[0] * 0.9)]
+        # self.min_expectation_estimator = self.expectation_estimator(self.x).flatten()
+        # self.min_expectation_estimator.sort()
+        # self.min_expectation_estimator = self.min_expectation_estimator[int(self.x.shape[0] * 0.9)]
         def function(x):
-            expectation = self.expectation_estimator(x) - self.min_expectation_estimator
-            distance = self.expectation_estimator.distance(x)
-            return expectation*distance
+            expectation = self.expectation_estimator(x) #- self.min_expectation_estimator
+            # distance = self.expectation_estimator.distance(x)
+            return expectation #+ distance
         return function  # to cope with exploration    
 
     def train(self, game, env, **kwargs):
