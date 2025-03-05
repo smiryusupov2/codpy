@@ -164,7 +164,7 @@ class GamesKernel(Kernel):
             fy = self.get_knm_inv()
 
         # knm = core.KerOp.knm(x=z, y=self.get_y(), fy=fy,kernel_ptr = self.get_kernel())
-        knm = np.zeros([z.shape[0],1])
+        knm = np.zeros([z.shape[0],self.get_fx().shape[1]])
 
         mapped_indices = self.clustering(z)
         mapped_indices = map_invertion(mapped_indices)
@@ -831,7 +831,9 @@ class KController(KAgent):
     
     def get_function(self, **kwargs):
         self.expectation_estimator = self.get_expectation_estimator(self.x, self.y, **kwargs)
-        self.min_expectation_estimator = self.expectation_estimator(self.x).min()
+        self.min_expectation_estimator = self.expectation_estimator(self.x).flatten()
+        self.min_expectation_estimator.sort()
+        self.min_expectation_estimator = self.min_expectation_estimator[int(self.x.shape[0] * 0.9)]
         def function(x):
             expectation = self.expectation_estimator(x) - self.min_expectation_estimator
             distance = self.expectation_estimator.distance(x)
@@ -948,9 +950,24 @@ class KQLearningHJB(KQLearning):
         return kernel
 
 class KActorCriticHJB(KActorCritic):
+
     def train(self, game, max_training_game_size=None, **kwargs):
-        super().train(game, max_training_game_size, **kwargs)
-        pass
+        params = kwargs.get("KCritic", {})
+        states, actions, next_states, rewards, returns, dones = self.format(game, max_training_game_size=max_training_game_size,**kwargs)
+        self.replay_buffer.push(states, actions, next_states, rewards, returns, dones, **kwargs)
+        states, actions, next_states, rewards, returns, dones  = self.replay_buffer.memory.copy()
+        games = [states, actions, next_states, rewards, returns, dones]
+
+        if self.actor.get_x() is not None and self.actor.get_x().shape[0] > 1:
+            last_policy = self.actor(states)
+        else:
+            last_policy = np.full(
+                [states.shape[0], self.actions_dim], 1.0 / self.actions_dim
+            )
+        advantages = self.get_advantages(games,policy=last_policy,**kwargs)
+        # update probabilities
+        kernel = self.update_probabilities(advantages,games,last_policy=last_policy,**kwargs)
+        self.actor.add_kernel(kernel)      
 
     def get_state_action_value_function(self, games,policy, verbose=False,kernel=None,**kwargs):
         states, actions, next_states, rewards, returns, dones = games
@@ -965,7 +982,7 @@ class KActorCriticHJB(KActorCritic):
         conditioned_kernel_ = get_conditioned_kernel(states,actions,next_states,rewards,returns,dones,expectation_kernel=expectation_kernel_,**kwargs)
         next_states_actions = self.all_states_actions(next_states)
         noise = next_states- expectation_kernel_(states_actions)
-        _probas = conditioned_kernel_.conditional_density(x=states_actions, y=noise)
+        _probas = conditioned_kernel_.get_transition(x=states_actions, y=noise)
         projection_op = kernel.knm(x=next_states_actions, y=kernel.get_x())
         projection_op = LAlg.prod(projection_op,_probas)
         _knm_ = kernel.knm(x=states_actions, y=kernel.get_x())
