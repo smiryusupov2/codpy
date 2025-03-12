@@ -219,28 +219,28 @@ class ConditionerKernel(Conditionner):
         """
         x, y = get_matrix(x), get_matrix(y)
         super().__init__(x=x, y=y, **kwargs)
-        xy = np.concatenate([x, y], axis=1)
-        self.cut_ = x.shape[1]
-        self.latent_generator_xy = lambda n: np.random.normal(
-            size=[n, x.shape[1] + y.shape[1]]
-        )
-        self.latent_generator_x = lambda n: np.random.normal(size=[n, x.shape[1]])
-        self.latent_generator_y = lambda n: np.random.normal(size=[n, y.shape[1]])
-        self.latent_x, self.latent_y = self.latent_generator_x(
-            x.shape[0]
-        ), self.latent_generator_y(x.shape[0])
-        self.latent_xy = np.concatenate([self.latent_x, self.latent_y], axis=1)
+        # xy = np.concatenate([x, y], axis=1)
+        # self.cut_ = x.shape[1]
+        # self.latent_generator_xy = lambda n: np.random.normal(
+        #     size=[n, x.shape[1] + y.shape[1]]
+        # )
+        # self.latent_generator_x = lambda n: np.random.normal(size=[n, x.shape[1]])
+        # self.latent_generator_y = lambda n: np.random.normal(size=[n, y.shape[1]])
+        # self.latent_x, self.latent_y = self.latent_generator_x(
+        #     x.shape[0]
+        # ), self.latent_generator_y(x.shape[0])
+        # self.latent_xy = np.concatenate([self.latent_x, self.latent_y], axis=1)
 
-        self.map_xy_inv = Kernel(x=self.latent_xy, **kwargs).map(y=xy)
-        self.map_xy = Kernel(
-            x=self.map_xy_inv.get_fx(), fx=self.map_xy_inv.get_x(), **kwargs
-        )
-        latent_x = self.map_xy_inv.get_x()[:, : x.shape[1]]
-        im_x = self.map_xy_inv.get_fx()[:, : x.shape[1]]
-        self.map_x = Kernel(x=im_x, fx=latent_x, **kwargs)
+        # self.map_xy_inv = Kernel(x=self.latent_xy, **kwargs).map(y=xy)
+        # self.map_xy = Kernel(
+        #     x=self.map_xy_inv.get_fx(), fx=self.map_xy_inv.get_x(), **kwargs
+        # )
+        # latent_x = self.map_xy_inv.get_x()[:, : x.shape[1]]
+        # im_x = self.map_xy_inv.get_fx()[:, : x.shape[1]]
+        # self.map_x = Kernel(x=im_x, fx=latent_x, **kwargs)
         self.pi = None
         self.expectation_kernel = None
-        self.var_kernel = None
+        # self.var_kernel = None
 
 
     def get_transition_kernel(self, **kwargs):
@@ -250,14 +250,19 @@ class ConditionerKernel(Conditionner):
         """
         class transition_kernel(Kernel):
             def __init__(self, y, x, **kwargs):
-                self.density_x = Kernel(x=x, **kwargs)
-                self.density_y = Kernel(x=y, **kwargs)
+                self.xy = Kernel(x=x, **kwargs)
+                self.yx = Kernel(x=y, **kwargs)
 
             def __call__(self, y, x, **kwargs):
-                left = self.density_y(y)
-                right = self.density_x(x).T
-                out = LAlg.prod(left,right).T
-                out /= out.sum()
+                left = self.yx(y)
+                left /= left.sum(axis=0)[None,:]
+                right = self.xy(x).T
+                right /= right.sum(axis=1)[:,None]
+                out = LAlg.prod(left,right)
+                # out = LAlg.prod(left,LAlg.prod(self.pi,right))
+                # out = codpy.algs.Alg.proportional_fitting(out,axis=0)
+                # out /= out.sum(axis=1)[:,None]
+                # out /= out.sum(axis=0)[None,:]
                 return out
         if self.pi is None and self.x is not None:
             self.pi = transition_kernel(x=self.get_x(),y=self.get_y(),**kwargs)
@@ -267,7 +272,7 @@ class ConditionerKernel(Conditionner):
         Return the kernel induced transition probability $p(y = \{y^1,..,y^N\} | x = x^i)$
         The output is expected to have size $(x.shape[0],y.shape[0])$.
         """
-        return self.get_transition_kernel()(y, x)
+        return self.get_transition_kernel(**kwargs)(y, x)
     def var(self, z, **kwargs):
 
         out = self.get_var_kernel()(z)
@@ -301,8 +306,9 @@ class ConditionerKernel(Conditionner):
                 mapped_z = self.call_back.map_x(z, **kwargs)
                 expectation_y = super().__call__(self.call_back.map_x(z, **kwargs))
                 return self.call_back.map_xy_inv(np.concatenate([mapped_z,expectation_y],axis=1))[:,z.shape[1]:]
+            
         if self.expectation_kernel is None and self.x is not None:
-            self.expectation_kernel = expectation_kernel(call_back=self,x=self.latent_x, fx=self.latent_y, **kwargs)
+            self.expectation_kernel = Kernel(x=self.get_x(),fx=self.get_y(),**kwargs)
         return self.expectation_kernel
 
     def expectation(self, x=None, **kwargs):
@@ -343,3 +349,49 @@ class ConditionerKernel(Conditionner):
         The output is expected to have size $(x.shape[0],y.shape[0])$.
         """
         return self.map_xy.density(np.concatenate([x,y],axis=0))
+
+class PiKernel(ConditionerKernel):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.state_dim = kwargs["state_dim"]
+
+    def get_transition(self, y, x, **kwargs):
+        """
+        Return the kernel induced transition probability $p(y = \{y^1,..,y^N\} | x = x^i)$
+        The output is expected to have size $(x.shape[0],y.shape[0])$.
+        """
+        return self.get_transition_kernel(**kwargs)(y, x)
+
+
+    def get_transition_kernel(self, **kwargs):
+        # Estime pi(y|x) avec y et x donnés comme exemple, matrice de transition, proba d'avoir couple y_j sachant x_j etc
+        """
+        Return the transition kernel, used to extrapolate the conditional probabilities $p(y|x)$.
+        """
+        class transition_kernel(Kernel):
+            def __init__(self, y, x, **kwargs):
+                self.density_x = Kernel(x=x, **kwargs)
+                self.density_y = Kernel(x=y, **kwargs)
+            def __init__(self, y, x, **kwargs):
+                self.xy = Kernel(x=x, **kwargs)
+                self.yx = Kernel(x=y, **kwargs)
+                self.state_dim = kwargs["state_dim"]
+                # self.pi = codpy.algs.Alg.pi(x=y, y=x[:,:self.state_dim], kernel_ptr=self.yx.get_kernel(),**kwargs)
+                # pi2 = codpy.algs.Alg.pi(x=x[:,:self.state_dim], y=y, kernel_ptr=self.get_kernel(),**kwargs)
+                # self.pi = LAlg.prod(self.pi,pi2)
+                pass
+
+            def __call__(self, y, x, **kwargs):
+                left = self.yx(y)
+                right = self.xy(x).T
+                out = LAlg.prod(left,right)
+                # out = LAlg.prod(left,LAlg.prod(self.pi,right))
+                out = codpy.algs.Alg.proportional_fitting(out,axis=0)
+                # out /= out.sum(axis=1)[:,None]
+                out /= out.sum(axis=0)[None,:]
+                return out
+
+
+        if self.pi is None and self.x is not None:
+            self.pi = transition_kernel(x=self.get_x(),y=self.get_y(),state_dim=self.state_dim,**kwargs)
+        return self.pi

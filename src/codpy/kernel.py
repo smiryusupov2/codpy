@@ -84,12 +84,13 @@ class Kernel:
             self.set_kernel = set_kernel
         else:
             self.set_kernel = self.default_kernel_functor()
-
+        self.valid = False
         if x is not None or fx is not None:
             self.set(x=x, y=y, fx=fx, **kwargs)
         else:
             self.x, self.y, self.fx = None, None, None
-
+    def is_valid(self):
+        return self.valid
     def dim(self) -> int:
         """
         return the dimension of the training set
@@ -903,6 +904,7 @@ class Kernel:
             # retrives the kernel
             self.kernel = core.KerInterface.get_kernel_ptr()
             self.set_theta(None)
+            self.valid = True
 
     def __call__(self, z: np.ndarray,**kwargs) -> np.ndarray:
         """
@@ -991,10 +993,10 @@ class KernelClassifier(Kernel):
         clip=Alg.proportional_fitting,
         **kwargs,
     ) -> None:
+        if clip is not None and fx is not None:
+            fx = clip(fx)
         if fx is not None:
-            fx = fx / get_matrix(fx.sum(axis=1))
-            debug = np.where(fx < 1e-9, 1e-9, fx)
-            fx = np.log(debug)
+            fx = np.log(fx)
         super().set_fx(fx, **kwargs)
 
     def __call__(self, z, **kwargs):

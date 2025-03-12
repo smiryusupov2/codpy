@@ -71,7 +71,7 @@ class Alg:
 
         out = cd.alg.Pi(x=x, y=y, nmax=nmax)
         if z is not None and fz is not None:
-            out = LAlg.prod(KernelClassifier(x=x, fx=out, **kwargs), fz)
+            out = LAlg.prod(KernelClassifier(x=x, fx=out, **kwargs)(z),fz)
         return out
 
     def hybrid_greedy_nystroem(
