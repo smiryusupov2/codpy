@@ -63,11 +63,11 @@ class Alg:
         )
         return out[:, 0:Dx], out[:, Dx:], permutation
 
-    def pi(x, y, z=None, fz=None, nmax=5, kernel_ptr=None,**kwargs):
+    def pi(x, y, z=None, fz=None, nmax=5, kernel_ptr = None,order=None,reg=1e-8,**kwargs):
         # print('######','Pi','######')
         from codpy.kernel import KernelClassifier
         if kernel_ptr is not None:
-            KerInterface.set_kernel_ptr(kernel_ptr)
+            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
 
         out = cd.alg.Pi(x=x, y=y, nmax=nmax)
         if z is not None and fz is not None:
@@ -98,9 +98,11 @@ class Alg:
         labels1, labels2 = cd.alg.two_balanced_clustering(DX, DY, C)
         return np.array(labels1), np.array(labels2)
 
-    def add(knm, knm_inv, x, y):
+    def add(knm, knm_inv, x, y, kernel_ptr = None,order=None,reg=1e-8):
         # import codpy.core
         # codpy.core.set_verbose(True)
+        if kernel_ptr is not None:
+            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
         return cd.alg.add(knm, knm_inv, x, y)
 
     def greedy_algorithm(

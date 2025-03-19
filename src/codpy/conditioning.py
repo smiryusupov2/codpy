@@ -44,7 +44,7 @@ class Conditionner:
         A shortcut to the conditional expectation $\mathbb{E}(y|x)$.
         """
         assert x.shape[1] == self.x.shape[1]
-        return self.expectation(x)
+        return self.expectation(x, **kwargs)
 
     def expectation(self, x, **kwargs):
         """
@@ -212,7 +212,7 @@ class NadarayaWatsonKernel(Conditionner):
 
 class ConditionerKernel(Conditionner):
     def __init__(
-        self, x, y, latent_generator_x=None, latent_generator_y=None, **kwargs
+        self, x, y, latent_generator_x=None, latent_generator_y=None, expectation_kernel=None, **kwargs
     ):
         """
         Base class to handle kernel conditional estimators of the law y | x using optimal transport
@@ -239,7 +239,8 @@ class ConditionerKernel(Conditionner):
         # im_x = self.map_xy_inv.get_fx()[:, : x.shape[1]]
         # self.map_x = Kernel(x=im_x, fx=latent_x, **kwargs)
         self.pi = None
-        self.expectation_kernel = None
+        self.expectation_kernel = expectation_kernel
+        self.var_kernel = None
         # self.var_kernel = None
 
 
@@ -253,26 +254,25 @@ class ConditionerKernel(Conditionner):
                 self.xy = Kernel(x=x, **kwargs)
                 self.yx = Kernel(x=y, **kwargs)
 
-            def __call__(self, y, x, **kwargs):
-                left = self.yx(y)
-                left /= left.sum(axis=0)[None,:]
-                right = self.xy(x).T
-                right /= right.sum(axis=1)[:,None]
-                out = LAlg.prod(left,right)
-                # out = LAlg.prod(left,LAlg.prod(self.pi,right))
-                # out = codpy.algs.Alg.proportional_fitting(out,axis=0)
-                # out /= out.sum(axis=1)[:,None]
-                # out /= out.sum(axis=0)[None,:]
+            def __call__(self, y, x, fx=None,**kwargs):
+                probasy = self.yx(y)
+                probasy /= probasy.sum(axis=0)[None,:]
+                probasx = self.xy(x)
+                probasx /= probasx.sum(axis=1)[:,None]
+                if fx is not None:
+                    out = LAlg.prod(probasx,LAlg.prod(probasy.T,fx))
+                else:
+                    out = LAlg.prod(probasx,probasy)
                 return out
         if self.pi is None and self.x is not None:
             self.pi = transition_kernel(x=self.get_x(),y=self.get_y(),**kwargs)
         return self.pi
-    def get_transition(self, y, x, **kwargs):
+    def get_transition(self, y, x, fx=None,**kwargs):
         """
         Return the kernel induced transition probability $p(y = \{y^1,..,y^N\} | x = x^i)$
         The output is expected to have size $(x.shape[0],y.shape[0])$.
         """
-        return self.get_transition_kernel(**kwargs)(y, x)
+        return self.get_transition_kernel(**kwargs)(y, x, fx)
     def var(self, z, **kwargs):
 
         out = self.get_var_kernel()(z)
@@ -316,7 +316,7 @@ class ConditionerKernel(Conditionner):
         Return the estimator of the conditional expectation $\mathbb{E}(f(y)|x)$
         The output is expected to have size $(x.shape[0],y.shape[1])$.
         """
-        return self.get_expectation_kernel()(x)
+        return self.get_expectation_kernel(**kwargs)(x)
 
     def sample(self, x, n, **kwargs):
         """
@@ -381,14 +381,15 @@ class PiKernel(ConditionerKernel):
                 # self.pi = LAlg.prod(self.pi,pi2)
                 pass
 
-            def __call__(self, y, x, **kwargs):
-                left = self.yx(y)
-                right = self.xy(x).T
-                out = LAlg.prod(left,right)
-                # out = LAlg.prod(left,LAlg.prod(self.pi,right))
-                out = codpy.algs.Alg.proportional_fitting(out,axis=0)
-                # out /= out.sum(axis=1)[:,None]
-                out /= out.sum(axis=0)[None,:]
+            def __call__(self, y, x, fx=None,**kwargs):
+                probasy = self.yx(y)
+                probasy /= probasy.sum(axis=0)[None,:]
+                probasx = self.xy(x)
+                probasx /= probasx.sum(axis=1)[:,None]
+                if fx is not None:
+                    out = LAlg.prod(probasx,LAlg.prod(probasy.T,fx))
+                else:
+                    out = LAlg.prod(probasx,probasy)
                 return out
 
 

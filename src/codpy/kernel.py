@@ -89,6 +89,7 @@ class Kernel:
             self.set(x=x, y=y, fx=fx, **kwargs)
         else:
             self.x, self.y, self.fx = None, None, None
+        self.kernels={}
     def is_valid(self):
         return self.valid
     def dim(self) -> int:
@@ -192,7 +193,7 @@ class Kernel:
         return self.order
 
     def knm(
-        self, x: np.ndarray, y: np.ndarray, fy: np.ndarray = [], **kwargs
+        self, x: np.ndarray = None, y: np.ndarray = None, fy: np.ndarray = [], **kwargs
     ) -> np.ndarray:
         """
         Compute the kernel matrix $K(X, Y)=k(x^i, y^j)_{i,j}$, where the kernel function $k$ is defined at class initialization, see :attr:`self.set_kernel`.
@@ -212,6 +213,8 @@ class Kernel:
             >>> y_data = np.array([...])
             >>> kernel_matrix = Kernel(x=x_data,y=y_data).knm()
         """
+        if x is None: x = self.get_x()
+        if y is None: y = self.get_y()
         if self.get_map() is not None:
             x, y = self.get_map()(x), self.get_map()(y)
 
@@ -246,7 +249,7 @@ class Kernel:
         return core.KerOp.dnm(x=x, y=y, fy=fy, kernel_ptr=self.get_kernel())
 
     def get_knm_inv(
-        self, epsilon: float = None, epsilon_delta: np.ndarray = None, **kwargs
+        self, epsilon: float = None, epsilon_delta: np.ndarray = None, reg=None,**kwargs
     ) -> np.ndarray:
         """
         Retrieve the inverse of the kernel matrix :math:`K^{-1}(x, y)` using least squares computations.
@@ -277,6 +280,7 @@ class Kernel:
         """
         if not hasattr(self, "knm_inv"):
             self.knm_inv = None
+
         if self.knm_inv is None:
             if epsilon is None: epsilon = self.reg
             if epsilon_delta is None:
@@ -287,11 +291,14 @@ class Kernel:
                 x, y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
             else:
                 x, y = self.get_x(), self.get_y()
+            if reg is None:
+                reg=self.reg
             self._set_knm_inv(
                 core.KerOp.knm_inv(
                     x=x,
                     y=y,
-                    epsilon=epsilon,
+                    order=self.order,
+                    reg= reg,
                     reg_matrix=epsilon_delta,
                     kernel_ptr=self.get_kernel(),
                     **kwargs
@@ -343,11 +350,11 @@ class Kernel:
         For unbiaised densities estimations, use NadarayaWatson instead.
         """
         out = LAlg.prod(self.knm(x,self.get_x()), self.get_knm_inv())
-        out = out.sum(axis=1)
+        out = out.sum(axis=1)/out.shape[1]
         return out
 
     def set_x(
-        self, x: np.ndarray, **kwargs
+        self, x: np.ndarray, rescale=True,**kwargs
     ) -> None:
         """
         Set the input data ``x`` for the kernel and update related internal states.
@@ -362,7 +369,9 @@ class Kernel:
         self.set_y()
         self._set_knm_inv(None)
         self._set_knm(None)
-        self.rescale()
+        self.set_theta(None)
+        if rescale :
+            self.rescale()
 
     def set_y(self, y: np.ndarray = None, **kwargs) -> None:
         """
@@ -574,7 +583,7 @@ class Kernel:
             self.x, self.fx = None, None
             return
         if x is not None and fx is None:
-            self.set_x(core.get_matrix(x.copy()))
+            self.set_x(core.get_matrix(x.copy()),**kwargs)
             self.set_y(y=y)
             self.set_fx(None)
             #self.rescale() # rescaling already done in set_x()
@@ -592,8 +601,8 @@ class Kernel:
             self.set_fx(core.get_matrix(fx))
 
         if x is not None and fx is not None:
-            self.set_x(x), self.set_fx(fx), self.set_y(y=y)
-            self.rescale()
+            self.set_x(x,**kwargs), self.set_fx(fx,**kwargs), self.set_y(y=y,**kwargs)
+            # self.rescale(**kwargs) # done is set_x(..)
             pass
 
         if not hasattr(self, "x"): 
@@ -753,7 +762,7 @@ class Kernel:
 
         return self
 
-    def add(self, y: np.ndarray = None, fy: np.ndarray = None) -> None:
+    def add(self, y: np.ndarray = None, fy: np.ndarray = None, kernel_ptr=None,**kwargs) -> None:
         """
         Augments the training set by adding new data points and their corresponding function values.
 
@@ -790,14 +799,17 @@ class Kernel:
 
         # the method add computes an updated Gram matrix using the already
         # pre-computed Gram matrix K(x,x).
-        self.knm_, self.knm_inv, y = Alg.add(
-            self.get_knm(), self.get_knm_inv(), self.get_x(), x
+        knm_, knm_inv, y = Alg.add(
+            self.get_knm(), self.get_knm_inv(), self.get_x(), x, self.get_kernel(),self.order,0.
         )
-        self.set_x(y)
         if fx is not None and self.get_fx() is not None:
-            self.set_fx(np.concatenate([fx, self.get_fx()], axis=0))
+            self.set_fx(np.concatenate([self.get_fx(),fx], axis=0))
         else:
             self.set_fx(fx)
+        new_x = np.concatenate([self.get_x(),x], axis=0)
+        self.set_x(new_x,rescale=False)
+        self.set_y(new_x,rescale=False)
+        self.knm_, self.knm_inv = knm_, knm_inv
 
         return self
 
@@ -834,6 +846,8 @@ class Kernel:
         """
         self.set_kernel_ptr()
         return core.KerOp.discrepancy_error(x=self.get_x(), z=z)
+    def set_kernel(self,kernel_ptr) -> callable:
+        self.kernel = kernel_ptr
 
     def get_kernel(self) -> callable:
         """
@@ -851,7 +865,7 @@ class Kernel:
             self.kernel = core.KerInterface.get_kernel_ptr()
         return self.kernel
 
-    def set_kernel_ptr(self) -> None:
+    def set_kernel_ptr(self,kernel_ptr = None) -> None:
         """
         Set the Codpy interface to use the current kernel function.
 
@@ -861,6 +875,8 @@ class Kernel:
         """
         if self.order is None: order = 0
         else: order = self.order+1
+        if kernel_ptr is not None:
+            self.kernel = kernel_ptr
         core.KerInterface.set_kernel_ptr(self.get_kernel(), order, self.reg)
 
     def set_map(self, map_) -> callable:
@@ -899,11 +915,12 @@ class Kernel:
                 )
             else:
                 core.KerInterface.rescale(
-                    self.get_x(), max=self.max_nystrom, kernel_ptr=self.get_kernel()
+                    self.get_x(), max=self.max_nystrom, kernel_ptr=self.get_kernel(),order = self.order,reg=self.reg
                 )
             # retrives the kernel
             self.kernel = core.KerInterface.get_kernel_ptr()
             self.set_theta(None)
+            self.knm_inv, self.knm_ = None,None
             self.valid = True
 
     def __call__(self, z: np.ndarray,**kwargs) -> np.ndarray:
@@ -942,12 +959,12 @@ class Kernel:
 
         if not hasattr(self, "set_clustering"):
             return knm
-        if not hasattr(self, "kernels") or len(self.kernels) <= 1:
+        if len(self.kernels)==0:
             return knm
         mapped_indices = self.clustering(z)
         mapped_indices = map_invertion(mapped_indices)
         for key in mapped_indices.keys():
-            indic7es = list(mapped_indices[key])
+            indices = list(mapped_indices[key])
             knm[indices] += self.kernels[key](z[indices])
         return knm
 
