@@ -955,7 +955,7 @@ class Kernel:
         if fy is None:
             fy = self.get_knm_inv()
 
-        knm = core.KerOp.knm(x=z, y=self.get_y(), fy=fy,kernel_ptr = self.get_kernel())
+        knm = core.KerOp.knm(x=z, y=self.get_y(), fy=fy,kernel_ptr = self.get_kernel(),order=self.order,reg=self.reg)
 
         if not hasattr(self, "set_clustering"):
             return knm

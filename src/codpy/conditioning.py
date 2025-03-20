@@ -262,8 +262,9 @@ class ConditionerKernel(Conditionner):
                 if fx is not None:
                     out = LAlg.prod(probasx,LAlg.prod(probasy.T,fx))
                 else:
-                    out = LAlg.prod(probasx,probasy)
+                    out = LAlg.prod(probasx,probasy.T)
                 return out
+
         if self.pi is None and self.x is not None:
             self.pi = transition_kernel(x=self.get_x(),y=self.get_y(),**kwargs)
         return self.pi

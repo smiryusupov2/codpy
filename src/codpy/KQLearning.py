@@ -144,6 +144,7 @@ class GamesKernel(Kernel):
 
         self.max_size = max_size
         self.map_ = None
+        params = kwargs.get("HJBModel",kwargs)
         super().__init__(**kwargs)
         self.clustering = self.set_clustering()
         self.update_kernels = False
@@ -175,12 +176,10 @@ class GamesKernel(Kernel):
                     # self.vals=np.concatenate([self.vals,vals], axis = 1)
         helper_=helper(self)
         [helper_(k) for k in self.kernels.values()]
-        # interpolator = codpy.conditioning.ConditionerKernel(x=helper_.xs,y=helper_.fxs)
-        # knm = interpolator(z, reg=1e-9)
+        # knm = codpy.conditioning.ConditionerKernel(x=helper_.xs,y=helper_.fxs).get_transition_kernel()(z, reg=1e-9)
         # knm = Kernel(x=helper_.xs)(z)
         kernel_ptr = Kernel(x=helper_.xs).get_kernel()
-        knm = codpy.core.KerOp.projection(x=helper_.xs,y=helper_.xs,z=z,fx=helper_.fxs, reg=.1,order=2,kernel_ptr = kernel_ptr)
-        # knm = helper_.vals.max(1)[:,None]
+        knm = codpy.core.KerOp.projection(x=helper_.xs,y=helper_.xs,z=z,fx=helper_.fxs, reg=1e-9,order=2,kernel_ptr = kernel_ptr)
         return knm
 
     def add_kernel(self, k, max_kernel=1e+30, **kwargs) -> None:
@@ -273,8 +272,15 @@ class KAgent:
 
     def get_expectation_kernel(self,games,**kwargs):
         return get_expectation_kernel(games,**kwargs)
-    def get_conditioned_kernel(self,games,**kwargs):
-        return get_conditioned_kernel(games,**kwargs)
+    def get_conditioned_kernel(self,games,expectation_kernel,**kwargs):
+        return get_conditioned_kernel(games,expectation_kernel=expectation_kernel,**kwargs)
+        states, actions, next_states, rewards, returns, dones = games
+        states_actions = self.all_states_actions(states)
+        expected_states = expectation_kernel(states_actions)
+        # noise = next_states-expected_states
+        params = kwargs.get("HJBModel",kwargs)
+        out = codpy.conditioning.ConditionerKernel(x=np.concatenate([expected_states, actions], axis=1),y=next_states,expectation_kernel=expectation_kernel,**params)
+        return out        
     
     def compute_returns(self, states, actions, next_states, rewards, dones, **kwargs):
         returns, next_return = [], 0.0
@@ -526,7 +532,7 @@ class KAgent:
         return test
 
     def optimal_bellman_solver(
-        self, thetas, next_states_projection, knm, rewards, maxiter, reg=1e-9,**kwargs
+        self, thetas, next_states_projection, knm, rewards, maxiter, reg=1e-9,tol=1e-6,**kwargs
     ):
         theta = thetas.copy()
         shape = [next_states_projection.shape[0]//self.actions_dim, self.actions_dim]
@@ -542,9 +548,9 @@ class KAgent:
 
         error, max_indices = bellman_error(theta,full_output=True)
         count = 0
-        if error < 1e-6:
+        if error < tol:
             return thetas,error, max_indices
-        while count < maxiter:
+        while count < maxiter or error < tol:
             indices = [
                 self.actions_dim * i + max_indices[i] for i in range(len(max_indices))
             ]
@@ -666,27 +672,23 @@ class KQLearning(KActorCritic):
         else:
             states, actions, next_states, rewards, returns, dones = game
 
-        self.replay_buffer.push(states, actions, next_states, rewards, returns, dones,capacity=sys.maxsize)
-        games = self.replay_buffer.memory
+        self.replay_buffer.push(states, actions, next_states, rewards, returns, dones, capacity=sys.maxsize)
 
-        if len(self.critic.kernels) <=1 and len(self.replay_buffer) <= self.replay_buffer.capacity and self.critic.update_kernels == False:
+        if len(self.replay_buffer) <= self.replay_buffer.capacity: # and self.critic.update_kernels == False:
+            games = self.replay_buffer.memory
             kernel = self.optimal_states_values_function(games,verbose=True,**kwargs)
             kernel.games=games
             if len(self.critic.kernels) ==0:
                 self.critic.add_kernel(kernel)
             else:
-                self.critic.kernels[0] = kernel
+                self.critic.kernels[len(self.critic.kernels)-1] = kernel
             return
-        if (len(self.replay_buffer) > self.replay_buffer.capacity): 
-            if self.critic.update_kernels == False:
-                self.replay_buffer.memory = self.replay_buffer.last_game()
-                self.critic.update_kernels = True
-                return
-            else:
-                kernel = self.optimal_states_values_function(games,verbose=True,**kwargs)
-                kernel.games=games
-                self.critic.add_kernel(kernel)
-                self.replay_buffer.empty()
+        else:
+            games = self.replay_buffer.last_game()
+            kernel = self.optimal_states_values_function(games,verbose=True,**kwargs)
+            kernel.games=games
+            self.critic.add_kernel(kernel)
+            self.replay_buffer.empty()
         delete_kernels = []
         for i,k in self.critic.kernels.items():
                 error = self.critic.kernels[i].bellman_error
@@ -812,10 +814,12 @@ def get_conditioned_kernel(games,expectation_kernel,base_class = codpy.condition
             super().__init__(**kwargs)
         
     states, actions, next_states, rewards, returns, dones = games
-    expected_states = expectation_kernel(np.concatenate([states, actions], axis=1))
+    states_actions = np.concatenate([states, actions], axis=1)
+    expected_states = expectation_kernel(states_actions)
     # noise = next_states-expected_states
     params = kwargs.get("HJBModel",kwargs)
     out = ConditionerKernel(x=np.concatenate([expected_states, actions], axis=1),y=next_states,expectation_kernel=expectation_kernel,**params)
+    # out = ConditionerKernel(x=states_actions,y=next_states,expectation_kernel=expectation_kernel,**params)
     return out
 
 
@@ -847,7 +851,7 @@ class KQLearningHJB(KQLearning):
 
         
         expectation_kernel_ = self.get_expectation_kernel(games,**kwargs)
-        conditioned_kernel_ = self.get_conditioned_kernel(games,expectation_kernel=expectation_kernel_,**kwargs)
+        conditioned_kernel_ = self.get_conditioned_kernel(games=games,expectation_kernel=expectation_kernel_,**kwargs)
 
         states_actions = np.concatenate([states,actions],axis=1)
         next_expected_states_actions = expectation_kernel_(states_actions)
@@ -855,7 +859,6 @@ class KQLearningHJB(KQLearning):
 
         _projection_ = kernel.knm(x=next_expected_states_actions, y=kernel.get_x())
         _knm_ = kernel.knm(x=states_actions, y=kernel.get_x())
-
         _projection_ = conditioned_kernel_.get_transition_kernel()(next_expected_states_actions[:,:self.state_dim], next_expected_states_actions,_projection_)
 
         thetas, bellman_error, indices = self.optimal_bellman_solver(
@@ -863,7 +866,7 @@ class KQLearningHJB(KQLearning):
             next_states_projection=_projection_,
             knm=_knm_,
             rewards=rewards,
-            maxiter=5,
+            maxiter=10,
             games=games,
             **kwargs                
         )
