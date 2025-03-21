@@ -2,6 +2,7 @@ import sys
 import os
 
 import codpy.core
+import codpy.permutation
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 import random
@@ -169,7 +170,7 @@ class GamesKernel(Kernel):
 
             def __call__(self, k):
                 d = k.knm(z, k.get_x())
-                vals = k(z)
+                # vals = k(z)
                 arg_x = d.argmax(1)
                 x, fx, d = k.get_x()[arg_x], k.get_fx()[arg_x], gather(d, arg_x)
                 if self.xs is None:
@@ -193,8 +194,8 @@ class GamesKernel(Kernel):
             y=helper_.xs,
             z=z,
             fx=helper_.fxs,
-            reg=1e-9,
-            order=2,
+            reg=1e-4,
+            order=3,
             kernel_ptr=kernel_ptr,
         )
         return knm
@@ -581,6 +582,7 @@ class KAgent:
         maxiter,
         reg=1e-9,
         tol=1e-6,
+        verbose=False,
         **kwargs,
     ):
         theta = thetas.copy()
@@ -602,7 +604,7 @@ class KAgent:
         count = 0
         if error < tol:
             return thetas, error, max_indices
-        while count < maxiter or error < tol:
+        while count < maxiter and error > tol:
             indices = [
                 self.actions_dim * i + max_indices[i] for i in range(len(max_indices))
             ]
@@ -628,13 +630,16 @@ class KAgent:
         indices = [
             self.actions_dim * i + max_indices[i] for i in range(len(max_indices))
         ]
+        if verbose:
+            print("Computed global error Bellman mean: ", fval, " iter: ", count)
         return theta, fval, indices
 
     def optimal_states_values_function(
-        self, games, kernel=None, verbose=False, full_output=False, **kwargs
+        self, games, kernel=None, full_output=False, **kwargs
     ):
 
         states, actions, next_states, rewards, returns, dones = games
+
         states_actions = np.concatenate([states, actions], axis=1)
         if kernel is None or not kernel.is_valid():
             kernel = self.kernel_type(x=states_actions, fx=returns, **kwargs)
@@ -656,11 +661,9 @@ class KAgent:
             **kwargs,
         )
         kernel.set_theta(thetas)
-        if verbose:
-            print("Computed global error Bellman mean: ", bellman_error)
+        kernel.bellman_error = bellman_error
         if full_output:
             return kernel, bellman_error, indices
-        kernel.bellman_error = bellman_error
         return kernel
 
 
@@ -737,10 +740,10 @@ class KQLearning(KActorCritic):
         game,
         max_training_game_size=None,
         format=True,
-        replay_buffer=True,
         tol=1e-2,
         **kwargs,
     ):
+        
         if format:
             states, actions, next_states, rewards, returns, dones = self.format(
                 game, max_training_game_size=max_training_game_size, **kwargs
@@ -753,7 +756,7 @@ class KQLearning(KActorCritic):
         )
 
         if (
-            len(self.replay_buffer) <= self.replay_buffer.capacity
+            len(self.replay_buffer) <= 2*self.replay_buffer.capacity
         ):  # and self.critic.update_kernels == False:
             games = self.replay_buffer.memory
             kernel = self.optimal_states_values_function(games, verbose=True, **kwargs)
@@ -764,11 +767,15 @@ class KQLearning(KActorCritic):
                 self.critic.kernels[len(self.critic.kernels) - 1] = kernel
             return
         else:
-            games = self.replay_buffer.last_game()
+            kernel = self.critic.kernels[len(self.critic.kernels) - 1]
+            kernel.set(x = kernel.get_x()[:self.replay_buffer.capacity], fx = kernel.get_fx()[:self.replay_buffer.capacity])
+            kernel.games = [elt[:self.replay_buffer.capacity] for elt in self.replay_buffer.memory]
+            games = self.replay_buffer.memory
+            games = [elt[self.replay_buffer.capacity:] for elt in self.replay_buffer.memory]
             kernel = self.optimal_states_values_function(games, verbose=True, **kwargs)
             kernel.games = games
             self.critic.add_kernel(kernel)
-            self.replay_buffer.empty()
+            self.replay_buffer.memory = games
         delete_kernels = []
         for i, k in self.critic.kernels.items():
             error = self.critic.kernels[i].bellman_error
@@ -902,16 +909,23 @@ class KController(KAgent):
 
 
 def get_conditioned_kernel(
-    games, expectation_kernel, base_class=codpy.conditioning.ConditionerKernel, **kwargs
+    games,
+    expectation_kernel,
+    base_class=codpy.conditioning.PiKernel, 
+    # base_class=codpy.conditioning.ConditionerKernel, 
+    # base_class=codpy.conditioning.NadarayaWatsonKernel, 
+    **kwargs
 ):
     class ConditionerKernel(base_class):
         def __init__(self, **kwargs):
             super().__init__(**kwargs)
 
     states, actions, next_states, rewards, returns, dones = games
-    states_actions = np.concatenate([states, actions], axis=1)
-    expected_states = expectation_kernel(states_actions)
-    # noise = next_states-expected_states
+    expected_states = expectation_kernel(np.concatenate([states, actions], axis=1))
+    # permutation = Kernel(x=states).map(next_states, distance="norm22").permutation
+    # states = states[permutation]
+    # expected_states = expected_states[permutation]
+
     params = kwargs.get("HJBModel", kwargs)
     out = ConditionerKernel(
         x=np.concatenate([expected_states, actions], axis=1),
@@ -945,38 +959,26 @@ def get_expectation_kernel(games, **kwargs):
 class KQLearningHJB(KQLearning):
 
     def optimal_states_values_function(
-        self, games, kernel=None, verbose=False, full_output=False, maxiter=5, **kwargs
+        self, games, kernel=None, full_output=False, maxiter=5, reorder = False,**kwargs
     ):
+        
         states, actions, next_states, rewards, returns, dones = games
-        if kernel is None:
-            states_actions = np.concatenate([states, actions], axis=1)
+        states_actions = np.concatenate([states, actions], axis=1)
+        if kernel is None or not kernel.is_valid():
             kernel = self.kernel_type(x=states_actions, fx=returns, **kwargs)
+
 
         expectation_kernel_ = self.get_expectation_kernel(games, **kwargs)
         conditioned_kernel_ = self.get_conditioned_kernel(
             games=games, expectation_kernel=expectation_kernel_, **kwargs
         )
-
         states_actions = np.concatenate([states, actions], axis=1)
         next_expected_states_actions = expectation_kernel_(states_actions)
         next_expected_all_states_actions = self.all_states_actions(
             next_expected_states_actions
         )
-
         _projection_ = kernel.knm(x=next_expected_all_states_actions, y=kernel.get_x())
-
         _knm_ = kernel.knm(x=states_actions, y=kernel.get_x())
-
-        # for dim in range(self.actions_dim):
-        #     indice = [n * self.actions_dim + dim for n in range(_knm_.shape[0])]
-        #     _projection_[indice] = conditioned_kernel_.get_transition_kernel()(
-        #         next_expected_all_states_actions[indice, : self.state_dim],
-        #         next_expected_all_states_actions[indice],
-        #         _projection_[indice],
-        #     )
-        _projection_ = conditioned_kernel_.get_transition_kernel()(
-            next_expected_states_actions, next_expected_all_states_actions, _projection_
-        )
 
         thetas, bellman_error, indices = self.optimal_bellman_solver(
             thetas=kernel.get_theta(),
@@ -987,12 +989,23 @@ class KQLearningHJB(KQLearning):
             games=games,
             **kwargs,
         )
+
+        thetas = conditioned_kernel_.get_transition(
+            y = next_expected_all_states_actions[indices,:self.state_dim],
+            x = np.concatenate([next_expected_states_actions, actions], axis=1),
+            fx = thetas
+        )
         kernel.set_theta(thetas)
-        if verbose:
-            print("Computed global error Bellman mean: ", bellman_error)
+        # fx = conditioned_kernel_.get_transition(
+        #     y = next_expected_all_states_actions[indices,:self.state_dim],
+        #     x = np.concatenate([next_expected_states_actions, actions], axis=1),
+        #     fx = kernel.get_fx()
+        # )
+        # kernel.set_fx(fx)
+        kernel.bellman_error = bellman_error
+
         if full_output:
             return kernel, bellman_error, indices
-        kernel.bellman_error = bellman_error
         return kernel
 
 

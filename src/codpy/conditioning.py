@@ -31,7 +31,7 @@ class Conditionner:
         """
         x, y = get_matrix(x), get_matrix(y)
         assert x.shape[0] == y.shape[0]
-        self.x, self.y = x, y
+        self.x, self.y = x.copy(), y.copy()
 
     def get_x(self):
         return self.x
@@ -193,7 +193,7 @@ class NadarayaWatsonKernel(Conditionner):
         Return the estimation of the density of the law $p(x,y)$
         The output is expected to have size $(x.shape[0],y.shape[0])$.
         """
-        return self.density_xy(y, x)
+        return self.density_xy(y=y, x=x)
 
     def dnm(self, x, y, **kwargs):
         """
@@ -202,13 +202,17 @@ class NadarayaWatsonKernel(Conditionner):
         """
         return self.density_x.kernel.dnm(x, y)
 
-    def get_transition(self, y, x, **kwargs):
+    def get_transition(self, y, x, fx=None, **kwargs):
         """
         Return the kernel induced transition probability $p(y^i | x^i)$
         The output is expected to have size $(x.shape[0],y.shape[0])$.
         """
-        out = self.joint_density(y, x) / self.density(x)
-        return out/out.sum(axis=1)[:,None]  
+        out = self.joint_density(y, x) 
+        out /= out.sum(axis=0)[None,:]  
+        out /= out.sum(axis=1)[:,None]  
+        if fx is not None:
+            return LAlg.prod(out, fx)
+        return out
 
 class ConditionerKernel(Conditionner):
     def __init__(
@@ -356,14 +360,6 @@ class PiKernel(ConditionerKernel):
         super().__init__(**kwargs)
         self.state_dim = kwargs["state_dim"]
 
-    def get_transition(self, y, x, **kwargs):
-        """
-        Return the kernel induced transition probability $p(y = \{y^1,..,y^N\} | x = x^i)$
-        The output is expected to have size $(x.shape[0],y.shape[0])$.
-        """
-        return self.get_transition_kernel(**kwargs)(y, x)
-
-
     def get_transition_kernel(self, **kwargs):
         # Estime pi(y|x) avec y et x donnés comme exemple, matrice de transition, proba d'avoir couple y_j sachant x_j etc
         """
@@ -371,16 +367,8 @@ class PiKernel(ConditionerKernel):
         """
         class transition_kernel(Kernel):
             def __init__(self, y, x, **kwargs):
-                self.density_x = Kernel(x=x, **kwargs)
-                self.density_y = Kernel(x=y, **kwargs)
-            def __init__(self, y, x, **kwargs):
                 self.xy = Kernel(x=x, **kwargs)
                 self.yx = Kernel(x=y, **kwargs)
-                self.state_dim = kwargs["state_dim"]
-                # self.pi = codpy.algs.Alg.pi(x=y, y=x[:,:self.state_dim], kernel_ptr=self.yx.get_kernel(),**kwargs)
-                # pi2 = codpy.algs.Alg.pi(x=x[:,:self.state_dim], y=y, kernel_ptr=self.get_kernel(),**kwargs)
-                # self.pi = LAlg.prod(self.pi,pi2)
-                pass
 
             def __call__(self, y, x, fx=None,**kwargs):
                 probasy = self.yx(y)
@@ -390,10 +378,9 @@ class PiKernel(ConditionerKernel):
                 if fx is not None:
                     out = LAlg.prod(probasx,LAlg.prod(probasy.T,fx))
                 else:
-                    out = LAlg.prod(probasx,probasy)
+                    out = LAlg.prod(probasx,probasy.T)
                 return out
 
-
         if self.pi is None and self.x is not None:
-            self.pi = transition_kernel(x=self.get_x(),y=self.get_y(),state_dim=self.state_dim,**kwargs)
+            self.pi = transition_kernel(x=self.get_x(),y=self.get_y(),**kwargs)
         return self.pi
