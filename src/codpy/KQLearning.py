@@ -137,7 +137,9 @@ class GamesClustering:
 
 
 class GamesKernel(Kernel):
-    def __init__(self,latent_distribution=None, max_size=None, next_states=None,**kwargs):
+    def __init__(
+        self, latent_distribution=None, max_size=None, next_states=None, **kwargs
+    ):
 
         if kwargs.get("latent_shape", None) is None:
             self.latent_distribution = None
@@ -174,7 +176,13 @@ class GamesKernel(Kernel):
                 d = k.knm(z, k.get_x())
                 # vals = k(z)
                 arg_x = d.argmax(1)
-                x, fx, d, r, n = k.get_x()[arg_x], k.get_fx()[arg_x], gather(d, arg_x), k.games[3][arg_x], k.games[2][arg_x]
+                x, fx, d, r, n = (
+                    k.get_x()[arg_x],
+                    k.get_fx()[arg_x],
+                    gather(d, arg_x),
+                    k.games[3][arg_x],
+                    k.games[2][arg_x],
+                )
                 if self.xs is None:
                     self.xs, self.fxs, self.ds, self.rs, self.ns = x, fx, d, r, n
                     # self.vals=vals
@@ -184,7 +192,7 @@ class GamesKernel(Kernel):
                         np.concatenate([self.fxs, fx], axis=0),
                         np.concatenate([self.ds, d], axis=0),
                         np.concatenate([self.rs, r], axis=0),
-                        np.concatenate([self.ns, n], axis=0)
+                        np.concatenate([self.ns, n], axis=0),
                     )
                     # self.vals=np.concatenate([self.vals,vals], axis = 1)
 
@@ -222,15 +230,13 @@ class GamesKernel(Kernel):
 
 
 class GamesKernelClassifier(GamesKernel):
-    def __init__(
-        self,
-        **kwargs
-    ):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def __call__(self, z, **kwargs):
         knm = super().__call__(z, **kwargs)
-        if len(self.kernels) ==1 : return knm
+        if len(self.kernels) == 1:
+            return knm
         return softmax(knm, axis=1)
 
     def set_fx(
@@ -280,15 +286,15 @@ class KAgent:
         self.gamma = gamma
         self.all_actions_ = None
         params = kwargs.get("KActor", {})
-        self.actor = self.kernel_type(gamma=gamma,**params)
-        self.target = self.kernel_type(gamma=gamma,**params)
+        self.actor = self.kernel_type(gamma=gamma, **params)
+        self.target = self.kernel_type(gamma=gamma, **params)
         params = kwargs.get("KCritic", {})
-        self.critic = self.kernel_type(gamma=gamma,**params)
+        self.critic = self.kernel_type(gamma=gamma, **params)
         params = kwargs.get("KNextStates", {})
-        self.next_states = self.kernel_type(gamma=gamma,**params)
+        self.next_states = self.kernel_type(gamma=gamma, **params)
         params = kwargs.get("Rewards", {})
-        self.rewards = self.kernel_type(gamma=gamma,**params)
-        self.replay_buffer = ReplayBuffer(gamma=gamma,**kwargs)
+        self.rewards = self.kernel_type(gamma=gamma, **params)
+        self.replay_buffer = ReplayBuffer(gamma=gamma, **kwargs)
         self.eps_threshold = kwargs.get("eps_threshold", 0.0)
 
     def get_expectation_kernel(self, games, **kwargs):
@@ -399,10 +405,17 @@ class KAgent:
         projection_op = value_function.knm(
             x=next_states_actions, y=value_function.get_x()
         )
+
         def helper(i):
             if dones[i] == True:
                 return [i * self.actions_dim + j for j in range(self.actions_dim)]
-        modif = [helper(i) for i in range(dones.shape[0]) if dones[i] == True]
+
+        modif = [
+            item
+            for i in range(dones.shape[0])
+            if dones[i] == True
+            for item in helper(i)
+        ]
         projection_op[modif] = 0.0
 
         projection_op = projection_op.reshape(
@@ -490,8 +503,7 @@ class KAgent:
                 rewards[-max_training_game_size:],
                 returns[-max_training_game_size:],
                 dones[-max_training_game_size:],
-            )        
-
+            )
 
         return states, actions, next_states, rewards, returns, dones
 
@@ -658,10 +670,17 @@ class KAgent:
 
         next_states_actions = self.all_states_actions(next_states)
         _projection_ = kernel.knm(x=next_states_actions, y=kernel.get_x())
+
         def helper(i):
             if dones[i] == True:
                 return [i * self.actions_dim + j for j in range(self.actions_dim)]
-        modif = [helper(i) for i in range(dones.shape[0]) if dones[i] == True]
+
+        modif = [
+            item
+            for i in range(dones.shape[0])
+            if dones[i] == True
+            for item in helper(i)
+        ]
         _projection_[modif] = 0.0
 
         _knm_ = kernel.knm(x=states_actions, y=kernel.get_x())
@@ -758,7 +777,7 @@ class KQLearning(KActorCritic):
         tol=1e-2,
         **kwargs,
     ):
-        
+
         if format:
             states, actions, next_states, rewards, returns, dones = self.format(
                 game, max_training_game_size=max_training_game_size, **kwargs
@@ -767,7 +786,7 @@ class KQLearning(KActorCritic):
             states, actions, next_states, rewards, returns, dones = game
 
         if self.critic.is_valid():
-            returns = self.critic(np.concatenate([states,actions],axis=1))
+            returns = self.critic(np.concatenate([states, actions], axis=1))
             games = states, actions, next_states, rewards, returns, dones
 
         self.replay_buffer.push(
@@ -777,7 +796,7 @@ class KQLearning(KActorCritic):
         if (
             len(self.replay_buffer) <= self.replay_buffer.capacity
         ):  # and self.critic.update_kernels == False:
-            
+
             games = self.replay_buffer.memory
             kernel = self.optimal_states_values_function(games, verbose=True, **kwargs)
             kernel.games = games
@@ -788,10 +807,19 @@ class KQLearning(KActorCritic):
             return
         else:
             kernel = self.critic.kernels[len(self.critic.kernels) - 1]
-            kernel.set(x = kernel.get_x()[:self.replay_buffer.capacity//2], fx = kernel.get_fx()[:self.replay_buffer.capacity//2])
-            kernel.games = [elt[:self.replay_buffer.capacity//2] for elt in self.replay_buffer.memory]
+            kernel.set(
+                x=kernel.get_x()[: self.replay_buffer.capacity // 2],
+                fx=kernel.get_fx()[: self.replay_buffer.capacity // 2],
+            )
+            kernel.games = [
+                elt[: self.replay_buffer.capacity // 2]
+                for elt in self.replay_buffer.memory
+            ]
             games = self.replay_buffer.memory
-            games = [elt[self.replay_buffer.capacity//2:] for elt in self.replay_buffer.memory]
+            games = [
+                elt[self.replay_buffer.capacity // 2 :]
+                for elt in self.replay_buffer.memory
+            ]
             kernel = self.optimal_states_values_function(games, verbose=True, **kwargs)
             kernel.games = games
             self.critic.add_kernel(kernel)
@@ -931,10 +959,10 @@ class KController(KAgent):
 def get_conditioned_kernel(
     games,
     expectation_kernel,
-    base_class=codpy.conditioning.PiKernel, 
-    # base_class=codpy.conditioning.ConditionerKernel, 
-    # base_class=codpy.conditioning.NadarayaWatsonKernel, 
-    **kwargs
+    base_class=codpy.conditioning.PiKernel,
+    # base_class=codpy.conditioning.ConditionerKernel,
+    # base_class=codpy.conditioning.NadarayaWatsonKernel,
+    **kwargs,
 ):
     class ConditionerKernel(base_class):
         def __init__(self, **kwargs):
@@ -979,14 +1007,13 @@ def get_expectation_kernel(games, **kwargs):
 class KQLearningHJB(KQLearning):
 
     def optimal_states_values_function(
-        self, games, kernel=None, full_output=False, maxiter=5, reorder = False,**kwargs
+        self, games, kernel=None, full_output=False, maxiter=5, reorder=False, **kwargs
     ):
-     
+
         states, actions, next_states, rewards, returns, dones = games
         states_actions = np.concatenate([states, actions], axis=1)
         if kernel is None or not kernel.is_valid():
             kernel = self.kernel_type(x=states_actions, fx=returns, **kwargs)
-
 
         expectation_kernel_ = self.get_expectation_kernel(games, **kwargs)
         conditioned_kernel_ = self.get_conditioned_kernel(
@@ -999,12 +1026,18 @@ class KQLearningHJB(KQLearning):
         )
         _projection_ = kernel.knm(x=next_expected_all_states_actions, y=kernel.get_x())
         _knm_ = kernel.knm(x=states_actions, y=kernel.get_x())
+
         def helper(i):
             if dones[i] == True:
                 return [i * self.actions_dim + j for j in range(self.actions_dim)]
-        modif = [helper(i) for i in range(dones.shape[0]) if dones[i] == True]
-        _projection_[modif] = 0.0
 
+        modif = [
+            item
+            for i in range(dones.shape[0])
+            if dones[i] == True
+            for item in helper(i)
+        ]
+        _projection_[modif] = 0.0
 
         thetas, bellman_error, indices = self.optimal_bellman_solver(
             thetas=kernel.get_theta(),
@@ -1017,9 +1050,9 @@ class KQLearningHJB(KQLearning):
         )
 
         thetas = conditioned_kernel_.get_transition(
-            y = next_expected_all_states_actions[indices,:self.state_dim],
-            x = np.concatenate([next_expected_states_actions, actions], axis=1),
-            fx = thetas
+            y=next_expected_all_states_actions[indices, : self.state_dim],
+            x=np.concatenate([next_expected_states_actions, actions], axis=1),
+            fx=thetas,
         )
         kernel.set_theta(thetas)
         # fx = conditioned_kernel_.get_transition(
