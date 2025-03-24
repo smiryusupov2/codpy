@@ -484,13 +484,14 @@ class KAgent:
         dones = core.get_matrix(dones, dtype=bool)
         if max_training_game_size is not None:
             states, actions, next_states, rewards, returns, dones = (
-                states[0:max_training_game_size],
-                actions[0:max_training_game_size],
-                next_states[0:max_training_game_size],
-                rewards[0:max_training_game_size],
-                returns[0:max_training_game_size],
-                dones[0:max_training_game_size],
-            )
+                states[-max_training_game_size:],
+                actions[-max_training_game_size:],
+                next_states[-max_training_game_size:],
+                rewards[-max_training_game_size:],
+                returns[-max_training_game_size:],
+                dones[-max_training_game_size:],
+            )        
+
 
         return states, actions, next_states, rewards, returns, dones
 
