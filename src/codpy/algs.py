@@ -103,7 +103,8 @@ class Alg:
         # codpy.core.set_verbose(True)
         if kernel_ptr is not None:
             KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
-        return cd.alg.add(knm, knm_inv, x, y)
+        out = cd.alg.add(knm, knm_inv, x, y)
+        return out
 
     def greedy_algorithm(
         x,

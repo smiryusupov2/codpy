@@ -617,7 +617,6 @@ class Kernel:
         y, labels = self.clustering.cluster_centers_, self.clustering.labels_
         self.set_y(y)
         self.labels = map_invertion(labels)
-        self.kernels = {}
         fx_proj = self.get_fx() - self(z=x)
         for key in self.labels.keys():
             indices = list(self.labels[key])
@@ -706,6 +705,15 @@ class Kernel:
         if self.x is None:
             return 0
         return self.x.shape[0]
+    def copy(
+        self, kernel
+    ) -> None:
+        def helper(b):
+            if b is not None: return b.copy()
+            else: return None
+        self.x,self.y,self.theta,self.fx = helper(kernel.x),helper(kernel.y),helper(kernel.theta),helper(kernel.fx)
+        self.knm_,self.knm_inv = helper(kernel.knm_),helper(kernel.knm_inv)
+        self.kernel = kernel.kernel
 
     def update(
         self, z: np.ndarray, fz: np.ndarray, eps: float = None, **kwargs
@@ -740,7 +748,7 @@ class Kernel:
         """
         self.set_kernel_ptr()
         if isinstance(z, list):
-            return [self.__call__(x, **kwargs) for x in z]
+            return [self.update(z_,fz_, **kwargs) for z_,fz_ in zip(z,fz)]
         z = core.get_matrix(z)
         if self.x is None:
             return None
@@ -1036,6 +1044,12 @@ class KernelClassifier(Kernel):
             return None
         out = LAlg.prod_vector_matrix(out,get_tensor_probas(softmax(self.get_fx(),axis=1)))
         return out
+    
+    def update(
+        self, z: np.ndarray, fz: np.ndarray, eps: float = None, **kwargs
+    ) -> None:
+        return super().update(z=z,fz=np.log(fz),eps=eps,**kwargs)
+
     
 from codpy.kengineering import *
 

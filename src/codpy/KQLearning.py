@@ -38,20 +38,33 @@ class ReplayBuffer(object):
         else:
             self.capacity = capacity
         self.games_list = []
+    def is_full(self):
+        return len(self) >= self.capacity
 
-    def update(self, capacity=None, **kwargs):
+    def update(self, capacity=None, worst_game = False,**kwargs):
         if capacity is None:
             capacity = self.capacity
         if len(self) < capacity:
-            return
+            return True
+        returned = True
+        if worst_game == True:
+            while len(self) > capacity:
+                scores = np.array([self.games_list[i][3].sum() - self.games_list[i][3].var() for i in range(len(self.games_list))])
+                min_indices = scores.argmin()
+                if min_indices == len(self.games_list)-1 :
+                    returned = False
+                self.remove_games(min_indices)
 
-        def helper(i):
-            self.memory[i] = self.memory[i][
-                max(self.memory[i].shape[0] - capacity, 0) :
-            ]
+            return returned
 
-        [helper(i) for i in range(len(self.memory))]
-        return
+        else:
+            def helper(i):
+                self.memory[i] = self.memory[i][
+                    max(self.memory[i].shape[0] - capacity, 0) :
+                ]
+
+            [helper(i) for i in range(len(self.memory))]
+        return True
 
     def empty(self, N=None, *args):
         if N is None:
@@ -74,20 +87,30 @@ class ReplayBuffer(object):
         else:
 
             def helper(i):
+                if len(sarsd[i]) == 0:
+                    return self.memory[i]
                 return np.concatenate([self.memory[i], sarsd[i]], axis=0)
 
-            self.memory = [helper(i) for i in range(len(sarsd))]
-        self.update(capacity)
-        return self
+            self.memory = [helper(i) for i in range(len(sarsd)) ]
+        return self.update(capacity,**kwargs)
 
     def games(self):
         return self.games_list
+    def remove_games(self,indices):
+        if isinstance(indices,list):
+            [self.remove_games(i) for i in indices]
+        else:
+            del self.games_list[indices]
+            def helper(i):
+                self.memory[i] = np.concatenate([self.games_list[j][i] for j in range(len(self.games_list))], axis=0)
+            [helper(i) for i in range(len(self.memory)) ]                    
+        return self
 
     def last_game(self):
         return self.games()[-1]
 
     def last(self):
-        return self.last_game
+        return self.last_game()
 
     def sample(self, batch_size):
         if len(self) == 0:
@@ -123,8 +146,6 @@ class GamesClustering:
         return self(self.k.get_x())
 
     def __call__(self, z, **kwargs):
-        if len(self.kernels) == 0:
-            return None
         labels = None
         for i in self.k.kernels.keys():
             k = self.k.kernels[i]
@@ -154,6 +175,7 @@ class GamesKernel(Kernel):
         self.clustering = self.set_clustering()
         self.update_kernels = False
         self.next_states = next_states
+        self.kernels = {}
         # self.gamma = gamma
 
     def default_clustering_functor(self) -> callable:
@@ -165,6 +187,14 @@ class GamesKernel(Kernel):
         if len(self.kernels) == 1:
             return self.kernels[0](z, **kwargs)
         z = core.get_matrix(z)
+        dim = self.kernels[0].get_fx().shape[1]
+        knm = np.zeros([z.shape[0], dim])
+        mapped_indices = self.clustering(z)
+        mapped_indices = map_invertion(mapped_indices)
+        for key in mapped_indices.keys():
+            indices = list(mapped_indices[key])
+            knm[indices] += self.kernels[key](z[indices])
+        return knm        
 
         class helper:
             xs, fxs, ds, vals, rs, ns = None, None, None, None, None, None
@@ -198,6 +228,8 @@ class GamesKernel(Kernel):
 
         helper_ = helper(self)
         [helper_(k) for k in self.kernels.values()]
+        # knm = helper_.vals.max(1)[:,None]
+        # return knm
         # knm = codpy.conditioning.ConditionerKernel(x=helper_.xs,y=helper_.fxs).get_transition_kernel()(z, reg=1e-9)
         # knm = Kernel(x=helper_.xs)(z)
         kernel_ptr = Kernel(x=helper_.xs).get_kernel()
@@ -327,22 +359,13 @@ class KAgent:
 
     def bellman_error(
         self,
-        states,
-        actions,
-        next_states,
-        rewards,
-        returns,
-        policy=None,
-        value_function=None,
+        games,
+        value_function,
+        policy=None
     ):
-        if value_function is None:
-            value_function = self.get_state_action_value_function(
-                states, actions, next_states, rewards, returns, policy
-            )
-
+        states, actions, next_states, rewards, returns, dones = games
         states_actions = np.concatenate([states, actions], axis=1)
         next_states_actions = self.all_states_actions(next_states)
-
         error = self.gamma * value_function(next_states_actions).reshape(
             [states_actions.shape[0], self.actions_dim]
         )
@@ -354,66 +377,81 @@ class KAgent:
 
         return error
 
-    def optimal_bellman_error(
-        self, states, actions, next_states, rewards, policy, value_function=None
-    ):
-        if value_function is None:
-            value_function = self.get_state_action_value_function(
-                states, actions, next_states, rewards, policy
-            )
+    def optimal_bellman_error(self,games,value_function):
+        return self.bellman_error(games,value_function)
 
+    def bellman_optimal_action(
+        self,
+        games,
+        q_value_function
+    ):
+        states, actions, next_states, rewards, returns, dones = games
         states_actions = np.concatenate([states, actions], axis=1)
         next_states_actions = self.all_states_actions(next_states)
-
-        error = self.gamma * value_function(next_states_actions).reshape(
-            [states_actions.shape[0], self.actions_dim]
-        )
-        error = core.get_matrix(error.max(1))
-        error = rewards + error - value_function(states_actions)
-
-        return error
-
+        error = self.gamma * q_value_function(next_states_actions).reshape(actions.shape) + rewards
+        error -= q_value_function(states_actions)
+        actions = error.argmax(1)[:,None]
+        return rl_hot_encoder(actions,self.actions_dim)
+    
     def update_probabilities(
-        self, advantages, games, last_policy, dt=None, **kwargs
+        self, advantages, games, last_policy, dt=None, kernel=None, clip=None,**kwargs
     ):  ##this function assumes that advantages[i,j]=KCritic([states[i],j])
         states, actions, next_states, rewards, returns, dones = games
+        advantages -= advantages.mean(axis=1)[:, None]
         if dt is None:
-            # dt = (advantages * advantages).mean(axis=1)[:,None]
-            # dt = np.where(dt < 1e-9,0.,1./dt)
-            dt = (advantages * advantages).mean()
-            if dt < 1e-9:
-                dt = 0.0
-            else:
-                dt = 1.0 / dt
-        interpolated_policy = Verhulst(last_policy, advantages * dt)
+            dt = advantages
+            # dt = np.where(np.fabs(dt) < 1e-8,0.,.1/dt)
+            # dt /= (dt * dt).mean(axis=1)[:,None] + 1e-9
+            dt /= ((dt*dt).mean(axis=1)[:, None] + 1e-9)
+            if clip is not None:
+                dt = clip*dt/ (np.fabs(dt).max(axis=1)[:, None] + 1e-9)
+            # if dt < 1e-9:
+            #     dt = 0.0
+            # else:
+            #     dt = advantages / dt
+        # dt -= dt.mean(axis=1)[:,None]
+        interpolated_policy = Verhulst(last_policy, dt)
         params = kwargs.get("KActor", {})
-
+        # if kernel is None:
         return GamesKernelClassifier(
-            x=states, fx=interpolated_policy, clip=None, **params
+            x=states, y=states, fx=interpolated_policy, clip=None, **params
         )
+        # else:
+        #     kernel.update(z=states,fz=interpolated_policy)
+        #     return kernel
 
-    def get_state_action_value_function(self, games, policy=None, **kwargs):
+    def get_state_action_value_function(self, games, policy=None, max_y=None,kernel=None,**kwargs):
 
         states, actions, next_states, rewards, returns, dones = games
         if policy is None:
             policy = actions
-        states_actions = np.concatenate([states, actions], axis=1)
-        next_states_actions = self.all_states_actions(next_states)
+        if max_y is None: max_y = sys.maxsize
+        # for i in range(states.shape[0] // max_y + 1):
+        # step= states.shape[0]/max_y
+        # indices = [int(i*step) for i in range(max_y)]
+        # indices = np.random.choice(states.shape[0], size=max_y, replace=False)
+        # indices = list(range(i*max_y,min((i+1)*max_y,states.shape[0])))
+        # states_, actions_, next_states_, rewards_, returns_, dones_ = states[indices], actions[indices], next_states[indices], rewards[indices], returns[indices], dones[indices]
+        states_, actions_, next_states_, rewards_, returns_, dones_ = states, actions, next_states, rewards, returns, dones
+        policy_ = policy
+        states_actions = np.concatenate([states_, actions_], axis=1)
+        next_states_actions = self.all_states_actions(next_states_)
         value_function = self.kernel_type(**kwargs.get("KActor", {}))
-        value_function.set(x=states_actions, fx=returns)
-        knm = value_function.knm(x=states_actions, y=value_function.get_x())
-        projection_op = value_function.knm(
-            x=next_states_actions, y=value_function.get_x()
-        )
+        if kernel is None:
+            value_function.set(x=states_actions, y=states_actions,fx=returns_)
+        else:
+            value_function.copy(kernel)
+        knm = value_function.knm(x=states_actions, y=value_function.get_y())
+        projection_op = value_function.knm(x=next_states_actions, y=value_function.get_y())
 
         def helper(i):
-            if dones[i] == True:
+            if dones_[i] == True:
                 return [i * self.actions_dim + j for j in range(self.actions_dim)]
 
         modif = [
             item
-            for i in range(dones.shape[0])
-            if dones[i] == True
+            for i in range(dones_.shape[0])
+            if dones_[i] == True
             for item in helper(i)
         ]
         projection_op[modif] = 0.0
@@ -422,13 +460,16 @@ class KAgent:
             [
                 states_actions.shape[0],
                 projection_op.shape[0] // states_actions.shape[0],
-                value_function.get_x().shape[0],
+                value_function.get_y().shape[0]
             ]
         )
-        sum_policy = np.einsum("...ji,...j", projection_op, policy)
-        thetas = LAlg.lstsq(knm - sum_policy * self.gamma, rewards)
-        # thetas = LAlg.prod(projection_op, rewards)
+        sum_policy = np.einsum("...ji,...j", projection_op, policy_)
+        mat = knm - sum_policy * self.gamma
+        thetas = LAlg.lstsq(mat, rewards)
         value_function.set_theta(thetas)
+        value_function.games=(states_, actions_, next_states_, rewards_, returns_, dones_)
+        # thetas = LAlg.prod(projection_op, rewards)
+        # kernel.add_kernel(value_function)
 
         # check
         # error = self.bellman_error(states,actions,next_states, rewards,policy, value_function)
@@ -703,12 +744,12 @@ class KActorCritic(KAgent):
 
     def __call__(self, state, **kwargs):
         # return 1
-        if self.actor.get_x() is not None and self.actor.get_x().shape[0] > 2:
+        if self.actor.is_valid():
             action_probs = self.actor(core.get_matrix(state).T)
-            if len(self.actor.kernels) > 1:
-                action_probs = softmax(action_probs, axis=1)
-            action_probs = action_probs.squeeze()
+            # if len(self.actor.kernels) > 1:
+            #     action_probs = softmax(action_probs, axis=1)
             # action = action_probs.argmax()
+            action_probs = action_probs.squeeze()
             action = np.random.choice(len(action_probs), p=action_probs)
             return action
         else:
@@ -716,44 +757,50 @@ class KActorCritic(KAgent):
 
     def get_advantages(self, games, policy, **kwargs):
         states, actions, next_states, rewards, returns, dones = games
-        kernel = Kernel(
-            x=np.concatenate([states, actions], axis=1), fx=returns, **kwargs
-        )
         value_function = self.get_state_action_value_function(
-            games, policy, kernel=kernel, **kwargs
+            games, policy, max_y=None,**kwargs
         )
         advantages = (
-            value_function(self.all_states_actions(next_states)).reshape(actions.shape)
+           value_function(self.all_states_actions(next_states)).reshape(actions.shape)
             * self.gamma
             + rewards
         )
         advantages -= value_function(np.concatenate([states, actions], axis=1))
         advantages -= core.get_matrix((advantages).mean(1))
-        return advantages
+
+        advantages[dones.flatten()] = 0.0
+        return advantages,value_function
 
     def train(self, game, max_training_game_size=None, **kwargs):
         params = kwargs.get("KCritic", {})
         states, actions, next_states, rewards, returns, dones = self.format(
             game, max_training_game_size=max_training_game_size, **kwargs
         )
+        if not hasattr(self,"scores"):
+            self.scores = [rewards.sum()]
+        else:
+            self.scores.append(rewards.sum())
         self.replay_buffer.push(
             states, actions, next_states, rewards, returns, dones, **kwargs
         )
         states, actions, next_states, rewards, returns, dones = (
             self.replay_buffer.memory
         )
+        dones[0] = True
         games = [states, actions, next_states, rewards, returns, dones]
 
-        if self.actor.get_x() is not None and self.actor.get_x().shape[0] > 1:
+        if self.actor.is_valid():
             last_policy = self.actor(states)
         else:
             last_policy = np.full(
                 [states.shape[0], self.actions_dim], 1.0 / self.actions_dim
             )
-        advantages = self.get_advantages(games, policy=last_policy, **kwargs)
+        last_policy = np.where(last_policy < 1e-9, 1e-9,last_policy)
+        last_policy = np.where(last_policy > 1.-1e-9,1.- 1e-9,last_policy)
+        advantages, value_function = self.get_advantages(games, policy=last_policy, **kwargs)
         # update probabilities
         kernel = self.update_probabilities(
-            advantages, games, last_policy=last_policy, **kwargs
+            advantages, games, last_policy=last_policy, kernel= value_function, **kwargs
         )
         self.actor = kernel
 
@@ -861,6 +908,7 @@ class PolicyGradient(KActorCritic):
             action_probs = self.actor(core.get_matrix(state).T)
             action_probs = action_probs.squeeze()
             action = np.random.choice(len(action_probs), p=action_probs)
+            # action = action_probs.argmax()
             return action
         else:
             return np.random.randint(0, self.actions_dim)
@@ -875,7 +923,7 @@ class PolicyGradient(KActorCritic):
         )
         states_actions = np.concatenate([states, actions], axis=1)
         derivative_estimations = derivative_estimator(states_actions)
-        return derivative_estimations
+        return derivative_estimations, derivative_estimator
 
 
 class KController(KAgent):
