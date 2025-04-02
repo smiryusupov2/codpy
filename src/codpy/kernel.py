@@ -868,7 +868,7 @@ class Kernel:
         :rtype: callable
         """
         if not hasattr(self, "kernel"):
-            self.kernel = self.default_kernel_functor()()
+            self.kernel = self.set_kernel()
             # self.order= None
             self.kernel = core.KerInterface.get_kernel_ptr()
         return self.kernel
