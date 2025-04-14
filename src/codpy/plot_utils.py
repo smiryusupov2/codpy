@@ -141,3 +141,40 @@ def plot1D(xfx, ax=None, **kwargs):
     plt.title(title)
     plt.xlabel(labelx, fontsize=kwargs.get("fontsize", 10))
     plt.ylabel(labely, fontsize=kwargs.get("fontsize", 10))
+
+
+def compare_plot_lists(kwargs):
+    listxs = kwargs["listxs"]
+    listfxs = kwargs["listfxs"]
+    ax = kwargs["ax"]
+
+    # Optional settings
+    listlabels = kwargs.get("listlabels", [None] * len(listxs))
+    listalphas = kwargs.get("alphas", [1.0] * len(listxs))
+    fontsize = kwargs.get("fontsize", 10)
+    marker = kwargs.get("marker", None)
+    ls = kwargs.get("ls", None)
+
+    # Plot each (x, f(x)) pair on the same axes
+    for x, fx, label, alpha in zip(listxs, listfxs, listlabels, listalphas):
+        plotx = np.asarray(x)
+        plotfx = np.asarray(fx)
+        plotx, plotfx, _ = lexicographical_permutation(x=plotx, fx=plotfx)
+        ax.plot(
+            plotx, plotfx, marker=marker, ls=ls, label=label, markersize=6, alpha=alpha
+        )
+
+    ax.tick_params(axis="both", which="major", labelsize=fontsize)
+    ax.tick_params(axis="both", which="minor", labelsize=fontsize)
+
+    labelx = kwargs.get("labelx", "x-units")
+    labely = kwargs.get("labely", "f(x)-units")
+    ax.set_xlabel(labelx, fontsize=fontsize)
+    ax.set_ylabel(labely, fontsize=fontsize)
+
+    if any(label is not None for label in listlabels):
+        ax.legend(prop={"size": fontsize})
+
+    title = kwargs.get("title", "")
+    if title:
+        ax.set_title(title, fontsize=fontsize)

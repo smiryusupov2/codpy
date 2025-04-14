@@ -1,3 +1,1 @@
-Help
-====
-contact:jean-marc.mercier@mpg-partners.com
+sphinx-build -M html . _build

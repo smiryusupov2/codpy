@@ -4,10 +4,10 @@ import numpy as np
 from scipy.special import softmax
 
 import codpy.core as core
-from codpy.algs import alg
+from codpy.algs import Alg
 from codpy.clustering import *
 from codpy.kernel import Kernel
-from codpy.permutation import map_invertion
+from codpy.permutation import lsap, map_invertion
 
 
 class MultiScaleKernel(Kernel):
@@ -78,7 +78,7 @@ class MultiScaleKernelClassifier(MultiScaleKernel):
         self,
         fx: np.ndarray,
         set_polynomial_regressor: bool = True,
-        clip=alg.proportional_fitting,
+        clip=Alg.proportional_fitting,
         **kwargs,
     ) -> None:
         if fx is not None:
@@ -128,7 +128,7 @@ class MultiScaleOT(MultiScaleKernel):
             y, centers_Y, distance="norm22"
         )
         perm = lsap(C)
-        self.label1, self.label2 = alg.two_balanced_clustering(Dx, Dy, C)
+        self.label1, self.label2 = Alg.two_balanced_clustering(Dx, Dy, C)
         self.invlabel1, self.invlabel2 = (
             map_invertion(self.label1),
             map_invertion(self.label2),

@@ -13,7 +13,9 @@ from codpy.utils import softmaxindices, softminindices
 
 class KerOp:
     @staticmethod
-    def projection(x, y, z, fx,kernel_ptr = None, reg=1e-9, order=0, reg_matrix=[],**kwargs):
+    def projection(
+        x, y, z, fx, kernel_ptr=None, reg=1e-9, order=0, reg_matrix=[], **kwargs
+    ):
         """
         Performs projection in kernel regression for efficient computation, targeting a lower sampling space.
         Note:
@@ -44,8 +46,7 @@ class KerOp:
                    polynomial_order=2)
         """
         if kernel_ptr is not None:
-            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
-
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
 
         reg = reg if reg is not None else []
 
@@ -59,7 +60,7 @@ class KerOp:
             return f_z
 
         def project_array(x, y, z, fx, reg):
-            return cd.op.projection(x, y, z, fx,reg_matrix)
+            return cd.op.projection(x, y, z, fx, reg_matrix)
 
         if isinstance(z, list):
             return [
@@ -268,7 +269,7 @@ class KerOp:
         return cd.op.coefficients(get_matrix(x), get_matrix(y), get_matrix(fx), [])
 
     @staticmethod
-    def knm(x, y, fy=None, kernel_ptr = None,order=0,reg=1e-9,**kwargs) -> np.ndarray:
+    def knm(x, y, fy=None, kernel_ptr=None, order=0, reg=1e-9, **kwargs) -> np.ndarray:
         """
         Computes the kernel matrix induced by a positive definite (pd) kernel.
 
@@ -285,13 +286,15 @@ class KerOp:
 
         """
         if kernel_ptr is not None:
-            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
 
         fy = fy if fy is not None else []
         return cd.op.Knm(get_matrix(x), get_matrix(y), get_matrix(fy))
 
     @staticmethod
-    def knm_inv(x, y, fx=None, kernel_ptr=None, order=0,reg=1e-9, reg_matrix=[], **kwargs):
+    def knm_inv(
+        x, y, fx=None, kernel_ptr=None, order=0, reg=1e-9, reg_matrix=[], **kwargs
+    ):
         """
         Args:
             x (:class:`numpy.ndarray`): Input data points for the gradient computation. np.array of size N , D.
@@ -306,14 +309,16 @@ class KerOp:
                 - prod(knm_inv(x,y),fx) else. This allow performance and memory optimizations. The output corresponds then to the coefficient of fx in the kernel induced basis.
         """
         if kernel_ptr is not None:
-            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
         fx = fx if fx is not None else []
         return cd.op.Knm_inv(
             get_matrix(x), get_matrix(y), get_matrix(fx), get_matrix(reg_matrix)
         )
 
     @staticmethod
-    def dnm(x, y, distance=None, kernel_ptr=None,order=0,reg=1e-9,**kwargs) -> np.ndarray:
+    def dnm(
+        x, y, distance=None, kernel_ptr=None, order=0, reg=1e-9, **kwargs
+    ) -> np.ndarray:
         """
         Computes a distance matrix induced by a positive definite (pd) kernel.
 
@@ -331,15 +336,23 @@ class KerOp:
         """
 
         if kernel_ptr is not None:
-            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
 
         if distance is not None:
             return cd.op.Dnm(get_matrix(x), get_matrix(y), {"distance": distance})
         return cd.op.Dnm(get_matrix(x), get_matrix(y))
 
-    def discrepancy_error(x: np.array, z: np.array, disc_type="raw", kernel_ptr=None,order=0,reg=1e-9,**kwargs):
+    def discrepancy_error(
+        x: np.array,
+        z: np.array,
+        disc_type="raw",
+        kernel_ptr=None,
+        order=0,
+        reg=1e-9,
+        **kwargs,
+    ):
         if kernel_ptr is not None:
-            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
 
         return cd.tools.discrepancy_error(get_matrix(x), get_matrix(z), disc_type)
 
@@ -356,7 +369,16 @@ class Misc:
 
     @staticmethod
     def distance_labelling(
-        x, y, label=None, distance=None, maxmin: str = "min", axis: int = 1, kernel_ptr= None,order=0,reg=1e-9, **kwargs
+        x,
+        y,
+        label=None,
+        distance=None,
+        maxmin: str = "min",
+        axis: int = 1,
+        kernel_ptr=None,
+        order=0,
+        reg=1e-9,
+        **kwargs,
     ) -> np.ndarray:
         """
         Computes and labels distances using a kernel-induced distance matrix.
@@ -379,7 +401,7 @@ class Misc:
         """
         # print('######','distance_labelling','######')
         if kernel_ptr is not None:
-            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
 
         D = KerOp.dnm(x, y, distance, **kwargs)
         if maxmin == "min":
@@ -393,10 +415,17 @@ class Misc:
 
     @staticmethod
     def discrepancy(
-        x: np.array, z: np.array, y: np.array = None, disc_type="raw", kernel_ptr=None,order=0,reg=1e-9,**kwargs
+        x: np.array,
+        z: np.array,
+        y: np.array = None,
+        disc_type="raw",
+        kernel_ptr=None,
+        order=0,
+        reg=1e-9,
+        **kwargs,
     ):
         if kernel_ptr is not None:
-            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
         if "discrepancy:xmax" in kwargs:
             x = random_select_interface(
                 xmaxlabel="discrepancy:xmax",
@@ -461,63 +490,40 @@ class Misc:
         def __init__(
             self,
             x,
-            fx,
-            kernel_fun="tensornorm",
-            map="unitcube",
-            polynomial_order=2,
-            regularization: float = 1e-8,
-            reg: np.ndarray = [],
-            rescale=False,
+            kernel_ptr,
+            polynomial_order=0,
+            regularization=1e-8,
             **kwargs,
         ):
             """
             Args:
 
-            :param kernel_fun: The name of the kernel function to use. Options include ``'gaussian'``, ``'tensornorm'``, etc.
+            :param kernel_ptr: The name of the kernel pointer to use.
             :type kernel_fun: :class:`str`, optional
-            :param map: The name of the mapping function to apply. Options include ``'linear'``, ``'affine'``, etc.
-            :type map: :class:`str`, optional
-            :param polynomial_order: The polynomial order for the kernel function. Defaults to ``2``.
-            :type polynomial_order: :class:`float`, optional
-            :param regularization: Regularization parameter for the kernel. Defaults to ``1e-8``.
-            :type regularization: :class:`numpy.ndarray`, optional
-            :param rescale: Whether to rescale the data.
-            :type rescale: :class:`bool`, optional
-            :param rescale_params: Parameters for data rescaling. Defaults to ``{'max': 1000, 'seed': 42}``.
-            :type rescale_params: :class:`dict`, optional
-            :param kwargs: Arbitrary keyword arguments.
-            :type kwargs: dict
             """
+            self.kernel_ptr = kernel_ptr
+            self.polynomial_order = polynomial_order
+            self.regularization = regularization
+            KerInterface.set_kernel_ptr(
+                self.kernel_ptr, self.polynomial_order, self.regularization
+            )
+
             self.Nx = len(x)
             self.x = x.copy()
 
             self.Kxx = KerOp.knm(
                 x,
                 x,
-                fx,
-                Kinv=None,
-                kernel_fun=kernel_fun,
-                map=map,
-                polynomial_order=polynomial_order,
-                regularization=regularization,
-                reg=reg,
-                rescale=rescale,
+                kernel_ptr=self.kernel_ptr,
+                order=self.polynomial_order,
+                reg=self.regularization,
                 **kwargs,
             )
             self.Kxx = np.sum(self.Kxx) / (self.Nx * self.Nx)
-            pass
 
-        def eval(
+        def __call__(
             self,
             ys,
-            fx,
-            Kinv=None,
-            kernel_fun="tensornorm",
-            map="unitcube",
-            polynomial_order=2,
-            regularization=1e-8,
-            reg=[],
-            rescale=False,
             **kwargs,
         ):
             """
@@ -539,17 +545,13 @@ class Misc:
             :type kwargs: dict
             """
             N = len(ys)
+
             Kxy = KerOp.knm(
                 x=ys,
                 y=self.x,
-                fx=fx,
-                Kinv=None,
-                kernel_fun=kernel_fun,
-                map=map,
-                polynomial_order=polynomial_order,
-                regularization=regularization,
-                reg=reg,
-                rescale=rescale,
+                kernel_ptr=self.kernel_ptr,
+                reg=self.regularization,
+                order=self.polynomial_order,
                 **kwargs,
             ) / (self.Nx)
             out = np.zeros([N])
@@ -560,18 +562,30 @@ class Misc:
 
 class DiffOps:
     @staticmethod
-    def nabla_knm(x: np.array, y: np.array, theta=None, kernel=None,order=0,reg=1e-9,**kwargs):
+    def nabla_knm(
+        x: np.array, y: np.array, theta=None, kernel=None, order=0, reg=1e-9, **kwargs
+    ):
         """
         Args:
 
         """
         if kernel is not None:
-            KerInterface.set_kernel_ptr(kernel,order,reg)
+            KerInterface.set_kernel_ptr(kernel, order, reg)
         theta = theta if theta is not None else []
         return cd.op.nabla_Knm(get_matrix(x), get_matrix(y), get_matrix(theta))
 
     @staticmethod
-    def nabla(x: np.array, z: np.array, y=None, fx=None,reg = None,kernel=None, **kwargs):
+    def nabla(
+        x: np.array,
+        z: np.array,
+        y=None,
+        fx=None,
+        reg=None,
+        kernel_ptr=None,
+        order=2,
+        regularization=1e-9,
+        **kwargs,
+    ):
         """
         Compute the kernel-induced gradient of a function.
 
@@ -593,11 +607,13 @@ class DiffOps:
             >>> fz = z * 2
             >>> gradient = DiffOps.nabla(x,x,z,fx)
         """
-        if kernel is not None:
-            KerInterface.set_kernel_ptr(kernel,order,reg)
+
+        KerInterface.set_kernel_ptr(kernel_ptr, order, regularization)
         fx = fx if fx is not None else []
         y = x if y is None else y
-        return cd.op.nabla(get_matrix(x), get_matrix(y), get_matrix(z), get_matrix(fx), get_matrix(reg))
+        return cd.op.nabla(
+            get_matrix(x), get_matrix(y), get_matrix(z), get_matrix(fx), get_matrix(reg)
+        )
 
     @staticmethod
     def nabla_inv(x, z, y=None, fz=None, **kwargs):
@@ -627,7 +643,7 @@ class DiffOps:
         return cd.op.nabla_inv(get_matrix(x), get_matrix(y), get_matrix(z), fz)
 
     @staticmethod
-    def nabla_t(x, y, z, fz, **kwargs):
+    def nabla_t(x, y, z, fz, kernel_ptr, order=2, regularization=1e-8, **kwargs):
         """
         Compute the divergence of a vector field using a kernel-induced method.
 
@@ -652,10 +668,15 @@ class DiffOps:
             >>> vector_field = np.array([...])
             >>> divergence = nabla_t(x_data, y_data, z_data, fz=vector_field)
         """
-        return cd.op.nablaT(get_matrix(x), get_matrix(y), get_matrix(z), get_matrix(fz))
+        KerInterface.set_kernel_ptr(kernel_ptr, order, regularization)
+        # fz = fz if fx is not None else []
+        y = x if y is None else y
+        return cd.op.nablaT(get_matrix(x), get_matrix(y), get_matrix(z), fz)
 
     @staticmethod
-    def nabla_t_inv(x, z, y=None, fx=None, **kwargs):
+    def nabla_t_inv(
+        x, z, y=None, fx=None, kernel_ptr=None, order=2, regularization=1e-8, **kwargs
+    ):
         """
         Compute the inverse of the transposed gradient operation.
 
@@ -677,6 +698,7 @@ class DiffOps:
             >>> fx_data = np.array([...])
             >>> inv_transpose_gradient = nabla_t_inv(x_data, y_data, z_data, fx_data)
         """
+        KerInterface.set_kernel_ptr(kernel_ptr, order, regularization)
         fx = fx if fx is not None else []
         y = x if y is None else y
         return cd.op.nablaT_inv(
@@ -684,7 +706,9 @@ class DiffOps:
         )
 
     @staticmethod
-    def nabla_t_nabla(x, y, fx=None, kernel=None,**kwargs):
+    def nabla_t_nabla(
+        x, y, fx=None, kernel_ptr=None, order=2, regularization=1e-8, **kwargs
+    ):
         """
         Compute the kernel-induced discrete Laplace operator.
 
@@ -711,17 +735,19 @@ class DiffOps:
             >>> fx_data = np.array([...])
             >>> laplace_operator = nabla_t_nabla(x_data, y_data, fx_data)
         """
-        if kernel is not None:
-            KerInterface.set_kernel_ptr(kernel,order,reg)
+        KerInterface.set_kernel_ptr(kernel_ptr, order, regularization)
         fx = fx if fx is not None else []
         return cd.op.nablaT_nabla(x=get_matrix(x), y=get_matrix(y), fx=get_matrix(fx))
 
     @staticmethod
-    def nabla_t_nabla_inv(x, y, fx=None, **kwargs):
+    def nabla_t_nabla_inv(
+        x, y, fx=None, kernel_ptr=None, order=2, regularization=1e-8, **kwargs
+    ):
         """
         Args:
 
         """
+        KerInterface.set_kernel_ptr(kernel_ptr, order, regularization)
         fx = fx if fx is not None else []
         return cd.op.nablaT_nabla_inv(get_matrix(x), get_matrix(y), get_matrix(fx))
 
@@ -731,7 +757,7 @@ class DiffOps:
         return cd.op.Leray_T(get_matrix(x), get_matrix(y), get_matrix(fx))
 
     @staticmethod
-    def leray(x, y, fx=None, **kwargs):
+    def leray(x, y, fx=None, kernel_ptr=None, order=2, regularization=1e-8, **kwargs):
         """
         Compute the Leray operator for a given set of input matrices.
 
@@ -750,6 +776,7 @@ class DiffOps:
             >>> fx_data = np.array([...])
             >>> leray_result = leray(x_data, y_data, fx_data)
         """
+        KerInterface.set_kernel_ptr(kernel_ptr, order, regularization)
         fx = fx if fx is not None else []
         return cd.op.Leray(get_matrix(x), get_matrix(y), get_matrix(fx))
 
@@ -893,7 +920,9 @@ class KerInterface:
         cd.set_num_threads(n)
 
     @staticmethod
-    def rescale(x, y=[], z=[], kernel_ptr = None, max=None, seed=42, order = 0,reg=1e-9,**kwargs):
+    def rescale(
+        x, y=[], z=[], kernel_ptr=None, max=None, seed=42, order=0, reg=1e-9, **kwargs
+    ):
         """
         Intruct the kernel map to fit its parameters in order to match the variables $x,y,z$.
 
@@ -903,7 +932,7 @@ class KerInterface:
             seed : (:class:`int`). The seed used to random selection. See (:class:`max`)
         """
         if kernel_ptr is not None:
-            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
 
         if max is not None:
             x, y, z = (
@@ -922,14 +951,17 @@ class KerInterface:
         return cd.get_kernel_ptr()
 
     @staticmethod
-    def set_kernel_ptr(kernel_ptr,order=None,reg=1e-8):
+    def set_kernel_ptr(kernel_ptr, order=None, reg=1e-8):
         """
         Set codpy with a kernel.
         """
         cd.set_kernel_ptr(kernel_ptr)
-        if order is not None: cd.kernel_interface.set_polynomial_order(order)
-        else: cd.kernel_interface.set_polynomial_order(0)
-        if reg is not None: cd.kernel_interface.set_regularization(reg)
+        if order is not None:
+            cd.kernel_interface.set_polynomial_order(order)
+        else:
+            cd.kernel_interface.set_polynomial_order(0)
+        if reg is not None:
+            cd.kernel_interface.set_regularization(reg)
 
     @staticmethod
     def set_polynomial_order(order):
@@ -975,7 +1007,7 @@ class KerInterface:
             KerInterface.rescale(x, y, z, **kwargs)
 
     @staticmethod
-    def set_kernel(kernel_key,order=0,reg=1e-9, check_=True, extras={}):
+    def set_kernel(kernel_key, order=0, reg=1e-9, check_=True, extras={}):
         """
         An utility to instruct codpy to set a kernel. The list of available kernels is given by :func:`Factories.get_map_factory_keys()`
 
@@ -989,7 +1021,7 @@ class KerInterface:
         if check_:
             Factories.check_kernel_strings(kernel_key)
         kernel_ptr = Factories.get_kernel_factory()[kernel_key](extras)
-        kernel_ptr.set_kernel_ptr(kernel_ptr,order,reg)
+        kernel_ptr.set_kernel_ptr(kernel_ptr, order, reg)
         cd.kernel_interface.set_regularization(reg)
 
     @staticmethod
@@ -1692,9 +1724,7 @@ def _requires_bandwidth(map_name: str) -> bool:
     return map_name in bandwidth_required_maps
 
 
-def _kernel_helper2(
-    kernel, map, polynomial_order=0, regularization=1e-8, bandwidth=1.0
-):
+def set_kernel(kernel, map, polynomial_order=0, regularization=1e-8, bandwidth=1.0):
     """
     Set the kernel function with specified parameters using string identifiers.
 
@@ -1739,6 +1769,4 @@ def kernel_setter(kernel, map, polynomial_order=0, regularization=1e-8, bandwidt
     Returns:
         The configured kernel function.
     """
-    return lambda: _kernel_helper2(
-        kernel, map, polynomial_order, regularization, bandwidth
-    )
+    return lambda: set_kernel(kernel, map, polynomial_order, regularization, bandwidth)

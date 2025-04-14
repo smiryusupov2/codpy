@@ -27,7 +27,7 @@ class Alg:
     ):
         # print('######','iso_probas_projection','######')
         params = {
-            "set_codpykernel": codpy.core._kernel_helper2(
+            "set_codpykernel": codpy.core.set_kernel(
                 kernel=kernel_fun,
                 map=map,
                 polynomial_order=polynomial_order,
@@ -63,15 +63,18 @@ class Alg:
         )
         return out[:, 0:Dx], out[:, Dx:], permutation
 
-    def pi(x, y, z=None, fz=None, nmax=5, kernel_ptr = None,order=None,reg=1e-8,**kwargs):
+    def pi(
+        x, y, z=None, fz=None, nmax=5, kernel_ptr=None, order=None, reg=1e-8, **kwargs
+    ):
         # print('######','Pi','######')
         from codpy.kernel import KernelClassifier
+
         if kernel_ptr is not None:
-            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
 
         out = cd.alg.Pi(x=x, y=y, nmax=nmax)
         if z is not None and fz is not None:
-            out = LAlg.prod(KernelClassifier(x=x, fx=out, **kwargs)(z),fz)
+            out = LAlg.prod(KernelClassifier(x=x, fx=out, **kwargs)(z), fz)
         return out
 
     def hybrid_greedy_nystroem(
@@ -98,11 +101,11 @@ class Alg:
         labels1, labels2 = cd.alg.two_balanced_clustering(DX, DY, C)
         return np.array(labels1), np.array(labels2)
 
-    def add(knm, knm_inv, x, y, kernel_ptr = None,order=None,reg=1e-8):
+    def add(knm, knm_inv, x, y, kernel_ptr=None, order=None, reg=1e-8):
         # import codpy.core
         # codpy.core.set_verbose(True)
         if kernel_ptr is not None:
-            KerInterface.set_kernel_ptr(kernel_ptr,order,reg)
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
         out = cd.alg.add(knm, knm_inv, x, y)
         return out
 
@@ -117,15 +120,15 @@ class Alg:
         out = cd.tools.greedy_algorithm(get_matrix(x), N, start_indices)
         return out
 
-    def probas_projection(probs, axis=1,**kwargs):
-        if axis==1:
+    def probas_projection(probs, axis=1, **kwargs):
+        if axis == 1:
             out = probs / probs.sum(axis=1).reshape(-1, 1)
         else:
-            out = Alg.probas_projection(probs.T,axis=1).T
+            out = Alg.probas_projection(probs.T, axis=1).T
         return out
 
-    def proportional_fitting(probs, iter=100, axis=0,**kwargs):
-        if axis==1:
+    def proportional_fitting(probs, iter=100, axis=0, **kwargs):
+        if axis == 1:
             out = cd.alg.proportional_fitting(probs.T, iter).T
             out = out / out.sum(axis=1).reshape(-1, 1)
         else:

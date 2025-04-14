@@ -1933,7 +1933,7 @@
     <span class="k">return</span> <span class="n">map_name</span> <span class="ow">in</span> <span class="n">bandwidth_required_maps</span>
 
 
-<span class="k">def</span> <span class="nf">_kernel_helper2</span><span class="p">(</span>
+<span class="k">def</span> <span class="nf">set_kernel</span><span class="p">(</span>
     <span class="n">kernel</span><span class="p">,</span> <span class="nb">map</span><span class="p">,</span> <span class="n">polynomial_order</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">regularization</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">bandwidth</span><span class="o">=</span><span class="mf">1.0</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
@@ -1982,7 +1982,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        The configured kernel function.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">_kernel_helper2</span><span class="p">(</span>
+    <span class="k">return</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">set_kernel</span><span class="p">(</span>
         <span class="n">kernel</span><span class="p">,</span> <span class="nb">map</span><span class="p">,</span> <span class="n">polynomial_order</span><span class="p">,</span> <span class="n">regularization</span><span class="p">,</span> <span class="n">bandwidth</span>
     <span class="p">)</span></div>
 

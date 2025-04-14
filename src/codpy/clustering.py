@@ -1,9 +1,10 @@
 import numpy as np
-import sklearn.cluster 
-
-import codpy
-import codpy.core as core
+import sklearn.cluster
 from codpydll import *
+
+import codpy.core as core
+from codpy.kernel import Kernel
+
 
 class MiniBatchkmeans(sklearn.cluster.MiniBatchKMeans):
     def __init__(
@@ -43,9 +44,10 @@ class MiniBatchkmeans(sklearn.cluster.MiniBatchKMeans):
 class GreedySearch:
     def __init__(self, x, N, **kwargs):
         # super().__init__(x=x,max_nystrom=N,**kwargs) #seemed to be a better idea, but no evidence in results !
-        self.k = codpy.kernel.Kernel(x=x, **kwargs)
+        self.k = Kernel(x=x, **kwargs)
         self.k.greedy_select(N=N, x=x, **kwargs)
         self.cluster_centers_ = x[self.k.indices]
+        self.x = x
 
     def get_labels(self):
         return self(self.x)
@@ -63,13 +65,13 @@ class GreedySearch:
 class SharpDiscrepancy(GreedySearch):
     def __init__(self, x, N, itermax=10, **kwargs):
         super().__init__(x=x, N=N, **{**kwargs, **{"all": True}})
-        self.cluster_centers_ = cd.alg.sharp_discrepancy(self.get_x(), N, itermax)
+        self.cluster_centers_ = cd.alg.sharp_discrepancy(x, N, itermax)
 
 
 class BalancedClustering:
     def __init__(self, method, x, N, epsilon=0, **kwargs):
         self.cut = 100000000
-        self.method = method(x,N,**kwargs)
+        self.method = method(x, N, **kwargs)
         self.cluster_centers_ = self.method.cluster_centers_
         self.x = self.method.x
         self.D = (

@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import numpy as np
 from codpydll import *
 from scipy.special import softmax
@@ -8,9 +6,8 @@ import codpy.core as core
 from codpy.algs import Alg
 from codpy.core import DiffOps
 from codpy.lalg import LAlg
-from codpy.permutation import lsap
-from codpy.clustering import MiniBatchkmeans, BalancedClustering
-from codpy.permutation import map_invertion
+from codpy.permutation import lsap, map_invertion
+
 
 class Kernel:
     """
@@ -89,15 +86,18 @@ class Kernel:
             self.set(x=x, y=y, fx=fx, **kwargs)
         else:
             self.x, self.y, self.fx = None, None, None
-        self.kernels={}
+        self.kernels = {}
+
     def is_valid(self):
         return self.valid
+
     def dim(self) -> int:
         """
         return the dimension of the training set
         """
         return self.dim_
-    def __set_dim(self,dim):
+
+    def __set_dim(self, dim):
         """
         return the dimension of the training set
         """
@@ -110,6 +110,8 @@ class Kernel:
         :returns: A clustering of the set x into N clusters.
         :rtype: :class:`callable`
         """
+        from codpy.clustering import BalancedClustering, MiniBatchkmeans
+
         return lambda x, N, **kwargs: BalancedClustering(MiniBatchkmeans, x=x, N=N)
 
     def default_kernel_functor(self) -> callable:
@@ -132,19 +134,22 @@ class Kernel:
         if self.get_order() is None:
             return out
         else:
+
             class piped:
-                def __init__(self,fun,order,reg):
-                    self.fun, self.order,self.reg = fun,order,reg
+                def __init__(self, fun, order, reg):
+                    self.fun, self.order, self.reg = fun, order, reg
+
                 def __call__(self):
                     self.fun()
                     linearkernel = core.KernelSetters.kernel_helper(
                         setter=core.KernelSetters.set_linear_regressor_kernel,
-                        polynomial_order=self.order+1,
+                        polynomial_order=self.order + 1,
                         regularization=self.reg,
-                        set_map=None
+                        set_map=None,
                     )
                     KerInterface.pipe_kernel_fun(linearkernel, self.reg)
-            return piped(out,self.get_order(),self.reg)
+
+            return piped(out, self.get_order(), self.reg)
 
     def set_custom_kernel(
         self,
@@ -213,8 +218,10 @@ class Kernel:
             >>> y_data = np.array([...])
             >>> kernel_matrix = Kernel(x=x_data,y=y_data).knm()
         """
-        if x is None: x = self.get_x()
-        if y is None: y = self.get_y()
+        if x is None:
+            x = self.get_x()
+        if y is None:
+            y = self.get_y()
         if self.get_map() is not None:
             x, y = self.get_map()(x), self.get_map()(y)
 
@@ -241,15 +248,21 @@ class Kernel:
             >>> y_data = np.array([...])
             >>> kernel_matrix = Kernel(x=x_data,y=y_data).knm()
         """
-        if x is None: x = self.get_x()
-        if y is None: y = self.get_y()
+        if x is None:
+            x = self.get_x()
+        if y is None:
+            y = self.get_y()
         if self.get_map() is not None:
             x, y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
 
         return core.KerOp.dnm(x=x, y=y, fy=fy, kernel_ptr=self.get_kernel())
 
     def get_knm_inv(
-        self, epsilon: float = None, epsilon_delta: np.ndarray = None, reg=None,**kwargs
+        self,
+        epsilon: float = None,
+        epsilon_delta: np.ndarray = None,
+        reg=None,
+        **kwargs,
     ) -> np.ndarray:
         """
         Retrieve the inverse of the kernel matrix :math:`K^{-1}(x, y)` using least squares computations.
@@ -282,7 +295,8 @@ class Kernel:
             self.knm_inv = None
 
         if self.knm_inv is None:
-            if epsilon is None: epsilon = self.reg
+            if epsilon is None:
+                epsilon = self.reg
             if epsilon_delta is None:
                 epsilon_delta = []
             else:
@@ -292,16 +306,16 @@ class Kernel:
             else:
                 x, y = self.get_x(), self.get_y()
             if reg is None:
-                reg=self.reg
+                reg = self.reg
             self._set_knm_inv(
                 core.KerOp.knm_inv(
                     x=x,
                     y=y,
                     order=self.order,
-                    reg= reg,
+                    reg=reg,
                     reg_matrix=epsilon_delta,
                     kernel_ptr=self.get_kernel(),
-                    **kwargs
+                    **kwargs,
                 )
             )
         return self.knm_inv
@@ -338,24 +352,23 @@ class Kernel:
         if not hasattr(self, "x"):
             self.x = None
         return self.x
-    def density(self, x,**kwargs):
+
+    def density(self, x, **kwargs):
         """
         Return an unnormalized model of the density of the law $p_k(x | X)$, $X=(x^1,\cdots,x^N)$ being the training set and $k$ the kernel.
         This model comes from the kernel extrapolation operator $f_k(x)=k(x,X)k(X,X)^{-1}f(X)$
         $\int f(x) dp(x | X) = \int f(x) p_k(x | X) dx$
         The output is a distribution having input size $(x.shape[0])$.
 
-        This distribution is valued as $\sum_X k(x,X)k(X,X)^{-1}$,  
-        Take care that this quantity can be negative, and might lead to biaised estimations, depending on the used kernels. 
+        This distribution is valued as $\sum_X k(x,X)k(X,X)^{-1}$,
+        Take care that this quantity can be negative, and might lead to biaised estimations, depending on the used kernels.
         For unbiaised densities estimations, use NadarayaWatson instead.
         """
-        out = LAlg.prod(self.knm(x,self.get_x()), self.get_knm_inv())
-        out = out.sum(axis=1)/out.shape[1]
+        out = LAlg.prod(self.knm(x, self.get_x()), self.get_knm_inv())
+        out = out.sum(axis=1) / out.shape[1]
         return out
 
-    def set_x(
-        self, x: np.ndarray, rescale=True,**kwargs
-    ) -> None:
+    def set_x(self, x: np.ndarray, rescale=True, **kwargs) -> None:
         """
         Set the input data ``x`` for the kernel and update related internal states.
 
@@ -370,7 +383,7 @@ class Kernel:
         self._set_knm_inv(None)
         self._set_knm(None)
         self.set_theta(None)
-        if rescale :
+        if rescale:
             self.rescale()
 
     def set_y(self, y: np.ndarray = None, **kwargs) -> None:
@@ -417,9 +430,7 @@ class Kernel:
             self.fx = LAlg.prod(self.get_knm(), self.get_theta())
         return self.fx
 
-    def set_fx(
-        self, fx: np.ndarray, **kwargs
-    ) -> None:
+    def set_fx(self, fx: np.ndarray, **kwargs) -> None:
         """
         Set the function values ``fx`` for the input data.
 
@@ -469,8 +480,8 @@ class Kernel:
         :rtype: :class:`numpy.ndarray`
         """
 
-        if not hasattr(self,"Deltas") or self.Delta is None:
-            self.Delta = DiffOps.nabla_t_nabla(self.y, self.x,kernel=self.get_kernel())
+        if not hasattr(self, "Deltas") or self.Delta is None:
+            self.Delta = DiffOps.nabla_t_nabla(self.y, self.x, kernel=self.get_kernel())
         return self.Delta
 
     def greedy_select(
@@ -583,10 +594,10 @@ class Kernel:
             self.x, self.fx = None, None
             return
         if x is not None and fx is None:
-            self.set_x(core.get_matrix(x.copy()),**kwargs)
+            self.set_x(core.get_matrix(x.copy()), **kwargs)
             self.set_y(y=y)
             self.set_fx(None)
-            #self.rescale() # rescaling already done in set_x()
+            # self.rescale() # rescaling already done in set_x()
 
         if x is None and fx is not None:
             if self.get_kernel() is None:
@@ -601,11 +612,15 @@ class Kernel:
             self.set_fx(core.get_matrix(fx))
 
         if x is not None and fx is not None:
-            self.set_x(x,**kwargs), self.set_fx(fx,**kwargs), self.set_y(y=y,**kwargs)
+            (
+                self.set_x(x, **kwargs),
+                self.set_fx(fx, **kwargs),
+                self.set_y(y=y, **kwargs),
+            )
             # self.rescale(**kwargs) # done is set_x(..)
             pass
 
-        if not hasattr(self, "x"): 
+        if not hasattr(self, "x"):
             return self
         if self.n_batch is None or self.n_batch >= self.get_x().shape[0]:
             return self
@@ -705,14 +720,21 @@ class Kernel:
         if self.x is None:
             return 0
         return self.x.shape[0]
-    def copy(
-        self, kernel
-    ) -> None:
+
+    def copy(self, kernel) -> None:
         def helper(b):
-            if b is not None: return b.copy()
-            else: return None
-        self.x,self.y,self.theta,self.fx = helper(kernel.x),helper(kernel.y),helper(kernel.theta),helper(kernel.fx)
-        self.knm_,self.knm_inv = helper(kernel.knm_),helper(kernel.knm_inv)
+            if b is not None:
+                return b.copy()
+            else:
+                return None
+
+        self.x, self.y, self.theta, self.fx = (
+            helper(kernel.x),
+            helper(kernel.y),
+            helper(kernel.theta),
+            helper(kernel.fx),
+        )
+        self.knm_, self.knm_inv = helper(kernel.knm_), helper(kernel.knm_inv)
         self.kernel = kernel.kernel
 
     def update(
@@ -748,7 +770,7 @@ class Kernel:
         """
         self.set_kernel_ptr()
         if isinstance(z, list):
-            return [self.update(z_,fz_, **kwargs) for z_,fz_ in zip(z,fz)]
+            return [self.update(z_, fz_, **kwargs) for z_, fz_ in zip(z, fz)]
         z = core.get_matrix(z)
         if self.x is None:
             return None
@@ -770,7 +792,9 @@ class Kernel:
 
         return self
 
-    def add(self, y: np.ndarray = None, fy: np.ndarray = None, kernel_ptr=None,**kwargs) -> None:
+    def add(
+        self, y: np.ndarray = None, fy: np.ndarray = None, kernel_ptr=None, **kwargs
+    ) -> None:
         """
         Augments the training set by adding new data points and their corresponding function values.
 
@@ -808,15 +832,21 @@ class Kernel:
         # the method add computes an updated Gram matrix using the already
         # pre-computed Gram matrix K(x,x).
         knm_, knm_inv, y = Alg.add(
-            self.get_knm(), self.get_knm_inv(), self.get_x(), x, self.get_kernel(),self.order,0.
+            self.get_knm(),
+            self.get_knm_inv(),
+            self.get_x(),
+            x,
+            self.get_kernel(),
+            self.order,
+            0.0,
         )
         if fx is not None and self.get_fx() is not None:
-            self.set_fx(np.concatenate([self.get_fx(),fx], axis=0))
+            self.set_fx(np.concatenate([self.get_fx(), fx], axis=0))
         else:
             self.set_fx(fx)
-        new_x = np.concatenate([self.get_x(),x], axis=0)
-        self.set_x(new_x,rescale=False)
-        self.set_y(new_x,rescale=False)
+        new_x = np.concatenate([self.get_x(), x], axis=0)
+        self.set_x(new_x, rescale=False)
+        self.set_y(new_x, rescale=False)
         self.knm_, self.knm_inv = knm_, knm_inv
 
         return self
@@ -854,7 +884,8 @@ class Kernel:
         """
         self.set_kernel_ptr()
         return core.KerOp.discrepancy_error(x=self.get_x(), z=z)
-    def set_kernel(self,kernel_ptr) -> callable:
+
+    def set_kernel(self, kernel_ptr) -> callable:
         self.kernel = kernel_ptr
 
     def get_kernel(self) -> callable:
@@ -873,7 +904,7 @@ class Kernel:
             self.kernel = core.KerInterface.get_kernel_ptr()
         return self.kernel
 
-    def set_kernel_ptr(self,kernel_ptr = None) -> None:
+    def set_kernel_ptr(self, kernel_ptr=None) -> None:
         """
         Set the Codpy interface to use the current kernel function.
 
@@ -881,8 +912,10 @@ class Kernel:
         function, sets the polynomial order+1 (according to the C++ core convention), and applies the regularization
         parameter defined in the object.
         """
-        if self.order is None: order = 0
-        else: order = self.order+1
+        if self.order is None:
+            order = 0
+        else:
+            order = self.order + 1
         if kernel_ptr is not None:
             self.kernel = kernel_ptr
         core.KerInterface.set_kernel_ptr(self.get_kernel(), order, self.reg)
@@ -923,15 +956,19 @@ class Kernel:
                 )
             else:
                 core.KerInterface.rescale(
-                    self.get_x(), max=self.max_nystrom, kernel_ptr=self.get_kernel(),order = self.order,reg=self.reg
+                    self.get_x(),
+                    max=self.max_nystrom,
+                    kernel_ptr=self.get_kernel(),
+                    order=self.order,
+                    reg=self.reg,
                 )
             # retrives the kernel
             self.kernel = core.KerInterface.get_kernel_ptr()
             self.set_theta(None)
-            self.knm_inv, self.knm_ = None,None
+            self.knm_inv, self.knm_ = None, None
             self.valid = True
 
-    def __call__(self, z: np.ndarray,**kwargs) -> np.ndarray:
+    def __call__(self, z: np.ndarray, **kwargs) -> np.ndarray:
         """
         Predict the output using the kernel for input data ``z``.
 
@@ -963,11 +1000,18 @@ class Kernel:
         if fy is None:
             fy = self.get_knm_inv()
 
-        knm = core.KerOp.knm(x=z, y=self.get_y(), fy=fy,kernel_ptr = self.get_kernel(),order=self.order,reg=self.reg)
+        knm = core.KerOp.knm(
+            x=z,
+            y=self.get_y(),
+            fy=fy,
+            kernel_ptr=self.get_kernel(),
+            order=self.order,
+            reg=self.reg,
+        )
 
         if not hasattr(self, "set_clustering"):
             return knm
-        if len(self.kernels)==0:
+        if len(self.kernels) == 0:
             return knm
         mapped_indices = self.clustering(z)
         mapped_indices = map_invertion(mapped_indices)
@@ -976,8 +1020,7 @@ class Kernel:
             knm[indices] += self.kernels[key](z[indices])
         return knm
 
-    def grad(self, z: np.ndarray,**kwargs) -> np.ndarray:
-
+    def grad(self, z: np.ndarray, **kwargs) -> np.ndarray:
         if z is None:
             return None
         z = core.get_matrix(z)
@@ -987,13 +1030,15 @@ class Kernel:
 
         if theta is None:
             theta = self.get_knm_inv(**kwargs)
-        knm = core.DiffOps.nabla_knm(x=z, y=self.get_x(), theta=theta, kernel = self.get_kernel())
+        knm = core.DiffOps.nabla_knm(
+            x=z, y=self.get_x(), theta=theta, kernel=self.get_kernel()
+        )
 
         return knm
 
     def __and__(self, other):
         return BitwiseANDKernel(self, other)
-    
+
 
 def get_tensor_probas(policy):
     @np.vectorize
@@ -1003,7 +1048,8 @@ def get_tensor_probas(policy):
     return np.fromfunction(
         fun, shape=[policy.shape[0], policy.shape[1], policy.shape[1]], dtype=int
     )
-    
+
+
 class KernelClassifier(Kernel):
     """
     A simple overload of the kernel :class:`Kernel` for proabability handling.
@@ -1012,6 +1058,7 @@ class KernelClassifier(Kernel):
 
                 $$\text{softmax} (\log(f)_{k,\\theta})(\cdot)$$
     """
+
     def set_fx(
         self,
         fx: np.ndarray,
@@ -1037,20 +1084,21 @@ class KernelClassifier(Kernel):
     ):
         return super().greedy_select(N=N, x=x, fx=fx, all=all, norm_=norm_, **kwargs)
 
-    def grad(self, z: np.ndarray,**kwargs) -> np.ndarray:
-
+    def grad(self, z: np.ndarray, **kwargs) -> np.ndarray:
         out = super().grad(z)
         if out is None:
             return None
-        out = LAlg.prod_vector_matrix(out,get_tensor_probas(softmax(self.get_fx(),axis=1)))
+        out = LAlg.prod_vector_matrix(
+            out, get_tensor_probas(softmax(self.get_fx(), axis=1))
+        )
         return out
-    
+
     def update(
         self, z: np.ndarray, fz: np.ndarray, eps: float = None, **kwargs
     ) -> None:
-        return super().update(z=z,fz=np.log(fz),eps=eps,**kwargs)
+        return super().update(z=z, fz=np.log(fz), eps=eps, **kwargs)
 
-    
+
 from codpy.kengineering import *
 
 if __name__ == "__main__":
@@ -1061,9 +1109,9 @@ if __name__ == "__main__":
     # print(test.grad(z=0))
 
     # test derivative of classifier, that regressor to probabilites
-    y = np.random.rand(100,10)
-    x = np.random.rand(100,15)
-    k = KernelClassifier(x=x,fx=y)
-    print(k(z=np.random.rand(2,15)))
-    print(k.grad(z=np.random.rand(2,15)))
+    y = np.random.rand(100, 10)
+    x = np.random.rand(100, 15)
+    k = KernelClassifier(x=x, fx=y)
+    print(k(z=np.random.rand(2, 15)))
+    print(k.grad(z=np.random.rand(2, 15)))
     pass
