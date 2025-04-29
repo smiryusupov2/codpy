@@ -1,21 +1,11 @@
-import math
-import warnings
-import functools
 import numpy as np
-import abc
 
-import codpy.algs
-import itertools
-from codpy.core import _requires_rescale, KerInterface, kernel_setter, get_matrix
+from codpy.core import get_matrix
 from codpy.data_conversion import get_matrix
-from codpy.selection import column_selector
-from codpy.kernel import Kernel, KernelClassifier
-from codpy.sampling import rejection_sampling
+from codpy.kernel import Kernel
 from codpy.lalg import LAlg
-from codpy.plot_utils import multi_plot
+from codpy.sampling import rejection_sampling
 from codpy.utils import cartesian_outer_product
-import codpy.algs 
-import pandas as pd
 
 
 class Conditionner:
@@ -117,21 +107,35 @@ class NadarayaWatsonKernel(Conditionner):
 
     def get_var_kernel(self, **kwargs):
         class var_kernel:
-            def __init__(
-                self, call_back,**kwargs
-            ):
+            def __init__(self, call_back, **kwargs):
                 self.call_back = call_back
-                vars = np.zeros([self.call_back.x.shape[0], self.call_back.y.shape[1], self.call_back.y.shape[1]])
-                y_norm = self.call_back.y - self.call_back.get_expectation_kernel(**kwargs)(self.call_back.x)
+                vars = np.zeros(
+                    [
+                        self.call_back.x.shape[0],
+                        self.call_back.y.shape[1],
+                        self.call_back.y.shape[1],
+                    ]
+                )
+                y_norm = self.call_back.y - self.call_back.get_expectation_kernel(
+                    **kwargs
+                )(self.call_back.x)
+
                 def helper(i):
                     vars[i, :] = y_norm[i].T @ y_norm[i]
-                [helper(i) for i in range(self.call_back.x.shape[0])]
-                self.var_kernel = NadarayaWatsonKernel(x=self.call_back.x, y=vars.reshape(vars.shape[0],vars.shape[1]*vars.shape[2]), **kwargs)
 
-            def __call__(self,z,**kwargs):
-                out = self.var_kernel(z).reshape(z.shape[0],self.call_back.y.shape[1],self.call_back.y.shape[1])
+                [helper(i) for i in range(self.call_back.x.shape[0])]
+                self.var_kernel = NadarayaWatsonKernel(
+                    x=self.call_back.x,
+                    y=vars.reshape(vars.shape[0], vars.shape[1] * vars.shape[2]),
+                    **kwargs,
+                )
+
+            def __call__(self, z, **kwargs):
+                out = self.var_kernel(z).reshape(
+                    z.shape[0], self.call_back.y.shape[1], self.call_back.y.shape[1]
+                )
                 return out
-            
+
         if self.var_kernel is None and self.x is not None:
             self.var_kernel = var_kernel(self, **kwargs)
         return self.var_kernel
@@ -156,19 +160,20 @@ class NadarayaWatsonKernel(Conditionner):
         [helper(i) for i in range(x.shape[0])]
         return out
 
-    def get_expectation_kernel(self,**kwargs):
+    def get_expectation_kernel(self, **kwargs):
         # esp(y|x) - diff de proba de transition
         class expectation_kernel:
-            def __init__(
-                self, call_back,**kwargs
-            ):
+            def __init__(self, call_back, **kwargs):
                 self.call_back = call_back
 
-            def __call__(self,z,**kwargs):
-                density_x = self.call_back.density_x.kernel.knm(z,self.call_back.density_x.kernel.get_x())
-                density_x /= density_x.sum(axis=1)[:,None]
+            def __call__(self, z, **kwargs):
+                density_x = self.call_back.density_x.kernel.knm(
+                    z, self.call_back.density_x.kernel.get_x()
+                )
+                density_x /= density_x.sum(axis=1)[:, None]
                 fx = self.call_back.get_y()
-                return density_x@fx
+                return density_x @ fx
+
         if self.expectation_kernel is None and self.x is not None:
             self.expectation_kernel = expectation_kernel(self, **kwargs)
         return self.expectation_kernel
@@ -179,7 +184,6 @@ class NadarayaWatsonKernel(Conditionner):
         The output is expected to have size $(x.shape[0],y.shape[1])$.
         """
         return self.get_expectation_kernel()(x)
-
 
     def density(self, x, **kwargs):
         """
@@ -207,16 +211,23 @@ class NadarayaWatsonKernel(Conditionner):
         Return the kernel induced transition probability $p(y^i | x^i)$
         The output is expected to have size $(x.shape[0],y.shape[0])$.
         """
-        out = self.joint_density(y, x) 
-        out /= out.sum(axis=0)[None,:]  
-        out /= out.sum(axis=1)[:,None]  
+        out = self.joint_density(y, x)
+        out /= out.sum(axis=0)[None, :]
+        out /= out.sum(axis=1)[:, None]
         if fx is not None:
             return LAlg.prod(out, fx)
         return out
 
+
 class ConditionerKernel(Conditionner):
     def __init__(
-        self, x, y, latent_generator_x=None, latent_generator_y=None, expectation_kernel=None, **kwargs
+        self,
+        x,
+        y,
+        latent_generator_x=None,
+        latent_generator_y=None,
+        expectation_kernel=None,
+        **kwargs,
     ):
         """
         Base class to handle kernel conditional estimators of the law y | x using optimal transport
@@ -247,73 +258,83 @@ class ConditionerKernel(Conditionner):
         self.var_kernel = None
         # self.var_kernel = None
 
-
     def get_transition_kernel(self, **kwargs):
         # Estime pi(y|x) avec y et x donnés comme exemple, matrice de transition, proba d'avoir couple y_j sachant x_j etc
         """
         Return the transition kernel, used to extrapolate the conditional probabilities $p(y|x)$.
         """
+
         class transition_kernel(Kernel):
             def __init__(self, y, x, **kwargs):
                 self.xy = Kernel(x=x, **kwargs)
                 self.yx = Kernel(x=y, **kwargs)
 
-            def __call__(self, y, x, fx=None,**kwargs):
+            def __call__(self, y, x, fx=None, **kwargs):
                 probasy = self.yx(y)
-                probasy /= probasy.sum(axis=0)[None,:]
+                probasy /= probasy.sum(axis=0)[None, :]
                 probasx = self.xy(x)
-                probasx /= probasx.sum(axis=1)[:,None]
+                probasx /= probasx.sum(axis=1)[:, None]
                 if fx is not None:
-                    out = LAlg.prod(probasx,LAlg.prod(probasy.T,fx))
+                    out = LAlg.prod(probasx, LAlg.prod(probasy.T, fx))
                 else:
-                    out = LAlg.prod(probasx,probasy.T)
+                    out = LAlg.prod(probasx, probasy.T)
                 return out
 
         if self.pi is None and self.x is not None:
-            self.pi = transition_kernel(x=self.get_x(),y=self.get_y(),**kwargs)
+            self.pi = transition_kernel(x=self.get_x(), y=self.get_y(), **kwargs)
         return self.pi
-    def get_transition(self, y, x, fx=None,**kwargs):
+
+    def get_transition(self, y, x, fx=None, **kwargs):
         """
         Return the kernel induced transition probability $p(y = \{y^1,..,y^N\} | x = x^i)$
         The output is expected to have size $(x.shape[0],y.shape[0])$.
         """
         return self.get_transition_kernel(**kwargs)(y, x, fx)
-    def var(self, z, **kwargs):
 
+    def var(self, z, **kwargs):
         out = self.get_var_kernel()(z)
         return out
 
-    def get_var_kernel(self,**kwargs):
+    def get_var_kernel(self, **kwargs):
         class var_kernel(Kernel):
-            def __call__(self,z,**kwargs):
-                return super().__call__(z, **kwargs).reshape(z.shape[0],self.get_fx().shape[1],self.get_fx().shape[1])
-            
+            def __call__(self, z, **kwargs):
+                return (
+                    super()
+                    .__call__(z, **kwargs)
+                    .reshape(z.shape[0], self.get_fx().shape[1], self.get_fx().shape[1])
+                )
+
         if self.var_kernel is None and self.x is not None:
             vars = np.zeros([self.x.shape[0], self.y.shape[1], self.y.shape[1]])
             y_norm = self.y - self.get_expectation_kernel(**kwargs)(self.x)
+
             def helper(i):
                 vars[i, :] = y_norm[i].T @ y_norm[i]
+
             [helper(i) for i in range(self.x.shape[0])]
-            self.var_kernel = var_kernel(x=self.x, fx=vars.reshape(vars.shape[0],vars.shape[1]*vars.shape[2]), **kwargs)
+            self.var_kernel = var_kernel(
+                x=self.x,
+                fx=vars.reshape(vars.shape[0], vars.shape[1] * vars.shape[2]),
+                **kwargs,
+            )
         return self.var_kernel
 
-
-    def get_expectation_kernel(self,**kwargs):
+    def get_expectation_kernel(self, **kwargs):
         # esp(y|x) - diff de proba de transition
         class expectation_kernel(Kernel):
-            def __init__(
-                self, call_back,**kwargs
-            ):
+            def __init__(self, call_back, **kwargs):
                 super().__init__(**kwargs)
                 self.call_back = call_back
 
-            def __call__(self,z,**kwargs):
+            def __call__(self, z, **kwargs):
                 mapped_z = self.call_back.map_x(z, **kwargs)
                 expectation_y = super().__call__(self.call_back.map_x(z, **kwargs))
-                return self.call_back.map_xy_inv(np.concatenate([mapped_z,expectation_y],axis=1))[:,z.shape[1]:]
-            
+                return self.call_back.map_xy_inv(
+                    np.concatenate([mapped_z, expectation_y], axis=1)
+                )[:, z.shape[1] :]
+
         if self.expectation_kernel is None and self.x is not None:
-            self.expectation_kernel = Kernel(x=self.get_x(),fx=self.get_y(),**kwargs)
+            self.expectation_kernel = Kernel(x=self.get_x(), fx=self.get_y(), **kwargs)
         return self.expectation_kernel
 
     def expectation(self, x=None, **kwargs):
@@ -353,7 +374,8 @@ class ConditionerKernel(Conditionner):
         Return the estimation of the density of the law $p(x,y)$
         The output is expected to have size $(x.shape[0],y.shape[0])$.
         """
-        return self.map_xy.density(np.concatenate([x,y],axis=0))
+        return self.map_xy.density(np.concatenate([x, y], axis=0))
+
 
 class PiKernel(ConditionerKernel):
     def __init__(self, **kwargs):
@@ -365,22 +387,23 @@ class PiKernel(ConditionerKernel):
         """
         Return the transition kernel, used to extrapolate the conditional probabilities $p(y|x)$.
         """
+
         class transition_kernel(Kernel):
             def __init__(self, y, x, **kwargs):
                 self.xy = Kernel(x=x, **kwargs)
                 self.yx = Kernel(x=y, **kwargs)
 
-            def __call__(self, y, x, fx=None,**kwargs):
+            def __call__(self, y, x, fx=None, **kwargs):
                 probasy = self.yx(y)
-                probasy /= probasy.sum(axis=0)[None,:]
+                probasy /= probasy.sum(axis=0)[None, :]
                 probasx = self.xy(x)
-                probasx /= probasx.sum(axis=1)[:,None]
+                probasx /= probasx.sum(axis=1)[:, None]
                 if fx is not None:
-                    out = LAlg.prod(probasx,LAlg.prod(probasy.T,fx))
+                    out = LAlg.prod(probasx, LAlg.prod(probasy.T, fx))
                 else:
-                    out = LAlg.prod(probasx,probasy.T)
+                    out = LAlg.prod(probasx, probasy.T)
                 return out
 
         if self.pi is None and self.x is not None:
-            self.pi = transition_kernel(x=self.get_x(),y=self.get_y(),**kwargs)
+            self.pi = transition_kernel(x=self.get_x(), y=self.get_y(), **kwargs)
         return self.pi

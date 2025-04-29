@@ -4,6 +4,7 @@ import xarray
 from codpydll import *
 from scipy.optimize import linear_sum_assignment
 
+from codpy.core import KerOp
 from codpy.data_conversion import get_matrix
 from codpy.dictionary import Dict, Set, cast
 from codpy.random_utils import random_select_interface

@@ -752,9 +752,10 @@ class DiffOps:
         return cd.op.nablaT_nabla_inv(get_matrix(x), get_matrix(y), get_matrix(fx))
 
     @staticmethod
-    def leray_t(x, y, fx=None, **kwargs):
+    def leray_t(x, y, fx=None, kernel_ptr=None, order=2, regularization=1e-8, **kwargs):
         fx = fx if fx is not None else []
-        return cd.op.Leray_T(get_matrix(x), get_matrix(y), get_matrix(fx))
+        KerInterface.set_kernel_ptr(kernel_ptr, order, regularization)
+        return cd.op.Leray_T(get_matrix(x), get_matrix(y), fx)
 
     @staticmethod
     def leray(x, y, fx=None, kernel_ptr=None, order=2, regularization=1e-8, **kwargs):
@@ -778,7 +779,7 @@ class DiffOps:
         """
         KerInterface.set_kernel_ptr(kernel_ptr, order, regularization)
         fx = fx if fx is not None else []
-        return cd.op.Leray(get_matrix(x), get_matrix(y), get_matrix(fx))
+        return cd.op.Leray(get_matrix(x), get_matrix(y), fx)
 
     @staticmethod
     def hessian(x, z, fx=None, **kwargs) -> np.ndarray:

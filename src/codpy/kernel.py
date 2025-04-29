@@ -255,7 +255,9 @@ class Kernel:
         if self.get_map() is not None:
             x, y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
 
-        return core.KerOp.dnm(x=x, y=y, fy=fy, kernel_ptr=self.get_kernel())
+        return core.KerOp.dnm(
+            x=x, y=y, fy=fy, kernel_ptr=self.get_kernel(), distance=None
+        )
 
     def get_knm_inv(
         self,
