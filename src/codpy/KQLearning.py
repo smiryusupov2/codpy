@@ -25,7 +25,7 @@ from codpy.utils import gather, cartesian_sum, cartesian_outer_product, fit_to_c
 import codpy.conditioning
 from codpy.permutation import map_invertion
 from codpy.clustering import MiniBatchkmeans, BalancedClustering
-
+import codpy.optimization as optimization
 
 class ReplayBuffer(object):
     def __init__(self, capacity=None, memory=None, **kwargs):
@@ -309,9 +309,15 @@ def Verhulst(probs, advantages):
 
 
 class KAgent:
+    """This is kagent class
+    
+    """
     def __init__(
         self, actions_dim, state_dim, gamma=0.99, kernel_type=GamesKernel, **kwargs
     ):
+        """Doc init here
+        
+        """
         self.kernel_type = kernel_type
         self.actions_dim = actions_dim
         self.state_dim = state_dim
@@ -330,6 +336,8 @@ class KAgent:
         self.eps_threshold = kwargs.get("eps_threshold", 0.0)
 
     def get_expectation_kernel(self, games, **kwargs):
+        """doc blabal
+        """
         return get_expectation_kernel(games, **kwargs)
 
     def get_conditioned_kernel(self, games, expectation_kernel, **kwargs):
@@ -989,7 +997,7 @@ class KController(KAgent):
             last_vals = function(self.x)
             last_val = last_vals.max()
             last_val_max_min = last_val - last_vals.min()
-            max_val, new_theta = codpy.optimization.continuous_optimizer(
+            max_val, new_theta = optimization.continuous_optimizer(
                 function,
                 self.controller.get_distribution(),
                 include=self.x,

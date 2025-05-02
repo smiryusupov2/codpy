@@ -11,7 +11,7 @@ from codpy.permutation import lsap, map_invertion
 
 class Kernel:
     """
-    A class to manipulate datas for various kernel-based operations, such as interpolations or extrapolations of functions, or mapping between distributions.
+    class to manipulate datas for various kernel-based operations, such as interpolations or extrapolations of functions, or mapping between distributions.
         Note:
             This class is similar to libraries as scikit-learn or XGBoost, in the sense that they use a fit / predict pattern, with the following correspondances and differences.
 
