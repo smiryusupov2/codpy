@@ -769,15 +769,16 @@ class KAgent:
         self, games, kernel=None, full_output=False, **kwargs
     ):
         """
-        Solves the Bellman equation on the given kernel. $$Q(s,a) = r + \gamma \max_{a'} Q(s',a')$$
-        It does so in an iterative way: 
+        Find a kernel regressor solving the Bellman equation  $$Q(s,a) = r + \gamma \max_{a'} Q(s',a')$$
+        The algorithm operates in an iterative way: 
             1. Solve $\\theta^{\pi}_{n+1/2} = \Big( K(Z, Z) - \gamma \sum_a \pi_{n+1/2}^a(S) K(W^a,Z)\Big)^{-1} R$
             2. Refines the parameters $\\theta_{n+1}^{\pi} = \lambda \\theta^{\pi}_{n+1/2} + (1 - \lambda) \\theta_{n}^{\pi}.$
         Where: 
             - Z is the concatenation of the states and actions
             - $K(Z,Z)$ is the gram matrix of current state actions pairs
             - $K(W^a,Z)$ is the gram matrix of the next states and actions
-            - $\pi_{n+1/2}^a(S)$ is the max of the next Q-values
+            - $\pi_{n+1/2}^a(S) = \delta_{\arg \max q^n(S,a) }$ is the max of the next Q-values, with $q^n$ the current Q-values.
+            - $R$ is the rewards function
         
         The function then assures a limit condition on the Q-values by setting the last Q-values equal to the rewards.
 
@@ -846,7 +847,7 @@ class KActorCritic(KAgent):
             return np.random.randint(0, self.actions_dim)
 
     def get_advantages(self, games, policy, **kwargs):
-        """Solves for $$A^{\pi^a}(s) = R(s,a) + \gamma V^{\pi}(s') - V^{\pi}(s), \quad s'=S(s,a).$$
+        """Compute the advantage function $$A^{\pi^a}(s) = R(s,a) + \gamma V^{\pi}(s') - V^{\pi}(s), \quad s'=S(s,a).$$
 
         Where :
             - $R(s,a)$ is the rewards function
@@ -1018,7 +1019,7 @@ class PolicyGradient(KActorCritic):
             return np.random.randint(0, self.actions_dim)
 
     def get_advantages(self, games, policy, **kwargs):
-        """Solves for 
+        """Compute
         $$A^{\pi}(s) = \\nabla_{y} Q^\pi_k(\cdot) = K(\cdot, Z) \\nabla_{y} \\theta^\pi.$$
 
         :param games: :class:`tuple` SARSD in reverse order.
@@ -1193,7 +1194,7 @@ class KQLearningHJB(KQLearning):
         self, games, kernel=None, full_output=False, maxiter=5, reorder=False, **kwargs
     ):
         """
-        Solves the Bellman equation on the given kernel. $$Q^{\pi}(s_t,a_t) = R(s_t,a_t) + \gamma \int \left[ \sum_{a \in \mathcal{A}} \pi^a(s_t) Q^{\pi}(s',a)\\right] d \mathbb{P}_S(s',s_t,a_t).$$
+        Solve the Bellman equation $$Q^{\pi}(s_t,a_t) = R(s_t,a_t) + \gamma \int \left[ \sum_{a \in \mathcal{A}} \pi^a(s_t) Q^{\pi}(s',a)\\right] d \mathbb{P}_S(s',s_t,a_t).$$
         Numerically, we effectively solve for the set of parameters $\\theta$ of the kernel $K$ such that:
         $$\\theta = \Big( K(Z, Z) - \gamma \sum_{a} \pi^a(S)\Gamma(P^a) K(P, Z)\Big)^{-1} R, \quad P = \{ S+F_k(S,a), a \}$$
         

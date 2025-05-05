@@ -16,10 +16,11 @@ from codpy.data_processing import hot_encoder
 from codpy.kernel import Kernel
 # A multi scale kernel method.
 from codpy.multiscale_kernel import *
+from codpy.clustering import *
 from sklearn.metrics import confusion_matrix
 
 os.environ["OPENBLAS_NUM_THREADS"] = "32"
-os.environ["OMP_NUM_THREADS"] = "32"
+os.environ["OMP_NUM_THREADS"] = "8"
 
 # %% [markdown]
 def get_MNIST_data(N=-1):
@@ -54,28 +55,17 @@ def show_confusion_matrix(z, fz, predictor=None, cm=True):
         print("confusion matrix:")
         print(out)
     print("score MNIST:", np.trace(out) / np.sum(out))
-    pass
-
+pass
 
 # %% [markdown]
 # Run codpy silently on/off.
-core.kernel_interface.set_verbose(False)
+core.kernel_interface.set_verbose(True)
 
 # %% [markdown]
 # The training set is `x,fx`, the test set is `z,fz`.
-N_clusters=100
-N_MNIST_pics=5000
-x, fx, z, fz = get_MNIST_data(N_MNIST_pics)
-
-# %% [markdown]
-# Select a multi scale kernel method where the centers are given by a k-mean algorithm.
+N_MNIST_pics=-1
 N_partition=5
-predictor = MultiScaleKernelClassifier(x=x,fx=fx,N=N_partition,method=MiniBatchkmeans)
-print("Reproductibility test:")
-show_confusion_matrix(x, fx, predictor,cm=False)
-print("Performance test:")
-show_confusion_matrix(z, fz, predictor,cm=False)
-
+x, fx, z, fz = get_MNIST_data(N_MNIST_pics)
 
 # %% [markdown]
 # Select a multi scale kernel where the centers are given by a greedy search algorithm.
@@ -84,3 +74,22 @@ print("Reproductibility test:")
 show_confusion_matrix(x, fx, predictor,cm=False)
 print("Performance test:")
 show_confusion_matrix(z, fz, predictor,cm=False)
+
+
+# %% [markdown]
+# Select a multi scale kernel where the centers are given by a sharp discrepancy algorithm.
+predictor = MultiScaleKernelClassifier(x=x,fx=fx,N=N_partition,method=SharpDiscrepancy)
+print("Reproductibility test:")
+show_confusion_matrix(x, fx, predictor,cm=False)
+print("Performance test:")
+show_confusion_matrix(z, fz, predictor,cm=False)
+
+# %% [markdown]
+# Select a multi scale kernel method where the centers are given by a k-mean algorithm.
+predictor = MultiScaleKernelClassifier(x=x,fx=fx,N=N_partition,method=MiniBatchkmeans)
+print("Reproductibility test:")
+show_confusion_matrix(x, fx, predictor,cm=False)
+print("Performance test:")
+show_confusion_matrix(z, fz, predictor,cm=False)
+
+

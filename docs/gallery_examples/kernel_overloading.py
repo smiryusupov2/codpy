@@ -8,6 +8,7 @@ This example demonstrates kernel overloading using CodPy.
 # import libraries
 import numpy as np
 from codpydll import *
+
 import codpy.core as core
 
 
@@ -15,7 +16,7 @@ import codpy.core as core
 class my_kernel(core.cd.kernel):
     # An example of overloading codpy kernel with a user-defined expression.
 
-    def __init__(self, bandwith = 1.,**kwargs):
+    def __init__(self, bandwith=1.0, **kwargs):
         core.cd.kernel.__init__(self)
         self.bandwidth_ = bandwith
 
@@ -26,11 +27,12 @@ class my_kernel(core.cd.kernel):
     def grad(self, x, y):
         return y * self.bandwidth_
 
+
 # %% [markdown]
 # Generate data for the kernel.
 
 # %%
-core.kernel_interface.set_verbose(True)
+core.KerInterface.set_verbose(True)
 x, y = np.random.randn(3, 2), np.random.randn(3, 2)
 
 # %% [markdown]
@@ -48,7 +50,7 @@ print("Result 1:", result_1)
 
 # %%
 my_kernel.set_kernel_ptr(my_kernel2)
-my_kernel_ptr2 = core.kernel_interface.get_kernel_ptr()
+my_kernel_ptr2 = core.KerInterface.get_kernel_ptr()
 result_2 = my_kernel_ptr2.k(x[0], y[0])
 print("Result 2:", result_2)
 
@@ -56,13 +58,13 @@ print("Result 2:", result_2)
 # Compute the Gram matrix with my_kernel2 and display it.
 
 # %%
-gram_matrix = core.op.Knm(x, y)
+gram_matrix = core.KerOp.knm(x, y)
 print("Gram Matrix:", gram_matrix)
 
 # %% [markdown]
 # You can switch kernel as follow.
 my_kernel.set_kernel_ptr(my_kernel1)
-print(core.op.Knm(x, y))
+print(core.KerOp.knm(x, y))
 pass
 
 # %%

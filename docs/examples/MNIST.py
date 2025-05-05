@@ -79,7 +79,7 @@ def show_confusion_matrix(z, fz, predictor=None, cm=True):
 
 # %% [markdown]
 # Run codpy silently on/off.
-core.kernel_interface.set_verbose(False)
+core.KerInterface.set_verbose(False)
 
 # %% [markdown]
 # Set variables and pick MNIST data for the test.
