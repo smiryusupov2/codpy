@@ -158,6 +158,9 @@ class GamesClustering:
 
 
 class GamesKernel(Kernel):
+    """A specific type of kernel for deterministic policies, handling clustering
+    
+    """
     def __init__(
         self, latent_distribution=None, max_size=None, next_states=None, **kwargs
     ):
@@ -262,6 +265,8 @@ class GamesKernel(Kernel):
 
 
 class GamesKernelClassifier(GamesKernel):
+    """A specific type of kernel for stochastic policies. Outputs probabilities 
+    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -288,6 +293,13 @@ class GamesKernelClassifier(GamesKernel):
 
 
 def rl_hot_encoder(actions, actions_dim):
+    """Hot encodes actions over actions_dim.
+
+    :param actions: :class:`np.ndarray`.
+    :param actions_dim: :class:`int` The dimension of the actions.
+
+    :return: :class:`pd.DataFrame`
+    """
     out = hot_encoder(pd.DataFrame(np.float64(actions)), cat_cols_include=[0])
     if out.shape[1] != actions_dim:
         for i in range(actions_dim):
@@ -309,14 +321,20 @@ def Verhulst(probs, advantages):
 
 
 class KAgent:
-    """This is kagent class
+    """
+    Basic KAgent. Has most of the usefull methods for other Reinforcement Learning algorithms.
     
     """
     def __init__(
         self, actions_dim, state_dim, gamma=0.99, kernel_type=GamesKernel, **kwargs
     ):
-        """Doc init here
-        
+        """Initializes the KAgent with the given parameters. Every agent has an actor and critic kernel. Some classes might not use both.
+
+        :param actions_dim: :class:`int` The action dimension of the environment.
+        :param state_dim: :class:`int` The state dimension of the environment.
+        :param gamma: :class:`float` Discount factor.
+        :param kernel_type: :class:`codpy.kernel.Kernel` Type of kernel to be used as actor and critic.
+        :type kwargs: :class:`dict` 
         """
         self.kernel_type = kernel_type
         self.actions_dim = actions_dim
@@ -336,8 +354,6 @@ class KAgent:
         self.eps_threshold = kwargs.get("eps_threshold", 0.0)
 
     def get_expectation_kernel(self, games, **kwargs):
-        """doc blabal
-        """
         return get_expectation_kernel(games, **kwargs)
 
     def get_conditioned_kernel(self, games, expectation_kernel, **kwargs):
@@ -358,6 +374,17 @@ class KAgent:
         return out
 
     def compute_returns(self, states, actions, next_states, rewards, dones, **kwargs):
+        """
+        Computes $G_t = R_t + \gamma G_{t+1}$ for the given history.
+
+        :param states: :class:`np.ndarray` The states of the game, in reverse order.
+        :param actions:  
+        :param next_states:
+        :param rewards: 
+        :param dones: 
+
+        :return: :class:`np.ndarray` 
+        """
         returns, next_return = [], 0.0
         # for t in reversed(range(len(rewards))): # we already reversed time
         for t in range(len(rewards)):
@@ -393,6 +420,13 @@ class KAgent:
         games,
         q_value_function
     ):
+        """Computes the optimal actions for the given $Q(s,a)$ function, with $$Q^*(s,a) = R(s,a) + \gamma \max_{a'} Q^{\pi}(s',a')$$.
+
+        :param games: :class:`tuple` SARSD in reverse order.
+        :param q_value_function: :class:`codpy.kernel.Kernel` The Q-value function.
+
+        :return: :class:`np.ndarray` The optimal actions one hot encoded.
+        """
         states, actions, next_states, rewards, returns, dones = games
         states_actions = np.concatenate([states, actions], axis=1)
         next_states_actions = self.all_states_actions(next_states)
@@ -403,7 +437,18 @@ class KAgent:
     
     def update_probabilities(
         self, advantages, games, last_policy, dt=None, kernel=None, clip=None,**kwargs
-    ):  ##this function assumes that advantages[i,j]=KCritic([states[i],j])
+    ):  
+        """Updates the policies for advantage-based algorithms. The advantage either is $\\nabla_{y} Q^\pi_k(\cdot)$ for Policy Gradient methods, or $R(s,a) + \gamma V^{\pi}(s') - V^{\pi}(s)$ for ActorCritic.
+
+        It does normalize the advantages and then computes the new policy as an interpolation between the last policy and the new one.
+
+        :param advantages: :class:`np.ndarray` 
+        :param games: :class:`tuple` SARSD in reverse order.
+        :param last_policy: :class:`np.ndarray` The last policy.
+        
+        :return: :class:`codpy.kernel.Kernel` The new policy.
+        """
+        ##this function assumes that advantages[i,j]=KCritic([states[i],j])
         states, actions, next_states, rewards, returns, dones = games
         advantages -= advantages.mean(axis=1)[:, None]
         if dt is None:
@@ -486,6 +531,23 @@ class KAgent:
     def get_derivatives_policy_state_action_value_function(
         self, games, policy, output_value_function=False, **kwargs
     ):
+        """
+        Solve for $$\\nabla_{y} \\theta^\pi = \gamma \Big(K(Z,Z) - \gamma \sum_a \pi^a(S) K(W,Z) \Big)^{-1} \sum_a\Big(Q^{\pi}_k(W) \pi^a(\delta_b(a)-\pi^b)\Big)$$
+
+        Where: 
+
+            - $Z$ are the state actions
+            - $W$ are the next state actions
+            - $K(Z,Z)$ is the Gram matrix of the training points
+            - $\gamma \sum_a \pi^a(S) K(W,Z)$ is the weighted projection operator onto the next state-actions 
+            - $Q^{\pi}_k(W)$ is the critic evaluated at the next state-actions
+            - $\pi^a(\delta_b(a)-\pi^b)$ is an adjustment based on probability differences
+
+        :param games: :class:`tuple` SARSD in reverse order.
+        :param policy: :class:`np.ndarray` The policy to be used for weigthing the next state-actions.
+
+        :return: :class:`codpy.kernel.Kernel` The derivative estimator of $Q(s,a)$
+        """
         # return an estimator of \nabla_\pi V(\pi) where
         # - \pi is a policy, that is a probability distribution over actions
         # - V(\pi) is the value function of the policy \pi
@@ -706,6 +768,24 @@ class KAgent:
     def optimal_states_values_function(
         self, games, kernel=None, full_output=False, **kwargs
     ):
+        """
+        Solves the Bellman equation on the given kernel. $$Q(s,a) = r + \gamma \max_{a'} Q(s',a')$$
+        It does so in an iterative way: 
+            1. Solve $\\theta^{\pi}_{n+1/2} = \Big( K(Z, Z) - \gamma \sum_a \pi_{n+1/2}^a(S) K(W^a,Z)\Big)^{-1} R$
+            2. Refines the parameters $\\theta_{n+1}^{\pi} = \lambda \\theta^{\pi}_{n+1/2} + (1 - \lambda) \\theta_{n}^{\pi}.$
+        Where: 
+            - Z is the concatenation of the states and actions
+            - $K(Z,Z)$ is the gram matrix of current state actions pairs
+            - $K(W^a,Z)$ is the gram matrix of the next states and actions
+            - $\pi_{n+1/2}^a(S)$ is the max of the next Q-values
+        
+        The function then assures a limit condition on the Q-values by setting the last Q-values equal to the rewards.
+
+        :param games: :class:`tuple` SARSD in reverse order.
+        :param kernel: :class:`codpy.kernel.Kernel` Kernel to be used. If None, a kernel fit on the returns is used. 
+
+        :return: :class:`codpy.kernel.Kernel` The kernel with the optimal Q-values.
+        """
 
         states, actions, next_states, rewards, returns, dones = games
 
@@ -749,6 +829,8 @@ class KAgent:
 
 
 class KActorCritic(KAgent):
+    """KActorCritic Kernel algorithm. It is policy-based and uses a :class:`GamesKernelClassifier` as the actor.
+    """
 
     def __call__(self, state, **kwargs):
         # return 1
@@ -764,6 +846,14 @@ class KActorCritic(KAgent):
             return np.random.randint(0, self.actions_dim)
 
     def get_advantages(self, games, policy, **kwargs):
+        """Solves for $$A^{\pi^a}(s) = R(s,a) + \gamma V^{\pi}(s') - V^{\pi}(s), \quad s'=S(s,a).$$
+
+        Where :
+            - $R(s,a)$ is the rewards function
+            - $V^{\pi}(s)$ is the value function
+            - $S(s,a)$ is the next state function.
+        
+        """
         states, actions, next_states, rewards, returns, dones = games
         value_function = self.get_state_action_value_function(
             games, policy, max_y=None,**kwargs
@@ -814,6 +904,9 @@ class KActorCritic(KAgent):
 
 
 class KQLearning(KActorCritic):
+    """Implements KQLearning algorithm. Uses clustering by default in the :func:`train` method.
+    
+    """
 
     def __call__(self, state, **kwargs):
         self.eps_threshold *= 0.999
@@ -906,6 +999,9 @@ class KQLearning(KActorCritic):
 
 
 class PolicyGradient(KActorCritic):
+    """
+    PolicyGradient Kernel algorithm. It is policy-based and uses a :class:`GamesKernelClassifier` as the actor.
+    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         params = kwargs.get("KCritic", {})
@@ -922,6 +1018,15 @@ class PolicyGradient(KActorCritic):
             return np.random.randint(0, self.actions_dim)
 
     def get_advantages(self, games, policy, **kwargs):
+        """Solves for 
+        $$A^{\pi}(s) = \\nabla_{y} Q^\pi_k(\cdot) = K(\cdot, Z) \\nabla_{y} \\theta^\pi.$$
+
+        :param games: :class:`tuple` SARSD in reverse order.
+        :param policy: :class:`np.ndarray` The policy to be used for weigthing the next state-actions.
+        :param kwargs: :class:`dict` 
+
+        :return: :class:`tuple` The  advantages of the policy along with a kernel estimator for new advantages on state-action pairs.
+        """
         # advantage taken as A = \nabla_\pi \pi Q^{pi}(S_T,A_T), so that the overall gradient policy can be written as
         #  d/di \pi(t) = d/d\pi Q^{pi}(S_T,A_T)
         #  Thus formally d/dt  Q^{pi}(S_T,A_T) = < \nabla_\pi \pi Q^{pi}(S_T,A_T), d/dt \pi> = | \nabla_\pi \pi Q^{pi}(S_T,A_T)|^2
@@ -935,6 +1040,9 @@ class PolicyGradient(KActorCritic):
 
 
 class KController(KAgent):
+    """
+    Implements the KController algorithm. The specificities of this algorithm is that it uses a heuristic controller to be tuned.
+    """
     def __init__(self, state_dim, actions_dim, controller, **kwargs):
         self.controller = controller
         self.x, self.y = None, None
@@ -943,6 +1051,13 @@ class KController(KAgent):
         super().__init__(state_dim=state_dim, actions_dim=actions_dim, **kwargs)
 
     def __call__(self, z, **kwargs):
+        """
+        The internal tuned heuristic controller directly outputs the action. 
+
+        :param z: :class:`np.ndarray the state 
+
+        :return: :class:`int`
+        """
         return self.controller(z, **kwargs)
 
     def get_reward(self, game, **kwargs):
@@ -960,6 +1075,8 @@ class KController(KAgent):
         return self.expectation_kernel
 
     def get_function(self, **kwargs):
+        """Defines the function to be optimized ${L}(R_{k,\lambda_e},\\theta)$.
+        """
         self.expectation_estimator = self.get_expectation_estimator(
             self.x, self.y, **kwargs
         )
@@ -977,6 +1094,14 @@ class KController(KAgent):
         return function  # to cope with exploration
 
     def train(self, game, **kwargs):
+        """
+        Solves for $$\\theta_{n+1} = \\arg \max_{\\theta \in \Theta_n} \mathcal{L}(R_{k,\lambda_e},\\theta), \quad \Theta_{n} = \\bar{\\theta_e} \cup \Theta_{N,n}$$
+        
+        Where $\Theta_{N,n}$ is a screening around the last $\\theta_n$ and is defined as follow:
+        $$\Theta_{N,n} = (\\theta_n+\\alpha^n \Theta_N) \cap \Theta$$ with $\\alpha^n$ is a contracting factor and ${L}(R_{k,\lambda_e},\\theta)$ is an optimization function which can be defined and tuned based on your needs at :func:`get_function`.
+        
+        :param game: :class:`tuple` SARSD in reverse order.
+        """
         states, actions, next_states, rewards, dones = self.format(game, **kwargs)
         self.replay_buffer.push(states, actions, next_states, rewards, dones, **kwargs)
         reward = get_matrix(rewards)
@@ -1061,10 +1186,23 @@ def get_expectation_kernel(games, **kwargs):
 
 
 class KQLearningHJB(KQLearning):
+    """Implements the Hamilton-Jacobi-Bellman Q-learning algorithm.
+    """
 
     def optimal_states_values_function(
         self, games, kernel=None, full_output=False, maxiter=5, reorder=False, **kwargs
     ):
+        """
+        Solves the Bellman equation on the given kernel. $$Q^{\pi}(s_t,a_t) = R(s_t,a_t) + \gamma \int \left[ \sum_{a \in \mathcal{A}} \pi^a(s_t) Q^{\pi}(s',a)\\right] d \mathbb{P}_S(s',s_t,a_t).$$
+        Numerically, we effectively solve for the set of parameters $\\theta$ of the kernel $K$ such that:
+        $$\\theta = \Big( K(Z, Z) - \gamma \sum_{a} \pi^a(S)\Gamma(P^a) K(P, Z)\Big)^{-1} R, \quad P = \{ S+F_k(S,a), a \}$$
+        
+        Where:
+            - $K(Z,Z)$ is the kernel matrix of the states and actions.
+            - $P$ is the set of the predicted next state actions possibilities.
+            - $\Gamma(P^a)$ is the transition probability matrix. 
+            - $K(P,Z)$ is the kernel matrix of the predicted next state actions and the states and actions.
+        """
 
         states, actions, next_states, rewards, returns, dones = games
         states_actions = np.concatenate([states, actions], axis=1)
