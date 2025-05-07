@@ -40,7 +40,7 @@ class Kernel:
         x=None,
         y=None,
         fx=None,
-        max_nystrom: int = sys.maxsize,
+        max_nystrom: int = 1000,
         reg: float = 1e-9,
         order: int = None,
         n_batch: int = sys.maxsize,

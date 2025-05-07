@@ -19,6 +19,8 @@ class MiniBatchkmeans(sklearn.cluster.MiniBatchKMeans):
     ):
         if x.shape[0] <= N:
             N = x.shape[0]
+        self.N = N
+        self.x = x
         super().__init__(
             n_clusters=N,
             init="k-means++",
