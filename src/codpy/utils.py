@@ -4,7 +4,6 @@ import operator
 import numpy as np
 import itertools
 from codpydll import *
-import codpy.lalg
 from sklearn import linear_model
 from sklearn.preprocessing import PolynomialFeatures
 

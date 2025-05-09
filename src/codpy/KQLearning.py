@@ -770,14 +770,14 @@ class KAgent:
     ):
         """
         Find a kernel regressor solving the Bellman equation  $$Q(s,a) = r + \gamma \max_{a'} Q(s',a')$$
-        The algorithm operates in an iterative way: 
+        The algorithm computes $Q^n(s,a)$ iteratively : 
             1. Solve $\\theta^{\pi}_{n+1/2} = \Big( K(Z, Z) - \gamma \sum_a \pi_{n+1/2}^a(S) K(W^a,Z)\Big)^{-1} R$
             2. Refines the parameters $\\theta_{n+1}^{\pi} = \lambda \\theta^{\pi}_{n+1/2} + (1 - \lambda) \\theta_{n}^{\pi}.$
         Where: 
             - Z is the concatenation of the states and actions
             - $K(Z,Z)$ is the gram matrix of current state actions pairs
             - $K(W^a,Z)$ is the gram matrix of the next states and actions
-            - $\pi_{n+1/2}^a(S) = \delta_{\arg \max q^n(S,a) }$ is the max of the next Q-values, with $q^n$ the current Q-values.
+            - $\pi_{n+1/2}^a(S) = \delta_{\\arg \max q^n(S,a) }(S)$ is the max of the next Q-values, with $q^n$ the current Q-values.
             - $R$ is the rewards function
         
         The function then assures a limit condition on the Q-values by setting the last Q-values equal to the rewards.

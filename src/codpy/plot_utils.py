@@ -178,3 +178,18 @@ def compare_plot_lists(kwargs):
     title = kwargs.get("title", "")
     if title:
         ax.set_title(title, fontsize=fontsize)
+
+
+def plot_confusion_matrix(confusion_matrix ,ax = None, **kwargs):
+    if ax is None: ax = plt.axes()
+    import seaborn as sns
+    fmt = kwargs.get('fmt',"d")
+    cmap = kwargs.get('cmap',plt.cm.copper)
+    sns.heatmap(confusion_matrix, ax=ax, annot=True, fmt=fmt, cmap=cmap)
+    labels = kwargs.get('labels',"")
+    title = kwargs.get('title',"Conf. Mat.:")
+    fontsize,rotationx,rotationy = kwargs.get('fontsize',14),kwargs.get('rotationx',90),kwargs.get('rotationy',360)
+    if ax is not None:
+        ax.set_title(title, fontsize=fontsize)
+        ax.set_xticklabels(labels, fontsize=fontsize, rotation=rotationx)
+        ax.set_yticklabels(labels, fontsize=fontsize, rotation=rotationy)

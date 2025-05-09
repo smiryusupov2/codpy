@@ -3,6 +3,7 @@ MANIFEST
 *.py[co]
 Output.xml
 .DS_Store
+gallery_examples
 _build
 _generate
 build

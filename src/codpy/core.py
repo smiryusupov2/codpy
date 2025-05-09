@@ -2,7 +2,7 @@ import itertools
 from functools import partial
 
 import numpy as np
-import pandas as pd
+#import pandas as pd
 from codpydll import *
 
 from codpy.data_conversion import get_matrix
@@ -1771,3 +1771,5 @@ def kernel_setter(kernel, map, polynomial_order=0, regularization=1e-8, bandwidt
         The configured kernel function.
     """
     return lambda: set_kernel(kernel, map, polynomial_order, regularization, bandwidth)
+if __name__ == "__main__":
+    pass

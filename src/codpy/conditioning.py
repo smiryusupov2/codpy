@@ -225,7 +225,7 @@ class ConditionerKernel(Conditionner):
         x,
         y,
         latent_generator_x=None,
-        latent_generator_y=None,
+        latent_generator_y= None,
         expectation_kernel=None,
         **kwargs,
     ):
@@ -234,29 +234,40 @@ class ConditionerKernel(Conditionner):
         """
         x, y = get_matrix(x), get_matrix(y)
         super().__init__(x=x, y=y, **kwargs)
-        # xy = np.concatenate([x, y], axis=1)
-        # self.cut_ = x.shape[1]
-        # self.latent_generator_xy = lambda n: np.random.normal(
-        #     size=[n, x.shape[1] + y.shape[1]]
-        # )
-        # self.latent_generator_x = lambda n: np.random.normal(size=[n, x.shape[1]])
-        # self.latent_generator_y = lambda n: np.random.normal(size=[n, y.shape[1]])
-        # self.latent_x, self.latent_y = self.latent_generator_x(
-        #     x.shape[0]
-        # ), self.latent_generator_y(x.shape[0])
-        # self.latent_xy = np.concatenate([self.latent_x, self.latent_y], axis=1)
+        self.latent_generator_x = latent_generator_x
+        if latent_generator_x is None:
+            self.latent_x = self.x
+        else:
+            self.latent_x = self.latent_generator_x(x.shape[0])        
+        
+        if latent_generator_y is None:
+            self.latent_generator_y = lambda n: np.random.normal(size=[n, self.y.shape[1]])
+        else:
+            self.latent_generator_y = latent_generator_y
+            self.latent_y = self.latent_generator_y(self.y.shape[0])        
 
-        # self.map_xy_inv = Kernel(x=self.latent_xy, **kwargs).map(y=xy)
-        # self.map_xy = Kernel(
-        #     x=self.map_xy_inv.get_fx(), fx=self.map_xy_inv.get_x(), **kwargs
-        # )
-        # latent_x = self.map_xy_inv.get_x()[:, : x.shape[1]]
-        # im_x = self.map_xy_inv.get_fx()[:, : x.shape[1]]
-        # self.map_x = Kernel(x=im_x, fx=latent_x, **kwargs)
         self.pi = None
         self.expectation_kernel = expectation_kernel
         self.var_kernel = None
+        self.map_xy = None
         # self.var_kernel = None
+    def set_maps(self,**kwargs): 
+        """
+        Set the maps for the kernel.
+        """
+        self.xy = np.concatenate([self.x, self.y], axis=1)
+        self.latent_y = self.latent_generator_y(self.y.shape[0])
+        self.latent_xy = np.concatenate([self.latent_x, self.latent_y], axis=1)
+        self.map_xy_inv = Kernel(x=self.latent_xy, order=2,**kwargs).map(y=self.xy)
+        self.map_xy = Kernel(
+            x=self.map_xy_inv.get_fx(), fx=self.map_xy_inv.get_x(), **kwargs
+        )
+        latent_x = self.map_xy_inv.get_x()[:, : self.x.shape[1]]
+        im_x = self.map_xy_inv.get_fx()[:, : self.x.shape[1]]
+        if self.latent_generator_x is not None:
+            self.map_x = Kernel(x=im_x, fx=latent_x, order=2,**kwargs)
+        else:
+            self.map_x = None           
 
     def get_transition_kernel(self, **kwargs):
         # Estime pi(y|x) avec y et x donnés comme exemple, matrice de transition, proba d'avoir couple y_j sachant x_j etc
@@ -346,21 +357,24 @@ class ConditionerKernel(Conditionner):
 
     def sample(self, x, n, **kwargs):
         """
-        Return N sampling for each z of the estimated law y | z.
+        Return N sampling for each z of the estimated law y | x.
         output is of size (x.shape[0],n,y.shape[1])
         """
-        latent_x = self.map_x(x, **kwargs)
+        if self.map_xy is None:
+           self.set_maps(**kwargs)
         latent_y = self.latent_generator_y(n)
+        if self.map_x is not None:
+            latent_x = self.map_x(x)
+        else:
+            latent_x = x
         latent_xy = cartesian_outer_product(latent_x, latent_y).reshape(
             latent_x.shape[0] * latent_y.shape[0], self.map_xy.get_fx().shape[1]
         )
         mapped = self.map_xy_inv(latent_xy).reshape(
             latent_x.shape[0], latent_y.shape[0], self.map_xy_inv.get_fx().shape[1]
         )
-        mapped = mapped[:, :, self.cut_ :]
+        mapped = mapped[:, :, self.x.shape[1] :]
         return mapped
-
-        # return out+self.meany
 
     def density(self, x, **kwargs):
         """
