@@ -1756,20 +1756,33 @@ def set_kernel(kernel, map, polynomial_order=0, regularization=1e-8, bandwidth=1
 
     return kernel_func(polynomial_order, regularization, map_func)()
 
+class kernel_setter:
+    def __init__(self, kernel, map, polynomial_order=0, regularization=1e-8, bandwidth=1.0):
+        self.kernel = kernel
+        self.map = map
+        self.polynomial_order = polynomial_order
+        self.regularization = regularization
+        self.bandwidth = bandwidth
 
-def kernel_setter(kernel, map, polynomial_order=0, regularization=1e-8, bandwidth=1.0):
-    """
-    Set the kernel function with specified parameters using string identifiers.
+    def __call__(self, *args, **kwds):
+        order = kwds.get("order", self.polynomial_order)
+        if order is None:
+            order = self.polynomial_order
+        return set_kernel(self.kernel, self.map, order, self.regularization, self.bandwidth)
+    
+# def kernel_setter(kernel, map, polynomial_order=0, regularization=1e-8, bandwidth=1.0):
+#     """
+#     Set the kernel function with specified parameters using string identifiers.
 
-    Args:
-        kernel (str): The name of the kernel function to use.
-        map (str): The name of the mapping function to use.
-        polynomial_order (int): The polynomial order for the kernel function.
-        regularization (float): The regularization parameter for the kernel.
+#     Args:
+#         kernel (str): The name of the kernel function to use.
+#         map (str): The name of the mapping function to use.
+#         polynomial_order (int): The polynomial order for the kernel function.
+#         regularization (float): The regularization parameter for the kernel.
 
-    Returns:
-        The configured kernel function.
-    """
-    return lambda: set_kernel(kernel, map, polynomial_order, regularization, bandwidth)
+#     Returns:
+#         The configured kernel function.
+#     """
+#     return lambda: set_kernel(kernel, map, polynomial_order, regularization, bandwidth)
 if __name__ == "__main__":
     pass
