@@ -46,7 +46,7 @@ class multi_plot:
             else:
                 ax = self.get_subplot(nrows, ncols, j + 1, **kwargs)
             if isinstance(param, dict):
-                fun({**param, **kwargs, **{"ax": ax, "fig": self.fig}})
+                fun({**param, **kwargs, **{"ax": ax, "fig": self.fig, "legend": legend}})
             else:
                 fun(
                     param, **{**kwargs, **{"legend": legend, "fig": self.fig, "ax": ax}}
