@@ -139,7 +139,7 @@ class Kernel:
                 def __init__(self, fun, order, reg):
                     self.fun, self.order, self.reg = fun, order, reg
 
-                def __call__(self):
+                def __call__(self, **kwargs):
                     self.fun()
                     linearkernel = core.KernelSetters.kernel_helper(
                         setter=core.KernelSetters.set_linear_regressor_kernel,

@@ -1764,8 +1764,8 @@ class kernel_setter:
         self.regularization = regularization
         self.bandwidth = bandwidth
 
-    def __call__(self, *args, **kwds):
-        order = kwds.get("order", self.polynomial_order)
+    def __call__(self, *args, **kwargs):
+        order = kwargs.get("order", self.polynomial_order)
         if order is None:
             order = self.polynomial_order
         return set_kernel(self.kernel, self.map, order, self.regularization, self.bandwidth)
