@@ -1069,6 +1069,8 @@ class KernelClassifier(Kernel):
     ) -> None:
         if clip is not None and fx is not None:
             fx = clip(fx)
+        fx = np.where(fx < 1e-9, 1e-9, fx) 
+        fx = fx / fx.sum(axis=1, keepdims=True) 
         if fx is not None:
             fx = np.log(fx)
         super().set_fx(fx, **kwargs)
