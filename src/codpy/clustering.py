@@ -66,8 +66,9 @@ class GreedySearch:
 
 class SharpDiscrepancy(GreedySearch):
     def __init__(self, x, N, itermax=10, **kwargs):
-        super().__init__(x=x, N=N, **{**kwargs, **{"all": True}})
+        self.k = Kernel(x=x, **kwargs)
         self.cluster_centers_ = cd.alg.sharp_discrepancy(x, N, itermax)
+        self.x = x
 
 
 class BalancedClustering:
