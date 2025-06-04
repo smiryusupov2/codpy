@@ -1,6 +1,7 @@
 import numpy as np
 import sklearn.cluster
 from codpydll import *
+import random 
 
 import codpy.core as core
 from codpy.kernel import Kernel
@@ -106,3 +107,16 @@ class BalancedClustering:
 
     def distance(self, x, y):
         return self.method.distance(x, y)
+
+class RandomClusters:
+    def __init__(self, x, N, **kwargs):
+        self.x = x
+        self.indices = random.sample(range(self.x.shape[0]), N)
+        self.cluster_centers_ = self.x[self.indices]
+        self.k = Kernel(x=x, **kwargs)
+
+    def __call__(self, z, N=None, **kwargs):
+        return self.distance(z, self.cluster_centers_).argmin(axis=1)
+
+    def distance(self, x, y):
+        return core.KerOp.dnm(x, y, kernel_ptr=self.k.get_kernel())

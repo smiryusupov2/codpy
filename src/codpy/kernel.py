@@ -82,11 +82,11 @@ class Kernel:
         else:
             self.set_kernel = self.default_kernel_functor()
         self.valid = False
+        self.kernels = {}
         if x is not None or fx is not None:
             self.set(x=x, y=y, fx=fx, **kwargs)
         else:
             self.x, self.y, self.fx = None, None, None
-        self.kernels = {}
 
     def is_valid(self):
         return self.valid
