@@ -120,3 +120,6 @@ class RandomClusters:
 
     def distance(self, x, y):
         return core.KerOp.dnm(x, y, kernel_ptr=self.k.get_kernel())
+    
+    def get_labels(self):
+        return self(self.x)
