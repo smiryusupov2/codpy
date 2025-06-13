@@ -1,11 +1,12 @@
 import numpy as np
-
+from scipy.special import softmax
 from codpy.core import get_matrix
 from codpy.data_conversion import get_matrix
 from codpy.kernel import Kernel
 from codpy.lalg import LAlg
 from codpy.sampling import rejection_sampling
 from codpy.utils import cartesian_outer_product
+from codpy.core import kernel_setter
 
 
 class Conditionner:
@@ -85,23 +86,27 @@ class NadarayaWatsonKernel(Conditionner):
             return out
 
     class joint_KDE:
-        def __init__(self, kx, ky):
-            self.kernelx = kx
-            self.kernely = ky
+        def __init__(self, kxy):
+            self.kernelxy = kxy
 
         def __call__(self, x, y):
-            kxx = self.kernelx.knm(x=x, y=self.kernelx.get_x())
-            kyy = self.kernely.knm(x=self.kernely.get_x(), y=y)
-            out = LAlg.prod(kxx, kyy)
+            # kxx = self.kernelx.knm(x=x, y=self.kernelx.get_x())
+            # kyy = self.kernely.knm(y = y,x=self.kernely.get_x())
+            # out = LAlg.prod(kxx, kyy)
+            xy = cartesian_outer_product(x,y).reshape(x.shape[0] * y.shape[0], -1)
+            out = self.kernelxy.knm(x=xy)
+            out = out.sum(axis=1).reshape([x.shape[0], y.shape[0]])
+            return out
             return out
 
-    def __init__(self, x, y, **kwargs):
+    def __init__(self, x, y, kernelx = None, kernelxy = None, **kwargs):
         """
         Base class to handle Nadaraya-Watson kernel conditional estimators of the law y | x.
         """
+        kernel = kernel_setter("matternnorm", "unitcube", 0, 1e-9)
         super().__init__(x=x, y=y, **kwargs)
         self.density_x = NadarayaWatsonKernel.KDE(Kernel(x=x))
-        self.density_xy = NadarayaWatsonKernel.joint_KDE(Kernel(x=x), Kernel(x=y))
+        self.density_xy = NadarayaWatsonKernel.joint_KDE(Kernel(x=np.concatenate([x,y], axis=1),**kwargs))
         self.expectation_kernel = None
         self.var_kernel = None
 
@@ -277,19 +282,34 @@ class ConditionerKernel(Conditionner):
 
         class transition_kernel(Kernel):
             def __init__(self, y, x, **kwargs):
-                self.xy = Kernel(x=x, **kwargs)
-                self.yx = Kernel(x=y, **kwargs)
+                # kernel = kernel_setter("gaussian", "meandistance", 0, 1e-9)
+                # kernel = kernel_setter("tensornorm", "unitcube", 0, 1e-9)
+                # kernel = None
+                # self.xy = Kernel(x=np.concatenate([x,y],axis=1), set_kernel=kernel,**kwargs)
+                self.xy = Kernel(x=np.concatenate([x,y],axis=1),fx= np.ones([x.shape[0],1]),**kwargs)
+                # self.xy = Kernel(x=x, **kwargs)
+                # self.yx = Kernel(x=y, **kwargs)
 
             def __call__(self, y, x, fx=None, **kwargs):
-                probasy = self.yx(y)
-                probasy /= probasy.sum(axis=0)[None, :]
-                probasx = self.xy(x)
-                probasx /= probasx.sum(axis=1)[:, None]
-                if fx is not None:
-                    out = LAlg.prod(probasx, LAlg.prod(probasy.T, fx))
-                else:
-                    out = LAlg.prod(probasx, probasy.T)
+
+                xy = cartesian_outer_product(x,y).reshape(x.shape[0] * y.shape[0], -1)
+                # out = self.xy.density(x=xy)
+                out = self.xy(z=xy)
+                out = out.reshape([x.shape[0], y.shape[0]])
                 return out
+
+                # probasy = self.yx(y)
+                # probasx = self.xy(x)
+                # if fx is not None:
+                #     out = LAlg.prod(probasx, LAlg.prod(probasy.T, fx))
+                # else:
+                #     out = LAlg.prod(probasx, probasy.T)
+                # # out /= out.sum(axis=0)[None, :]
+                # # out = softmax(out, axis=1)
+                # out /= out.sum(axis=1)[:,None]
+                # # out = self.xy
+
+                # return out
 
         if self.pi is None and self.x is not None:
             self.pi = transition_kernel(x=self.get_x(), y=self.get_y(), **kwargs)
