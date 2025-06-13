@@ -1721,7 +1721,7 @@ def _requires_rescale(map_name: str) -> bool:
 
 
 def _requires_bandwidth(map_name: str) -> bool:
-    bandwidth_required_maps = {"scale_factor"}
+    bandwidth_required_maps = {"bandwidth"}
     return map_name in bandwidth_required_maps
 
 
