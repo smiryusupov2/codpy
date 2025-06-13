@@ -86,27 +86,31 @@ class NadarayaWatsonKernel(Conditionner):
             return out
 
     class joint_KDE:
-        def __init__(self, kxy):
-            self.kernelxy = kxy
+        def __init__(self, kx, ky):
+            self.kernelx = kx
+            self.kernely = ky 
 
         def __call__(self, x, y):
-            # kxx = self.kernelx.knm(x=x, y=self.kernelx.get_x())
-            # kyy = self.kernely.knm(y = y,x=self.kernely.get_x())
-            # out = LAlg.prod(kxx, kyy)
-            xy = cartesian_outer_product(x,y).reshape(x.shape[0] * y.shape[0], -1)
-            out = self.kernelxy.knm(x=xy)
-            out = out.sum(axis=1).reshape([x.shape[0], y.shape[0]])
-            return out
+            kxx = self.kernelx.knm(x=x, y=self.kernelx.get_x())
+            # kxx /= kxx.sum(axis=1)
+            kyy = self.kernely.knm(y = y,x=self.kernely.get_x())
+            out = LAlg.prod(kxx, kyy)
+            # xy = cartesian_outer_product(x,y).reshape(x.shape[0] * y.shape[0], -1)
+            # out = self.kernelxy.knm(x=xy)
+            # out = out.sum(axis=1).reshape([x.shape[0], y.shape[0]])
             return out
 
     def __init__(self, x, y, kernelx = None, kernelxy = None, **kwargs):
         """
         Base class to handle Nadaraya-Watson kernel conditional estimators of the law y | x.
         """
-        kernel = kernel_setter("matternnorm", "unitcube", 0, 1e-9)
         super().__init__(x=x, y=y, **kwargs)
         self.density_x = NadarayaWatsonKernel.KDE(Kernel(x=x))
-        self.density_xy = NadarayaWatsonKernel.joint_KDE(Kernel(x=np.concatenate([x,y], axis=1),**kwargs))
+        # self.density_xy = NadarayaWatsonKernel.joint_KDE(Kernel(x=np.concatenate([x,y], axis=1),**kwargs))
+        self.density_xy = NadarayaWatsonKernel.joint_KDE(
+            Kernel(x=x, **kwargs),
+            Kernel(x=y, **kwargs)
+            )
         self.expectation_kernel = None
         self.var_kernel = None
 
