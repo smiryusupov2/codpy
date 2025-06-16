@@ -1,12 +1,12 @@
 import numpy as np
 from scipy.special import softmax
-from codpy.core import get_matrix
+import codpy.core
+from codpy.core import get_matrix,kernel_setter
 from codpy.data_conversion import get_matrix
-from codpy.kernel import Kernel
+from codpy.kernel import Kernel,KernelClassifier
 from codpy.lalg import LAlg
 from codpy.sampling import rejection_sampling
 from codpy.utils import cartesian_outer_product
-from codpy.core import kernel_setter
 
 
 class Conditionner:
@@ -286,34 +286,15 @@ class ConditionerKernel(Conditionner):
 
         class transition_kernel(Kernel):
             def __init__(self, y, x, **kwargs):
-                # kernel = kernel_setter("gaussian", "meandistance", 0, 1e-9)
-                # kernel = kernel_setter("tensornorm", "unitcube", 0, 1e-9)
-                # kernel = None
-                # self.xy = Kernel(x=np.concatenate([x,y],axis=1), set_kernel=kernel,**kwargs)
-                self.xy = Kernel(x=np.concatenate([x,y],axis=1),fx= np.ones([x.shape[0],1]),**kwargs)
-                # self.xy = Kernel(x=x, **kwargs)
-                # self.yx = Kernel(x=y, **kwargs)
+                xy = x=np.concatenate([x,y],axis=1)
+                fx = np.ones([x.shape[0], 1])
+                self.xy = Kernel(x=xy,fx= fx,**kwargs)
 
             def __call__(self, y, x, fx=None, **kwargs):
 
                 xy = cartesian_outer_product(x,y).reshape(x.shape[0] * y.shape[0], -1)
-                # out = self.xy.density(x=xy)
                 out = self.xy(z=xy)
-                out = out.reshape([x.shape[0], y.shape[0]])
                 return out
-
-                # probasy = self.yx(y)
-                # probasx = self.xy(x)
-                # if fx is not None:
-                #     out = LAlg.prod(probasx, LAlg.prod(probasy.T, fx))
-                # else:
-                #     out = LAlg.prod(probasx, probasy.T)
-                # # out /= out.sum(axis=0)[None, :]
-                # # out = softmax(out, axis=1)
-                # out /= out.sum(axis=1)[:,None]
-                # # out = self.xy
-
-                # return out
 
         if self.pi is None and self.x is not None:
             self.pi = transition_kernel(x=self.get_x(), y=self.get_y(), **kwargs)

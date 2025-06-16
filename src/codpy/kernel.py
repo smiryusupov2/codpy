@@ -1067,6 +1067,10 @@ class KernelClassifier(Kernel):
         clip=Alg.proportional_fitting,
         **kwargs,
     ) -> None:
+        if fx is None:
+            fx = np.identity(self.get_x().shape[0])
+        else:
+            fx = core.get_matrix(fx)
         if clip is not None and fx is not None:
             fx = clip(fx)
         fx = np.where(fx < 1e-9, 1e-9, fx) 

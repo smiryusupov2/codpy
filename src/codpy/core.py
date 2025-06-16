@@ -952,6 +952,16 @@ class KerInterface:
         return cd.get_kernel_ptr()
 
     @staticmethod
+    def map(x,kernel_ptr=None, order=0, reg=1e-9, **kwargs) -> np.ndarray:
+        """
+        Compute the kernel map applied to a set x.
+        """
+        if kernel_ptr is not None:
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
+
+        return cd.kernel_interface.map(get_matrix(x))
+
+    @staticmethod
     def set_kernel_ptr(kernel_ptr, order=None, reg=1e-8):
         """
         Set codpy with a kernel.
