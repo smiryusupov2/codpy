@@ -1,9 +1,8 @@
 import numpy as np
-from scipy.special import softmax
-import codpy.core
-from codpy.core import get_matrix,kernel_setter
+
+from codpy.core import get_matrix
 from codpy.data_conversion import get_matrix
-from codpy.kernel import Kernel,KernelClassifier
+from codpy.kernel import Kernel
 from codpy.lalg import LAlg
 from codpy.sampling import rejection_sampling
 from codpy.utils import cartesian_outer_product
@@ -88,29 +87,28 @@ class NadarayaWatsonKernel(Conditionner):
     class joint_KDE:
         def __init__(self, kx, ky):
             self.kernelx = kx
-            self.kernely = ky 
+            self.kernely = ky
 
         def __call__(self, x, y):
             kxx = self.kernelx.knm(x=x, y=self.kernelx.get_x())
             # kxx /= kxx.sum(axis=1)
-            kyy = self.kernely.knm(y = y,x=self.kernely.get_x())
+            kyy = self.kernely.knm(y=y, x=self.kernely.get_x())
             out = LAlg.prod(kxx, kyy)
             # xy = cartesian_outer_product(x,y).reshape(x.shape[0] * y.shape[0], -1)
             # out = self.kernelxy.knm(x=xy)
             # out = out.sum(axis=1).reshape([x.shape[0], y.shape[0]])
             return out
 
-    def __init__(self, x, y, kernelx = None, kernelxy = None, **kwargs):
+    def __init__(self, x, y, kernelx=None, kernelxy=None, **kwargs):
         """
         Base class to handle Nadaraya-Watson kernel conditional estimators of the law y | x.
         """
         super().__init__(x=x, y=y, **kwargs)
-        self.density_x = NadarayaWatsonKernel.KDE(Kernel(x=x))
+        self.density_x = NadarayaWatsonKernel.KDE(Kernel(x=x, **kwargs))
         # self.density_xy = NadarayaWatsonKernel.joint_KDE(Kernel(x=np.concatenate([x,y], axis=1),**kwargs))
         self.density_xy = NadarayaWatsonKernel.joint_KDE(
-            Kernel(x=x, **kwargs),
-            Kernel(x=y, **kwargs)
-            )
+            Kernel(x=x, **kwargs), Kernel(x=y, **kwargs)
+        )
         self.expectation_kernel = None
         self.var_kernel = None
 
@@ -192,7 +190,7 @@ class NadarayaWatsonKernel(Conditionner):
         Return the estimator of the conditional expectation $\mathbb{E}(f(y)|x)$
         The output is expected to have size $(x.shape[0],y.shape[1])$.
         """
-        return self.get_expectation_kernel()(x)
+        return self.get_expectation_kernel(**kwargs)(x)
 
     def density(self, x, **kwargs):
         """
@@ -234,7 +232,7 @@ class ConditionerKernel(Conditionner):
         x,
         y,
         latent_generator_x=None,
-        latent_generator_y= None,
+        latent_generator_y=None,
         expectation_kernel=None,
         **kwargs,
     ):
@@ -247,36 +245,39 @@ class ConditionerKernel(Conditionner):
         if latent_generator_x is None:
             self.latent_x = self.x
         else:
-            self.latent_x = self.latent_generator_x(x.shape[0])        
-        
+            self.latent_x = self.latent_generator_x(x.shape[0])
+
         if latent_generator_y is None:
-            self.latent_generator_y = lambda n: np.random.normal(size=[n, self.y.shape[1]])
+            self.latent_generator_y = lambda n: np.random.normal(
+                size=[n, self.y.shape[1]]
+            )
         else:
             self.latent_generator_y = latent_generator_y
-            self.latent_y = self.latent_generator_y(self.y.shape[0])        
+            self.latent_y = self.latent_generator_y(self.y.shape[0])
 
         self.pi = None
         self.expectation_kernel = expectation_kernel
         self.var_kernel = None
         self.map_xy = None
         # self.var_kernel = None
-    def set_maps(self,**kwargs): 
+
+    def set_maps(self, **kwargs):
         """
         Set the maps for the kernel.
         """
         self.xy = np.concatenate([self.x, self.y], axis=1)
         self.latent_y = self.latent_generator_y(self.y.shape[0])
         self.latent_xy = np.concatenate([self.latent_x, self.latent_y], axis=1)
-        self.map_xy_inv = Kernel(x=self.latent_xy, order=2,**kwargs).map(y=self.xy)
+        self.map_xy_inv = Kernel(x=self.latent_xy, order=2, **kwargs).map(y=self.xy)
         self.map_xy = Kernel(
             x=self.map_xy_inv.get_fx(), fx=self.map_xy_inv.get_x(), **kwargs
         )
         latent_x = self.map_xy_inv.get_x()[:, : self.x.shape[1]]
         im_x = self.map_xy_inv.get_fx()[:, : self.x.shape[1]]
         if self.latent_generator_x is not None:
-            self.map_x = Kernel(x=im_x, fx=latent_x, order=2,**kwargs)
+            self.map_x = Kernel(x=im_x, fx=latent_x, order=2, **kwargs)
         else:
-            self.map_x = None           
+            self.map_x = None
 
     def get_transition_kernel(self, **kwargs):
         # Estime pi(y|x) avec y et x donnés comme exemple, matrice de transition, proba d'avoir couple y_j sachant x_j etc
@@ -286,13 +287,12 @@ class ConditionerKernel(Conditionner):
 
         class transition_kernel(Kernel):
             def __init__(self, y, x, **kwargs):
-                xy = x=np.concatenate([x,y],axis=1)
+                xy = x = np.concatenate([x, y], axis=1)
                 fx = np.ones([x.shape[0], 1])
-                self.xy = Kernel(x=xy,fx= fx,**kwargs)
+                self.xy = Kernel(x=xy, fx=fx, **kwargs)
 
             def __call__(self, y, x, fx=None, **kwargs):
-
-                xy = cartesian_outer_product(x,y).reshape(x.shape[0] * y.shape[0], -1)
+                xy = cartesian_outer_product(x, y).reshape(x.shape[0] * y.shape[0], -1)
                 out = self.xy(z=xy)
                 return out
 
@@ -366,7 +366,7 @@ class ConditionerKernel(Conditionner):
         output is of size (x.shape[0],n,y.shape[1])
         """
         if self.map_xy is None:
-           self.set_maps(**kwargs)
+            self.set_maps(**kwargs)
         latent_y = self.latent_generator_y(n)
         if self.map_x is not None:
             latent_x = self.map_x(x)
