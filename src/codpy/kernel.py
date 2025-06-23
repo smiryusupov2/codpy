@@ -1041,6 +1041,44 @@ class Kernel:
     def __and__(self, other):
         return BitwiseANDKernel(self, other)
 
+class Sampler(Kernel):
+    """
+    an overload of the class Kernel to sample distributions from a latent space:
+        :param x: Input distribution.
+        :type x: :class:`numpy.ndarray`
+
+        :param latent_generator: an optional generator. Defaulted to numpy.random.normal
+    """
+    def __init__(self, x, latent_generator=None,**kwargs):
+        """
+        Initializes the sampler with a kernel mapping object.
+
+        Parameters:
+            kernel (Kernel): A kernel-based mapper with a `.map()` method.
+        """
+        if latent_generator is None:
+            self.latent_generator = lambda n: np.random.normal(
+                size=[n, x.shape[1]]
+            ) 
+        else:
+            self.latent_generator = latent_generator
+        y= self.latent_generator(x.shape[0])
+        super().__init__(x=y,fx=None,**kwargs)
+        self.map(y=x)
+
+    def sample(self, N):
+        """
+        Generates samples using the learned structure.
+
+        Parameters:
+            N (int): Number of samples to generate.
+
+        Returns:
+            np.ndarray: Sampled data.
+        """
+        return self(z=self.latent_generator(N))
+
+
 
 def get_tensor_probas(policy):
     @np.vectorize
