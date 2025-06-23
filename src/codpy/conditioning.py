@@ -241,7 +241,8 @@ class ConditionerKernel(Conditionner):
         """
         x, y = get_matrix(x), get_matrix(y)
         super().__init__(x=x, y=y, **kwargs)
-        self.sampler_x = Sampler(x=x,latent_generator=latent_generator_x)
+        if latent_generator_x:
+            self.sampler_x = Sampler(x=x,latent_generator=latent_generator_x)
         self.sampler_y = Sampler(x=y,latent_generator=latent_generator_y)
         # if latent_generator_x is None:
         #     self.latent_x = self.x
@@ -267,7 +268,11 @@ class ConditionerKernel(Conditionner):
         Set the maps for the kernel.
         """
         self.xy = np.concatenate([self.x, self.y], axis=1)
-        self.latent_x = self.sampler_x.get_x()
+        if hasattr(self, 'sampler_x'):
+            self.latent_x = self.sampler_x.get_x()
+        else: 
+            self.latent_x = self.x
+            
         self.latent_y = self.sampler_y.get_x()
         self.latent_xy = np.concatenate([self.latent_x, self.latent_y], axis=1)
         self.map_xy_inv = Kernel(x=self.latent_xy, order=2, **kwargs).map(y=self.xy)
