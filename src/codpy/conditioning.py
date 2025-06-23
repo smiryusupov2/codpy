@@ -2,7 +2,7 @@ import numpy as np
 
 from codpy.core import get_matrix
 from codpy.data_conversion import get_matrix
-from codpy.kernel import Kernel
+from codpy.kernel import Kernel,Sampler
 from codpy.lalg import LAlg
 from codpy.sampling import rejection_sampling
 from codpy.utils import cartesian_outer_product
@@ -241,19 +241,20 @@ class ConditionerKernel(Conditionner):
         """
         x, y = get_matrix(x), get_matrix(y)
         super().__init__(x=x, y=y, **kwargs)
-        self.latent_generator_x = latent_generator_x
-        if latent_generator_x is None:
-            self.latent_x = self.x
-        else:
-            self.latent_x = self.latent_generator_x(x.shape[0])
+        self.sampler_x = Sampler(x=x,latent_generator=latent_generator_x)
+        self.sampler_y = Sampler(x=y,latent_generator=latent_generator_y)
+        # if latent_generator_x is None:
+        #     self.latent_x = self.x
+        # else:
+        #     self.latent_x = self.latent_generator_x(x.shape[0])
 
-        if latent_generator_y is None:
-            self.latent_generator_y = lambda n: np.random.normal(
-                size=[n, self.y.shape[1]]
-            )
-        else:
-            self.latent_generator_y = latent_generator_y
-            self.latent_y = self.latent_generator_y(self.y.shape[0])
+        # if latent_generator_y is None:
+        #     self.latent_generator_y = lambda n: np.random.normal(
+        #         size=[n, self.y.shape[1]]
+        #     )
+        # else:
+        #     self.latent_generator_y = latent_generator_y
+        #     self.latent_y = self.latent_generator_y(self.y.shape[0])
 
         self.pi = None
         self.expectation_kernel = expectation_kernel
@@ -266,18 +267,19 @@ class ConditionerKernel(Conditionner):
         Set the maps for the kernel.
         """
         self.xy = np.concatenate([self.x, self.y], axis=1)
-        self.latent_y = self.latent_generator_y(self.y.shape[0])
+        self.latent_x = self.sampler_x.get_x()
+        self.latent_y = self.sampler_y.get_x()
         self.latent_xy = np.concatenate([self.latent_x, self.latent_y], axis=1)
         self.map_xy_inv = Kernel(x=self.latent_xy, order=2, **kwargs).map(y=self.xy)
         self.map_xy = Kernel(
             x=self.map_xy_inv.get_fx(), fx=self.map_xy_inv.get_x(), **kwargs
         )
-        latent_x = self.map_xy_inv.get_x()[:, : self.x.shape[1]]
-        im_x = self.map_xy_inv.get_fx()[:, : self.x.shape[1]]
-        if self.latent_generator_x is not None:
-            self.map_x = Kernel(x=im_x, fx=latent_x, order=2, **kwargs)
-        else:
-            self.map_x = None
+        # latent_x = self.map_xy_inv.get_x()[:, : self.x.shape[1]]
+        # im_x = self.map_xy_inv.get_fx()[:, : self.x.shape[1]]
+        # if self.latent_generator_x is not None:
+        #     self.map_x = Kernel(x=im_x, fx=latent_x, order=2, **kwargs)
+        # else:
+        #     self.map_x = None
 
     def get_transition_kernel(self, **kwargs):
         # Estime pi(y|x) avec y et x donnés comme exemple, matrice de transition, proba d'avoir couple y_j sachant x_j etc
@@ -365,10 +367,11 @@ class ConditionerKernel(Conditionner):
         Return N sampling for each z of the estimated law y | x.
         output is of size (x.shape[0],n,y.shape[1])
         """
+        x = get_matrix(x)
         if self.map_xy is None:
             self.set_maps(**kwargs)
-        latent_y = self.latent_generator_y(n)
-        if self.map_x is not None:
+        latent_y = self.sampler_y.latent_generator(n)
+        if hasattr(self,'map_x'):
             latent_x = self.map_x(x)
         else:
             latent_x = x
