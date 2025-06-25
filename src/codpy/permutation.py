@@ -33,8 +33,8 @@ def map_invertion(map, type_in=None):
         type_in = type(map)
     out = cast(data=map, type_in=type_in, type_out=Dict[int, Set[int]])
     out = cd.alg.map_invertion(out)
-    return out
-    # return cast(out, type_out=type_in, type_in=Dict[int, Set[int]])
+    # return out
+    return cast(out, type_out=type_in, type_in=Dict[int, Set[int]])
 
 
 def scipy_lsap(C: np.ndarray) -> np.ndarray:

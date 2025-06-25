@@ -604,7 +604,7 @@ class Kernel:
         if x is None and fx is not None:
             if self.get_kernel() is None:
                 raise Exception("Please input x at least once")
-            if fx.shape[0] != self.x.shape[0]:
+            if fx.shape[0] != self.get_x().shape[0]:
                 raise Exception(
                     "fx of size "
                     + str(fx.shape[0])
@@ -654,7 +654,7 @@ class Kernel:
     def map(
         self,
         y: np.ndarray,
-        distance: str = "norm2",
+        distance: str = "norm22",
         x: np.ndarray = None,
         sub: bool = False,
         **kwargs,
@@ -1064,7 +1064,8 @@ class Sampler(Kernel):
             self.latent_generator = latent_generator
         y= self.latent_generator(x.shape[0])
         super().__init__(x=y,fx=None,**kwargs)
-        self.map(y=x)
+        # self.map(y=x,distance=None)
+        self.map(y=x,distance="norm22")
 
     def sample(self, N):
         """

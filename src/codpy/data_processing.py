@@ -227,6 +227,14 @@ def lexicographical_permutation(x, fx=[], **kwargs) -> tuple:
         out = fx[index_array]
     return (x_sorted, out, index_array)
 
+def simple_hot_encoder(y_label,num_classes=None):
+    y_label = np.asarray(y_label,dtype=int)
+    if num_classes is None:
+        num_classes = np.max(y_label) + 1
+    out = np.zeros((y_label.shape[0], num_classes))
+    out[np.arange(y_label.shape[0]), y_label] = 1
+    return out
+
 
 def hot_encoder(
     data_frame: pd.DataFrame,
