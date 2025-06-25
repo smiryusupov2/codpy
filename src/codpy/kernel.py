@@ -702,6 +702,7 @@ class Kernel:
             # and find the optimal permutation (descent-based method)
             self.set_kernel_ptr()
             self.permutation = cd.alg.encoder(self.get_x(), self.get_fx())
+            self.permutation = map_invertion(np.array(self.permutation))            
         else:
             # If the d imensionalities are the same, use the LSAP algorithm to compute the permutation
             D = core.KerOp.dnm(
