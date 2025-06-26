@@ -7,6 +7,7 @@ from codpy.algs import Alg
 from codpy.core import DiffOps
 from codpy.lalg import LAlg
 from codpy.permutation import lsap, map_invertion
+from codpy.sampling import get_uniforms
 
 
 class Kernel:
@@ -701,16 +702,17 @@ class Kernel:
             # If the dimensionalities differ, use an encoder to map data into latent space
             # and find the optimal permutation (descent-based method)
             self.set_kernel_ptr()
-            self.permutation = cd.alg.encoder(self.get_x(), self.get_fx())
-            self.permutation = map_invertion(np.array(self.permutation))            
+            self.permutation = cd.alg.encoder(self.get_x(), self.get_fx(),kwargs.get("iter",10))
+            # Update `fx` based on the computed permutation
+            self.set_fx(self.get_fx()[self.permutation])
         else:
             # If the d imensionalities are the same, use the LSAP algorithm to compute the permutation
             D = core.KerOp.dnm(
                 x=x, y=y, distance=distance, kernel_ptr=self.get_kernel()
             )
             self.permutation = lsap(D, bool(sub))  # Solve LSAP to find permutation
-        # Update `x` based on the computed permutation
-        self.set_x(self.get_x()[self.permutation])
+            # Update `x` based on the computed permutation (lsap uses different conventions than alg.encoder #to fix )
+            self.set_x(self.get_x()[self.permutation])
         return self
 
     def __len__(self) -> int:
@@ -1050,7 +1052,7 @@ class Sampler(Kernel):
 
         :param latent_generator: an optional generator. Defaulted to numpy.random.normal
     """
-    def __init__(self, x, set_kernel=core.kernel_setter("matern", "standardmean",0,0), latent_generator=None,**kwargs):
+    def __init__(self, x, set_kernel=core.kernel_setter("matern", "standardmean",0,1e-9), latent_dim=None,latent_generator=None,**kwargs):
         """
         Initializes the sampler with a kernel mapping object.
 
@@ -1058,15 +1060,15 @@ class Sampler(Kernel):
             kernel (Kernel): A kernel-based mapper with a `.map()` method.
         """
         if latent_generator is None:
-            self.latent_generator = lambda n: np.random.normal(
-                size=[n, x.shape[1]]
-            ) 
+            if latent_dim is None:
+                latent_dim = x.shape[1]
+            self.latent_generator = lambda n: get_uniforms(n, latent_dim,nmax=10)
         else:
             self.latent_generator = latent_generator
         y= self.latent_generator(x.shape[0])
         super().__init__(x=y,fx=None,set_kernel=set_kernel,**kwargs)
         # self.map(y=x,distance=None)
-        self.map(y=x,distance="norm22")
+        self.map(y=x,**kwargs)
 
     def sample(self, N):
         """

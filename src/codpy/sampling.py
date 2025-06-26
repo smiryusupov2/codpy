@@ -9,54 +9,9 @@ import codpy.algs
 from codpy.core import _requires_rescale,KerInterface,kernel_setter,get_matrix
 from codpy.data_conversion import get_matrix
 from codpy.selection import column_selector
-from codpy.kernel import Kernel
 from codpy.lalg import LAlg
 
 
-
-def kernel_conditional_density_estimator(x, y, kernel_x=None,kernel_y=None,**kwargs):
-    """
-    Estimate the conditional density of 'Y' given 'X' using Nadaraya-Watson kernel conditional density estimator.
-    that is the matrix of conditional probabilities p(y|x) for each x in X and y in Y.
-
-    This function calculates the conditional density of values based on a joint distribution ('X', 'Y').
-    It uses KDE method for the estimation.
-
-    Args:
-        X (array-like): Observed data for 'x' in the joint distribution with 'y'.
-        Y (array-like): Observed data for 'y' in the joint distribution with 'x'.
-
-    pre-requisite:
-        A kernel must be loaded and rescaled to the data X AND Y
-
-    Returns:
-        array-like: The estimated conditional density of 'Y' given 'X', that is a stochastic matrix.
-
-    Example:
-        Define joint distribution data for 'x' and 'y'
-
-        >>> X = np.array([...])
-        >>> Y = np.array([...])
-
-        Compute the conditional density
-
-        >>> conditional_density = kernel_conditional_density_estimator(X, Y)
-    """
-    # given a joint distribution (X, Y), return the density Y | X using the Nadaraya-Watson estimate
-    if kernel_x is None:
-        kernel_x = Kernel(x=x,**kwargs)
-    kernel_x.set_kernel_ptr()
-    marginal_x = kernel_x.knm(x=x, y=kernel_x.get_x())
-
-    if kernel_y is None:
-        kernel_y = Kernel(x=y,**kwargs)
-    kernel_y.set_kernel_ptr()
-    marginal_y = kernel_y.knm(x=y, y=kernel_y.get_x())
-    out = np.zeros([x.shape[0], y.shape[0]])
-    def helper(i,j):
-        out[i,j] = (marginal_x[i] * marginal_y[j]).sum() / (marginal_x[i].sum())
-    [helper(i,j) for i in range(x.shape[0]) for j in range(y.shape[0])]
-    return out
 
 def rejection_sampling(proposed_sample, densities,size=None):
     """

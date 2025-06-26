@@ -4,7 +4,7 @@ from codpy.core import get_matrix
 from codpy.data_conversion import get_matrix
 from codpy.kernel import Kernel,Sampler
 from codpy.lalg import LAlg
-from codpy.sampling import rejection_sampling
+from codpy.sampling import rejection_sampling,get_uniforms
 from codpy.utils import cartesian_outer_product
 
 
@@ -74,6 +74,49 @@ class Conditionner:
         """
         raise NotImplementedError
 
+def kernel_conditional_density_estimator(x, y, kernel_x=None,kernel_y=None,**kwargs):
+    """
+    Legacy method to estimate the conditional density of 'Y' given 'X' using Nadaraya-Watson kernel conditional density estimator.
+    that is the matrix of conditional probabilities p(y|x) for each x in X and y in Y.
+
+    This function calculates the conditional density of values based on a joint distribution ('X', 'Y').
+    It uses KDE method for the estimation.
+
+    Args:
+        X (array-like): Observed data for 'x' in the joint distribution with 'y'.
+        Y (array-like): Observed data for 'y' in the joint distribution with 'x'.
+
+    pre-requisite:
+        A kernel must be loaded and rescaled to the data X AND Y
+
+    Returns:
+        array-like: The estimated conditional density of 'Y' given 'X', that is a stochastic matrix.
+
+    Example:
+        Define joint distribution data for 'x' and 'y'
+
+        >>> X = np.array([...])
+        >>> Y = np.array([...])
+
+        Compute the conditional density
+
+        >>> conditional_density = kernel_conditional_density_estimator(X, Y)
+    """
+    # given a joint distribution (X, Y), return the density Y | X using the Nadaraya-Watson estimate
+    if kernel_x is None:
+        kernel_x = Kernel(x=x,**kwargs)
+    kernel_x.set_kernel_ptr()
+    marginal_x = kernel_x.knm(x=x, y=kernel_x.get_x())
+
+    if kernel_y is None:
+        kernel_y = Kernel(x=y,**kwargs)
+    kernel_y.set_kernel_ptr()
+    marginal_y = kernel_y.knm(x=y, y=kernel_y.get_x())
+    out = np.zeros([x.shape[0], y.shape[0]])
+    def helper(i,j):
+        out[i,j] = (marginal_x[i] * marginal_y[j]).sum() / (marginal_x[i].sum())
+    [helper(i,j) for i in range(x.shape[0]) for j in range(y.shape[0])]
+    return out
 
 class NadarayaWatsonKernel(Conditionner):
     class KDE:
@@ -231,7 +274,8 @@ class ConditionerKernel(Conditionner):
         self,
         x,
         y,
-        latent_generator_y,
+        latent_generator_y=None,
+        latent_dim_y=None,
         latent_generator_x=None,
         expectation_kernel=None,
         **kwargs,
@@ -242,7 +286,12 @@ class ConditionerKernel(Conditionner):
         x, y = get_matrix(x), get_matrix(y)
         super().__init__(x=x, y=y, **kwargs)
         self.latent_generator_x = latent_generator_x
-        self.latent_generator_y = latent_generator_y
+        if latent_generator_y is not None:
+            self.latent_generator_y = latent_generator_y
+        elif latent_dim_y is not None:
+            self.latent_generator_y = lambda n: get_uniforms(n, latent_dim_y,nmax=10)
+        else: 
+            raise ValueError('You must input either latent_generator_y or the latent dimension latent_dim_y.')
 
         self.pi = None
         self.expectation_kernel = expectation_kernel
