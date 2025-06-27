@@ -1057,7 +1057,7 @@ class Sampler(Kernel):
 
         :param latent_generator: an optional generator. Defaulted to numpy.random.normal
     """
-    def __init__(self, x, set_kernel=core.kernel_setter("matern", "standardmean",0,1e-9), latent_dim=None,latent_generator=None,**kwargs):
+    def __init__(self, x, set_kernel=core.kernel_setter("maternnorm", "standardmean",0,1e-9), latent_dim=None,latent_generator=None,**kwargs):
         """
         Initializes the sampler with a kernel mapping object.
 
