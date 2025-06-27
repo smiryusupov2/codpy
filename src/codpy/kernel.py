@@ -7,7 +7,7 @@ from codpy.algs import Alg
 from codpy.core import DiffOps
 from codpy.lalg import LAlg
 from codpy.permutation import lsap, map_invertion
-from codpy.sampling import get_uniforms
+from codpy.sampling import get_uniforms,get_normals,get_qmc_uniforms,get_qmc_normals
 
 
 class Kernel:
@@ -633,8 +633,9 @@ class Kernel:
         )
 
         y, labels = self.clustering.cluster_centers_, self.clustering.labels_
+        labels = {range(len(labels)): labels}
         self.set_y(y)
-        self.labels = map_invertion(labels)
+        self.labels = map_invertion(labels,type_in=dict)
         fx_proj = self.get_fx() - self(z=x)
         for key in self.labels.keys():
             indices = list(self.labels[key])
@@ -703,16 +704,20 @@ class Kernel:
             # and find the optimal permutation (descent-based method)
             self.set_kernel_ptr()
             self.permutation = cd.alg.encoder(self.get_x(), self.get_fx(),kwargs.get("iter",10))
+
             # Update `fx` based on the computed permutation
             self.set_fx(self.get_fx()[self.permutation])
+            # self.permutation = map_invertion(np.array(self.permutation))
+            # self.set_x(self.get_x()[self.permutation])
         else:
             # If the d imensionalities are the same, use the LSAP algorithm to compute the permutation
             D = core.KerOp.dnm(
-                x=x, y=y, distance=distance, kernel_ptr=self.get_kernel()
+                x=self.get_fx(), y=self.get_x(), distance=distance, kernel_ptr=self.get_kernel()
             )
             self.permutation = lsap(D, bool(sub))  # Solve LSAP to find permutation
             # Update `x` based on the computed permutation (lsap uses different conventions than alg.encoder #to fix )
-            self.set_x(self.get_x()[self.permutation])
+            self.set_fx(self.get_fx()[self.permutation])
+            # self.set_x(self.get_x()[map_invertion(np.array(self.permutation))])
         return self
 
     def __len__(self) -> int:
@@ -1036,7 +1041,7 @@ class Kernel:
         if theta is None:
             theta = self.get_knm_inv(**kwargs)
         knm = core.DiffOps.nabla_knm(
-            x=z, y=self.get_x(), theta=theta, kernel=self.get_kernel()
+            x=z, y=self.get_x(), theta=theta, order = self.order, reg = self.reg, kernel=self.get_kernel()
         )
 
         return knm
@@ -1062,7 +1067,8 @@ class Sampler(Kernel):
         if latent_generator is None:
             if latent_dim is None:
                 latent_dim = x.shape[1]
-            self.latent_generator = lambda n: get_uniforms(n, latent_dim,nmax=10)
+            # self.latent_generator = lambda n: get_uniforms(n, latent_dim,nmax=10) # FIX THIS!!!
+            self.latent_generator = lambda n: get_qmc_normals(n, latent_dim,nmax=10)
         else:
             self.latent_generator = latent_generator
         y= self.latent_generator(x.shape[0])

@@ -10,7 +10,8 @@ from codpy.core import _requires_rescale,KerInterface,kernel_setter,get_matrix
 from codpy.data_conversion import get_matrix
 from codpy.selection import column_selector
 from codpy.lalg import LAlg
-
+from scipy.special import erfinv, erf
+from scipy.stats import qmc    
 
 
 def rejection_sampling(proposed_sample, densities,size=None):
@@ -50,8 +51,23 @@ def rejection_sampling(proposed_sample, densities,size=None):
     chosen_indices=np.random.choice(indices, size=size, replace=True, p=probas)
     return proposed_sample[chosen_indices]
 
+
+def get_qmc_uniforms(N, D, **kwargs):
+    from scipy.stats import qmc
+    M = 2**(int(np.log2(N))+1)
+    out = np.array(qmc.Sobol(d=D, scramble=True).random(M))[:N]
+    return out
+
+
+
+def get_qmc_normals(N, D, **kwargs):
+    out = get_qmc_uniforms(N, D, **kwargs)
+    out = np.vectorize(erfinv)((out-.5)*2.)
+    return out
+
 @functools.cache
 def get_normals(N, D, nmax=10,kernel_ptr=None):
+#TO-DO : FIX CODPY GET_NORMAL !!   
     if kernel_ptr is not None:
         KerInterface.set_kernel_ptr(kernel_ptr)
     else:
@@ -59,7 +75,6 @@ def get_normals(N, D, nmax=10,kernel_ptr=None):
     out = cd.alg.get_normals(N=N, D=D, nmax=nmax)
     # mean,var = np.mean(out,axis=0),np.var(out,axis=0)
     return out
-
 
 @functools.cache
 def get_uniforms(N, D, nmax=10,kernel_ptr=None):

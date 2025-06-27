@@ -286,12 +286,10 @@ class ConditionerKernel(Conditionner):
         x, y = get_matrix(x), get_matrix(y)
         super().__init__(x=x, y=y, **kwargs)
         self.latent_generator_x = latent_generator_x
-        if latent_generator_y is not None:
-            self.latent_generator_y = latent_generator_y
-        elif latent_dim_y is not None:
+        if latent_dim_y is not None and latent_generator_y is None:
             self.latent_generator_y = lambda n: get_uniforms(n, latent_dim_y,nmax=10)
         else: 
-            raise ValueError('You must input either latent_generator_y or the latent dimension latent_dim_y.')
+            self.latent_generator_y = latent_generator_y
 
         self.pi = None
         self.expectation_kernel = expectation_kernel
@@ -304,7 +302,7 @@ class ConditionerKernel(Conditionner):
         if self.latent_generator_x is not None:
             self.sampler_x = Sampler(x=self.get_x(),latent_generator=self.latent_generator_x)
             self.map_x = Kernel(x=self.sampler_x.get_fx(),fx = self.sampler_x.get_x())
-        self.sampler_y = Sampler(x=self.get_y(),latent_generator=self.latent_generator_y)
+        self.sampler_y = Sampler(x=self.get_y(),latent_generator=self.latent_generator_y,**kwargs)
 
         self.xy = np.concatenate([self.x, self.y], axis=1)
         if hasattr(self, 'map_x'):
