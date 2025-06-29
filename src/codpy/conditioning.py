@@ -4,7 +4,7 @@ from codpy.core import get_matrix
 from codpy.data_conversion import get_matrix
 from codpy.kernel import Kernel,Sampler
 from codpy.lalg import LAlg
-from codpy.sampling import rejection_sampling,get_uniforms
+from codpy.sampling import rejection_sampling,get_uniforms,get_qmc_normals
 from codpy.utils import cartesian_outer_product
 
 
@@ -287,7 +287,7 @@ class ConditionerKernel(Conditionner):
         super().__init__(x=x, y=y, **kwargs)
         self.latent_generator_x = latent_generator_x
         if latent_dim_y is not None and latent_generator_y is None:
-            self.latent_generator_y = lambda n: get_uniforms(n, latent_dim_y,nmax=10)
+            self.latent_generator_y = lambda n: get_qmc_normals(n, latent_dim_y,nmax=10)
         else: 
             self.latent_generator_y = latent_generator_y
 
@@ -312,7 +312,7 @@ class ConditionerKernel(Conditionner):
             
         self.latent_y = self.sampler_y.get_x()
         self.latent_xy = np.concatenate([self.latent_x, self.latent_y], axis=1)
-        self.sampler_xy = Kernel(x=self.latent_xy, order=None, **kwargs).map(y=self.xy,distance=None)
+        self.sampler_xy = Kernel(x=self.latent_xy, order=None, **kwargs).map(y=self.xy,distance=None,**kwargs)
         # self.sampler_xy = Kernel(x=self.latent_xy, fx=self.xy, order=2, **kwargs)
         self.map_xy = Kernel(
             x=self.sampler_xy.get_fx(), fx=self.sampler_xy.get_x(), order=2,**kwargs
@@ -413,9 +413,11 @@ class ConditionerKernel(Conditionner):
         else:
             latent_x = x
         latent_xy = cartesian_outer_product(latent_x, latent_y)
-        latent_xy = latent_xy[0,:,:]
-        mapped = self.sampler_xy(latent_xy)
+
+        # latent_xy = latent_xy[0,:,:]
+        mapped = self.sampler_xy(latent_xy.reshape(-1, latent_xy.shape[-1]))
         mapped = mapped[:, self.x.shape[1] :]
+        mapped = mapped.reshape(x.shape[0], n, self.y.shape[1])
         return mapped
 
     def density(self, x, **kwargs):
