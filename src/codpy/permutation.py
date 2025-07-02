@@ -3,6 +3,7 @@ import pandas as pd
 import xarray
 from codpydll import *
 from scipy.optimize import linear_sum_assignment
+import ot
 
 from codpy.core import KerOp
 from codpy.data_conversion import get_matrix
@@ -144,7 +145,17 @@ def grid_projection(**kwargs):
     )
     return method(x)
 
-def Gromov_Monge(Dx, Dy):
+def Gromov_Monge_OT(Dx, Dy):
+    p = ot.unif(Dx.shape[0])
+    q = ot.unif(Dy.shape[0])
+    # GW ---
+    T = ot.gromov.gromov_wasserstein(Dy,Dx, p, q, loss_fun="square_loss")
+    permutation = np.array([np.argmax(T[:, j]) for j in range(T.shape[1])])
+    return permutation
+
+
+
+def Gromov_Monge(Dx, Dy,method="combinatorial",**kwargs):
     """
     Match function to resample or reorder data points in x to match a specified distribution size Ny.
 
@@ -153,7 +164,10 @@ def Gromov_Monge(Dx, Dy):
     Returns:
         numpy.ndarray a permutation.
     """
-    return cd.alg.Gromov_Monge(get_matrix(Dx), get_matrix(Dy))
+    if method == "combinatorial":
+        return cd.alg.Gromov_Monge(get_matrix(Dx), get_matrix(Dy))
+    else:
+        return Gromov_Monge_OT(Dx, Dy)
 
 def match(x, Ny=None, sharp_discrepancy_xmax=None, sharp_discrepancy_seed=None):
     """

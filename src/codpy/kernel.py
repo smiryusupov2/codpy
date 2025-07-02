@@ -705,7 +705,7 @@ class Kernel:
             self.set_kernel_ptr()
             Dx = self.dnm(distance=distance)
             Dy = Kernel(x=self.get_fx()).dnm(distance=distance)
-            self.permutation = Gromov_Monge(Dx,Dy)
+            self.permutation = Gromov_Monge(Dx,Dy,**kwargs)
 
             # Update `fx` based on the computed permutation
             self.set_fx(self.get_fx()[self.permutation])
