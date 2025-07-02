@@ -144,6 +144,16 @@ def grid_projection(**kwargs):
     )
     return method(x)
 
+def Gromov_Monge(Dx, Dy):
+    """
+    Match function to resample or reorder data points in x to match a specified distribution size Ny.
+
+    Args:
+   
+    Returns:
+        numpy.ndarray a permutation.
+    """
+    return cd.alg.Gromov_Monge(get_matrix(Dx), get_matrix(Dy))
 
 def match(x, Ny=None, sharp_discrepancy_xmax=None, sharp_discrepancy_seed=None):
     """

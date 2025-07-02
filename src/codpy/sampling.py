@@ -54,6 +54,8 @@ def rejection_sampling(proposed_sample, densities,size=None):
 
 def get_qmc_uniforms(N, D, **kwargs):
     from scipy.stats import qmc
+    if D==1:
+        return np.linspace(.5/N, 1.-.5/N, N).reshape(-1, 1)
     M = 2**(int(np.log2(N))+1)
     out = np.array(qmc.Sobol(d=D, scramble=True).random(M))[:N]
     return out

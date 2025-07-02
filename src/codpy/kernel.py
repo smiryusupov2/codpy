@@ -6,7 +6,7 @@ import codpy.core as core
 from codpy.algs import Alg
 from codpy.core import DiffOps
 from codpy.lalg import LAlg
-from codpy.permutation import lsap, map_invertion
+from codpy.permutation import lsap, map_invertion,Gromov_Monge
 from codpy.sampling import get_uniforms,get_normals,get_qmc_uniforms,get_qmc_normals
 
 
@@ -703,7 +703,9 @@ class Kernel:
             # If the dimensionalities differ, use an encoder to map data into latent space
             # and find the optimal permutation (descent-based method)
             self.set_kernel_ptr()
-            self.permutation = cd.alg.encoder(self.get_x(), self.get_fx(),kwargs.get("iter",10))
+            Dx = self.dnm(distance=distance)
+            Dy = Kernel(x=self.get_fx()).dnm(distance=distance)
+            self.permutation = Gromov_Monge(Dx,Dy)
 
             # Update `fx` based on the computed permutation
             self.set_fx(self.get_fx()[self.permutation])
