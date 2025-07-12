@@ -704,11 +704,12 @@ class Kernel:
             # and find the optimal permutation (descent-based method)
             self.set_kernel_ptr()
             Dx = self.dnm(distance=distance)
-            Dy = Kernel(x=self.get_fx()).dnm(distance=distance)
+            Dy = Kernel(x=y).dnm(distance=distance)
             self.permutation = Gromov_Monge(Dx,Dy,**kwargs)
 
             # Update `fx` based on the computed permutation
-            self.set_fx(self.get_fx()[self.permutation])
+            Kernel.set_fx(self,fx=self.fx[self.permutation])
+            # self.set_fx(self.get_fx()[self.permutation]) # not use, set_fx can be overloaded
             # self.permutation = map_invertion(np.array(self.permutation))
             # self.set_x(self.get_x()[self.permutation])
         else:
@@ -911,7 +912,7 @@ class Kernel:
         :rtype: callable
         """
         if not hasattr(self, "kernel"):
-            self.kernel = self.set_kernel(order=self.order)
+            self.kernel = self.set_kernel(polynomial_order=self.order)
             # self.order= None
             self.kernel = core.KerInterface.get_kernel_ptr()
         return self.kernel

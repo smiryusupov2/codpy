@@ -30,7 +30,7 @@ def declare_cast(source,target,fun,dic = cast_dict):
 def cast(data,type_out, type_in = None):
     if type_in is None: type_in = type(data)
     if type_in == type_out : return data
-    if type_in not in cast_dict.keys(): return type_out(data)
+    if type_in not in cast_dict.keys(): return dic_int_set_int_to_list_int(data)
     test = cast_dict[type_in]
     return test[type_out](data)
 
@@ -41,6 +41,12 @@ def ndarray_to_dic_int_set_int(data : np.ndarray) -> Dict[int, Set[int]]:
     return out
 declare_cast(np.ndarray,Dict[int, Set[int]],ndarray_to_dic_int_set_int)
 
+def dic_to_dic_int_set_int(data : dict) -> Dict[int, Set[int]]:
+    out = {}
+    def helper(k,v):out.update({int(k):cast(int(v),Set[int])})
+    [helper(k,v) for k,v in data.items()]
+    return out
+declare_cast(dict,Dict[int, Set[int]],dic_to_dic_int_set_int)
 
 
 def list_int_to_dic_int_set_int(data : List[int]) -> Dict[int, Set[int]]:
@@ -59,7 +65,7 @@ def dic_int_set_int_to_list_int(data : dict) -> List[int]:
     keys = list(data.keys())
     keys.sort()
     out = []
-    for i in keys : out += list(data[i])
+    for i in keys : out += [data[i]]
     return out
 declare_cast(Dict[int, Set[int]],List[int],dic_int_set_int_to_list_int)
 

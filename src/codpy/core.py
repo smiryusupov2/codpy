@@ -2,7 +2,7 @@ import itertools
 from functools import partial
 
 import numpy as np
-#import pandas as pd
+import pandas as pd
 from codpydll import *
 
 from codpy.data_conversion import get_matrix
@@ -76,56 +76,38 @@ class KerOp:
             else project_array(x, y, z, fx, reg)
         )
 
-    def _weighted_projection(**kwargs):
-        projection_format_switchDict = {
-            pd.DataFrame: lambda **kwargs: projection_dataframe(**kwargs)
-        }
-        z = kwargs["z"]
-        if isinstance(z, list):
+    def _weighted_projection(x, y, z, fx, weights,kernel_ptr=None, reg=1e-9, order=0, reg_matrix=[], **kwargs):
+        if kernel_ptr is not None:
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
 
-            def fun(zi):
-                kwargs["z"] = zi
-                return KerOp._weighted_projection(**kwargs)
+        reg = reg if reg is not None else []
 
-            out = [fun(zi) for zi in z]
-            return out
-
-        def projection_dataframe(**kwargs):
-            x, y, z, fx, weights = (
-                kwargs.get("x", []),
-                kwargs.get("y", x),
-                kwargs.get("z", []),
-                kwargs.get("fx", []),
-                np.array(kwargs.get("weights", [])),
-            )
+        def project_dataframe(x, y, z, fx, reg):
             x, y, z = column_selector([x, y, z], **kwargs)
-            f_z = cd.op.weighted_projection(
-                get_matrix(x), get_matrix(y), get_matrix(z), get_matrix(fx), weights
-            )
+            f_z = cd.op.weighted_projection(x, y, z, fx, weights)
             if isinstance(fx, pd.DataFrame):
-                f_z = pd.DataFrame(f_z, columns=list(fx.columns), index=z.index)
+                f_z = pd.DataFrame(f_z, columns=list(fx.columns))
+                if isinstance(z, pd.DataFrame):
+                    f_z.index = z.index
             return f_z
 
-        KerInterface.init(**kwargs)
-        type_debug = type(kwargs.get("x", []))
+        def project_array(x, y, z, fx, reg):
+            return cd.op.weighted_projection(x, y, z, fx, weights)
 
-        def debug_fun(**kwargs):
-            x, y, z, fx, weights = (
-                kwargs.get("x", []),
-                kwargs.get("y", x),
-                kwargs.get("z", []),
-                kwargs.get("fx", []),
-                np.array(kwargs.get("weights", [])),
-            )
-            f_z = cd.op.weighted_projection(
-                get_matrix(x), get_matrix(y), get_matrix(z), get_matrix(fx), weights
-            )
-            return f_z
+        if isinstance(z, list):
+            return [
+                project_dataframe(x, y, zi, fx, reg)
+                if isinstance(x, pd.DataFrame)
+                else project_array(x, y, zi, fx, reg)
+                for zi in z
+            ]
 
-        method = projection_format_switchDict.get(type_debug, debug_fun)
-        f_z = method(**kwargs)
+        return (
+            project_dataframe(x, y, z, fx, reg)
+            if isinstance(x, pd.DataFrame)
+            else project_array(x, y, z, fx, reg)
+        )
 
-        return f_z
 
     @staticmethod
     def extrapolation(x, z, fx=None, reg=None, **kwargs):
@@ -1295,7 +1277,9 @@ class KernelSetters:
         kernel_string,
         polynomial_order: int = 2,
         regularization: float = 1e-8,
-        set_map=None,
+        map_string=None,
+        kernel_args={},
+        map_args={}
     ):
         """
         Set the kernel function with specified parameters.
@@ -1313,9 +1297,11 @@ class KernelSetters:
         in subsequent calculations.
         """
         cd.kernel_interface.set_polynomial_order(polynomial_order)
-        cd.set_kernel(kernel_string)
-        if set_map:
-            set_map()
+        cd.set_kernel(kernel_string,kernel_args)
+        if map_string:
+            if map_string in _map_settings.keys():
+                map_string = _map_settings[map_string]
+            KerInterface.set_map(map_string)
         if polynomial_order > 0:
             linearkernel = KernelSetters.kernel_helper(
                 setter=KernelSetters.set_linear_regressor_kernel,
@@ -1558,7 +1544,6 @@ class KernelSetters:
             "scalar_product", polynomial_order, regularization, set_map
         )
 
-
 class _pipe__map_setters:
     @staticmethod
     def pipe(s, **kwargs):
@@ -1606,116 +1591,29 @@ class _pipe__map_setters:
 
 
 kernel_settings = {
-    "linear": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_linear_regressor_kernel,
-        polynomial_order,
-        regularization,
-        map_func,
-    ),
-    "gaussian": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_gaussian_kernel, polynomial_order, regularization, map_func
-    ),
-    "tensornorm": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_tensornorm_kernel, polynomial_order, regularization, map_func
-    ),
-    "absnorm": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_absnormkernel, polynomial_order, regularization, map_func
-    ),
-    "matern": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_matern_tensor_kernel,
-        polynomial_order,
-        regularization,
-        map_func,
-    ),
-    "multiquadricnorm": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_multiquadricnorm_kernel,
-        polynomial_order,
-        regularization,
-        map_func,
-    ),
-    "multiquadrictensor": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_multiquadrictensor_kernel,
-        polynomial_order,
-        regularization,
-        map_func,
-    ),
-    "sincardtensor": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_sincardtensor_kernel,
-        polynomial_order,
-        regularization,
-        map_func,
-    ),
-    "sincardsquaretensor": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_sincardsquaretensor_kernel,
-        polynomial_order,
-        regularization,
-        map_func,
-    ),
-    "dotproduct": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_dotproduct_kernel, polynomial_order, regularization, map_func
-    ),
-    "gaussianper": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_gaussianper_kernel,
-        polynomial_order,
-        regularization,
-        map_func,
-    ),
-    "maternnorm": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_matern_norm_kernel,
-        polynomial_order,
-        regularization,
-        map_func,
-    ),
-    "scalarproduct": lambda: lambda polynomial_order,
-    regularization,
-    map_func: KernelSetters.kernel_helper(
-        KernelSetters.set_scalar_product_kernel,
-        polynomial_order,
-        regularization,
-        map_func,
-    ),
+    "linear": KernelSetters.set_linear_regressor_kernel,
+    "gaussian": KernelSetters.set_gaussian_kernel,
+    "tensornorm": KernelSetters.set_tensornorm_kernel,
+    "absnorm": KernelSetters.set_absnormkernel,
+    "matern": KernelSetters.set_matern_tensor_kernel,
+    "multiquadricnorm": KernelSetters.set_multiquadricnorm_kernel,
+    "multiquadrictensor": KernelSetters.set_multiquadrictensor_kernel,
+    "sincardtensor": KernelSetters.set_sincardtensor_kernel,
+    "sincardsquaretensor": KernelSetters.set_sincardsquaretensor_kernel,
+    "dotproduct": KernelSetters.set_dotproduct_kernel,
+    "gaussianper": KernelSetters.set_gaussianper_kernel,
+    "maternnorm": KernelSetters.set_matern_norm_kernel,
+    "scalarproduct": KernelSetters.set_scalar_product_kernel,
 }
 
 _map_settings = {
-    "linear": MapSetters.set_linear_map,
-    "affine": MapSetters.set_affine_map,
-    "log": MapSetters.set_log_map,
-    "exp": MapSetters.set_exp_map,
-    "scalestd": MapSetters.set_scale_std_map,
-    "erf": MapSetters.set_erf_map,
-    "erfinv": MapSetters.set_erfinv_map,
-    "scalefactor": MapSetters.set_scale_factor_map,
     "bandwidth": MapSetters.set_scale_factor_helper,
-    "grid": MapSetters.set_grid_map,
-    "unitcube": MapSetters.set_unitcube_map,
-    "meandistance": MapSetters.set_mean_distance_map,
-    "mindistance": MapSetters.set_min_distance_map,
-    "standardmin": MapSetters.set_standard_min_map,
-    "standardmean": MapSetters.set_standard_mean_map,
+    "standardmin": ["scale_to_min_distance","scale_to_erfinv","scale_to_unitcube"],
+    "standardmean": ["scale_to_mean_distance","scale_to_erfinv","scale_to_unitcube"],
+    # "standardmin": ["scale_to_unitcube","scale_to_erfinv","scale_to_min_distance"],
+    # "standardmean": ["scale_to_unitcube","scale_to_erfinv","scale_to_mean_distance"],
+    "meandistance":"scale_to_mean_distance",
+    "mindistance":"scale_to_min_distance",
 }
 
 
@@ -1735,7 +1633,16 @@ def _requires_bandwidth(map_name: str) -> bool:
     return map_name in bandwidth_required_maps
 
 
-def set_kernel(kernel, map, polynomial_order=0, regularization=1e-8, bandwidth=1.0):
+
+
+def set_kernel(        
+        kernel_string,
+        polynomial_order: int = 2,
+        regularization: float = 1e-8,
+        map_string=None,
+        kernel_args={},
+        map_args={}
+    ):
     """
     Set the kernel function with specified parameters using string identifiers.
 
@@ -1748,51 +1655,43 @@ def set_kernel(kernel, map, polynomial_order=0, regularization=1e-8, bandwidth=1
     Returns:
         The configured kernel function.
     """
-    kernel_func_creator = kernel_settings.get(kernel)
-    map_func = _map_settings.get(map)
-
-    if not kernel_func_creator:
-        raise ValueError(f"Kernel '{kernel}' not recognized.")
-    if map is not None:
-        map_func = _map_settings.get(map)
-        if not map_func:
-            raise ValueError(f"Map '{map}' not recognized.")
-        if _requires_bandwidth(map):
-            map_func = map_func(bandwidth=bandwidth)
+    if kernel_string in kernel_settings.keys():
+        return kernel_settings[kernel_string](polynomial_order,regularization,map_string)
     else:
-        map_func = None
+        return KernelSetters.set_kernel(kernel_string,polynomial_order,regularization,map_string,kernel_args,map_args)
 
-    kernel_func = kernel_func_creator()
-
-    return kernel_func(polynomial_order, regularization, map_func)()
 
 class kernel_setter:
-    def __init__(self, kernel, map, polynomial_order=0, regularization=1e-8, bandwidth=1.0):
-        self.kernel = kernel
-        self.map = map
+    """
+    Set the kernel function with specified parameters using string identifiers.
+
+    Args:
+        kernel (str): The name of the kernel function to use.
+        map (str): The name of the mapping function to use.
+        polynomial_order (int): The polynomial order for the kernel function.
+        regularization (float): The regularization parameter for the kernel.
+        bandwidth (float): extra bandwidth parameter for bandwidth kernels.
+    """
+    def __init__(self,
+        kernel_string,
+        map_string=None,
+        polynomial_order: int = 2,
+        regularization: float = 1e-8,
+        kernel_args={},
+        map_args={}
+    ):
+        self.kernel_string = kernel_string
+        self.map_string = map_string
         self.polynomial_order = polynomial_order
         self.regularization = regularization
-        self.bandwidth = bandwidth
+        self.kernel_args = kernel_args
+        self.map_args = map_args
 
     def __call__(self, *args, **kwargs):
         order = kwargs.get("order", self.polynomial_order)
         if order is None:
             order = self.polynomial_order
-        return set_kernel(self.kernel, self.map, order, self.regularization, self.bandwidth)
+        return set_kernel(self.kernel_string, self.polynomial_order, self.regularization, self.map_string, self.kernel_args,self.map_args)
     
-# def kernel_setter(kernel, map, polynomial_order=0, regularization=1e-8, bandwidth=1.0):
-#     """
-#     Set the kernel function with specified parameters using string identifiers.
-
-#     Args:
-#         kernel (str): The name of the kernel function to use.
-#         map (str): The name of the mapping function to use.
-#         polynomial_order (int): The polynomial order for the kernel function.
-#         regularization (float): The regularization parameter for the kernel.
-
-#     Returns:
-#         The configured kernel function.
-#     """
-#     return lambda: set_kernel(kernel, map, polynomial_order, regularization, bandwidth)
 if __name__ == "__main__":
     pass

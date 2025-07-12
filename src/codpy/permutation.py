@@ -12,6 +12,14 @@ from codpy.random_utils import random_select_interface
 from codpy.selection import column_selector
 from codpy.utils import format_23, format_32
 
+def dic_invertion(map):
+    out = {}
+    for k,v in map.items():
+        if v in out.keys():
+            out[v] += [k]
+        else:
+            out[v] = [k]
+    return out
 
 def map_invertion(map, type_in=None):
     """
