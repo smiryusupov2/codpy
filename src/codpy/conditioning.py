@@ -1,3 +1,4 @@
+from codpy.permutation import map_invertion
 import numpy as np
 
 from codpy.core import get_matrix
@@ -310,7 +311,9 @@ class ConditionerKernel(Conditionner):
         else: 
             self.latent_x = self.x
             
-        self.latent_y = self.sampler_y.get_x()
+        # self.latent_y = self.sampler_y.get_x() # latent_y not aligned with latent_x and self.y !!!!
+        # TODO check regressions? 
+        self.latent_y = self.sampler_y.get_x()[map_invertion(self.sampler_y.permutation)]
         self.latent_xy = np.concatenate([self.latent_x, self.latent_y], axis=1)
         self.sampler_xy = Kernel(x=self.latent_xy, order=None, **kwargs).map(y=self.xy,**kwargs)
         # self.sampler_xy = Kernel(x=self.latent_xy, fx=self.xy, order=2, **kwargs)
