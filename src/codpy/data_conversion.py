@@ -2,11 +2,11 @@ import xarray
 import pandas as pd
 import numpy as np
 import datetime
-
+import torch
 
 get_data_switchDict = { pd.DataFrame: lambda vals :  vals.values,
                         pd.Series: lambda vals : np.array(vals.array, dtype= 'float'),
-                        # torch.Tensor: lambda vals : vals.detach().numpy(),
+                        torch.Tensor: lambda vals : vals.detach().numpy(),
                         tuple: lambda xs : [get_data(vals) for vals in xs],
                         xarray.core.dataarray.DataArray: lambda xs : get_data(xs.values) 
                     }
@@ -60,14 +60,22 @@ def get_data(x,dtype='float'):
     return method(x)
 
 def get_float_nan(vals, **k):
-    if isinstance(vals,list):return [get_float_nan(y,**k) for y in vals]
-    if isinstance(vals,np.ndarray):return [get_float_nan(y,**k) for y in vals]
-    out = float(vals)
-    # out = np.array(x, dtype=float)
-    nan_val = k.get("nan_val",np.nan)
-    if pd.isnull(out) : 
+    if isinstance(vals, (list, np.ndarray)):
+        return [get_float_nan(y, **k) for y in vals]
+    
+    if isinstance(vals, (pd.DataFrame, pd.Series, pd.Index)):
+        vals = vals.values[0] if len(vals) > 0 else np.nan
+    
+    try:
+        out = float(vals)
+    except (TypeError, ValueError):
+        out = np.nan
+    
+    nan_val = k.get("nan_val", np.nan)
+    if pd.isnull(out):
         out = nan_val
     return out
+
 def Id(vals,**k):return vals
 def get_float(vals, **kwargs):
     type_ = type(vals)
@@ -77,7 +85,7 @@ def get_float(vals, **kwargs):
     return out
 
 def get_date(vals,**kwargs):
-    if isinstance(vals,list): return [get_date(n,**kwargs) for n in x]
+    if isinstance(vals,list): return [get_date(n,**kwargs) for n in vals]
     type_debug = type(vals)
     method = get_date_switchDict.get(type_debug,None)
     return method(vals,**kwargs)
