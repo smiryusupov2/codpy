@@ -64,7 +64,7 @@ def get_float_nan(vals, **k):
         return [get_float_nan(y, **k) for y in vals]
     
     if isinstance(vals, (pd.DataFrame, pd.Series, pd.Index)):
-        vals = vals.values[0] if len(vals) > 0 else np.nan
+        return [get_float_nan(y, **k) for y in vals.values]
     
     try:
         out = float(vals)
