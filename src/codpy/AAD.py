@@ -1,6 +1,7 @@
 import numpy as np
 import torch as torch
 
+from codpy import core
 
 class AAD:
     def gradient(fx, x, grad_outputs=None, **kwargs):
@@ -8,18 +9,39 @@ class AAD:
         if not isinstance(x, torch.Tensor):
             x = torch.tensor(x, requires_grad=True)
         if x.dim() == 1:
-            out = torch.autograd.functional.jacobian(fx, x)
+            # Wrapper function to ensure tensor output
+            def tensor_fx(t):
+                result = fx(t, **kwargs)
+                if isinstance(result, np.ndarray):
+                    # For gradients, we also want scalar output when input is 1D
+                    scalar_result = result.item() if result.size == 1 else result[0]
+                    return torch.tensor(scalar_result, dtype=torch.float64)
+                elif isinstance(result, (int, float)):
+                    return torch.tensor(result, dtype=torch.float64)
+                else:
+                    return result
+            out = torch.autograd.functional.jacobian(tensor_fx, x)
             return out
         N, D = x.shape[0], x.shape[1]
-        out = [torch.autograd.functional.jacobian(fx, y).detach().numpy() for y in x]
+        # Wrapper function to ensure tensor output
+        def tensor_fx_wrapper(y_):
+            result = fx(y_, **kwargs)
+            if isinstance(result, np.ndarray):
+                return torch.tensor(result, dtype=torch.float64)
+            elif isinstance(result, (int, float)):
+                return torch.tensor(result, dtype=torch.float64)
+            else:
+                return result
+        out = [torch.autograd.functional.jacobian(tensor_fx_wrapper, y).detach().numpy() for y in x]
         return np.asarray(out)
 
     def taylor_expansion(x, z, fx, order=False, **kwargs):
         # print('######','distance_labelling','######')
-        xo, zo, fxo = core.get_matrix(x), core.get_matrix(z), core.get_matrix(fx(x))
+        fz = fx(x, **kwargs)
+        xo, zo, fxo = core.get_matrix(x), core.get_matrix(z), core.get_matrix(fz)
         indices = kwargs.get("indices", [])
         if len(indices) != z.shape[0]:
-            indices = alg.distance_labelling(
+            indices = core.Misc.distance_labelling(
                 **{**kwargs, **{"x": x, "axis": 0, "y": z}}
             )
         xo = xo[indices]
@@ -79,7 +101,7 @@ class AAD:
         )[0]
         if x.shape[0] == z.shape[0]:
             return grad
-        indices = alg.distance_labelling(**{**kwargs, **{"x": x, "y": z}})
+        indices = core.Misc.distance_labelling(**{**kwargs, **{"x": x, "y": z}})
         x = x[indices]
         fx = fx[indices]
 
@@ -92,7 +114,7 @@ class AAD:
         for i in range(y.shape[0]):
             grad_outputs = torch.zeros_like(y)
             grad_outputs[i] = 1
-            jac[i] = gradient(y, x, grad_outputs=grad_outputs)
+            jac[i] = AAD.gradient(y, x, grad_outputs=grad_outputs)
         return jac
 
     def jacobianBatch(f, wrt):
@@ -112,12 +134,27 @@ class AAD:
             x = torch.tensor(x, requires_grad=True)
 
         def hessian_helper(y):
-            mat = torch.autograd.functional.hessian(func=fx, inputs=y)
-            return get_matrix(mat)
+            # Wrapper function to ensure tensor output and pass kwargs
+            def tensor_fx_hessian(t):
+                result = fx(x=t, **kwargs)
+                if isinstance(result, np.ndarray):
+                    # For hessian, we need a scalar output, so take the first element if it's an array
+                    scalar_result = result.item() if result.size == 1 else result[0]
+                    return torch.tensor(scalar_result, dtype=torch.float64)
+                elif isinstance(result, (int, float)):
+                    return torch.tensor(result, dtype=torch.float64)
+                else:
+                    # If it's already a tensor, ensure it's scalar
+                    assert result.numel() == 1, "Hessian function must return a scalar value."
+                    # if hasattr(result, 'item'):
+                    #     return result.item() if result.numel() == 1 else result[0]
+                    return result
+            mat = torch.autograd.functional.hessian(func=tensor_fx_hessian, inputs=y)
+            return core.get_matrix(mat)
 
         out = [hessian_helper(y=y.clone().detach().requires_grad_(True)) for y in x]
         return np.asarray(out)
-
+    
     def divergence(y, x, **kwargs):
         import torch as torch
 

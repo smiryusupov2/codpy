@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
 
+from codpydll import *
 import codpy.core as core
-from codpy.core import diffops, kernel_interface
+from codpy.core import DiffOps, KerInterface
 from codpy.data_conversion import get_data, get_matrix
 
 ########################################### Partial Differential tools #########################################
@@ -45,13 +46,13 @@ def CrankNicolson(A, dt=0.0, u0=[], **kwargs):
         >>> u_next = CrankNicolson(A, dt, u0)
     """
 
-    kernel_interface.init(**kwargs)
+    KerInterface.init(**kwargs)
     theta = kwargs.get("theta", 0.5)
     return cd.alg.CrankNicolson(get_matrix(A), dt, get_matrix(u0), theta)
 
 
 def taylor_expansion(
-    x, y, z, fx, nabla=diffops.nabla, hessian=diffops.hessian, **kwargs
+    x, y, z, fx, nabla=DiffOps.nabla, hessian=DiffOps.hessian, **kwargs
 ):
     """
     Perform a Taylor series expansion to approximate the function values at new points.
@@ -92,7 +93,7 @@ def taylor_expansion(
     xo, _, _, fxo = x, y, z, fx
     indices = kwargs.get("indices", [])
     if len(indices) != z.shape[0]:
-        indices = core.misc.distance_labelling(**{**kwargs, **{"x": x, "axis": 0, "y": z}})
+        indices = core.Misc.distance_labelling(**{**kwargs, **{"x": x, "axis": 0, "y": z}})
     xo = x[indices]
     fxo = fx[indices]
     deltax = get_data(z - xo)
@@ -119,7 +120,8 @@ def taylor_expansion(
             results["nabla"] = grad
 
     if taylor_order >= 2:
-        hess = hessian(x=x, y=x, z=x, fx=fx, **kwargs)
+        hess = hessian(x=x, z=x, fx=fx, **kwargs)
+        # hess = hessian(x=x, y=x, z=x, fx=fx, **kwargs)
         if hess.ndim > 3:
             hess = hess.reshape(hess.shape[0], hess.shape[1], hess.shape[2])
         if len(indices):
