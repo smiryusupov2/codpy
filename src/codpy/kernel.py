@@ -229,7 +229,7 @@ class Kernel:
         return core.KerOp.knm(x=x, y=y, fy=fy, kernel_ptr=self.get_kernel())
 
     def dnm(
-        self, x: np.ndarray = None, y: np.ndarray = None, fy: np.ndarray = [], **kwargs
+        self, x: np.ndarray = None, y: np.ndarray = None, fy: np.ndarray = [], distance = [], **kwargs
     ) -> np.ndarray:
         """
         Compute the kernel matrix $D(X, Y)=k(x^i, y^j)_{i,j}$, where the kernel function $k$ is defined at class initialization, see :attr:`self.set_kernel`.
@@ -255,9 +255,8 @@ class Kernel:
             y = self.get_y()
         if self.get_map() is not None:
             x, y = self.get_map()(self.get_x()), self.get_map()(self.get_y())
-
         return core.KerOp.dnm(
-            x=x, y=y, fy=fy, kernel_ptr=self.get_kernel(), distance=None
+            x=x, y=y, fy=fy, kernel_ptr=self.get_kernel(), distance=distance
         )
 
     def get_knm_inv(
@@ -695,7 +694,7 @@ class Kernel:
         else:
             self.set_x(x)
             self.rescale()
-        self.set_fx(y)
+        self.set_fx(y,**kwargs)
         # Rescale the input data `x` using the current kernel configuration
 
         # Check if the dimensionality of `x` and `y` is the same
@@ -704,12 +703,12 @@ class Kernel:
             # and find the optimal permutation (descent-based method)
             self.set_kernel_ptr()
             Dx = self.dnm(distance=distance)
-            Dy = Kernel(x=y).dnm(distance=distance)
+            Dy = Kernel(x=self.get_fx()).dnm(distance=distance)
             self.permutation = Gromov_Monge(Dx,Dy,**kwargs)
 
             # Update `fx` based on the computed permutation
-            Kernel.set_fx(self,fx=self.fx[self.permutation])
-            # self.set_fx(self.get_fx()[self.permutation]) # not use, set_fx can be overloaded
+            # Kernel.set_fx(self,fx=y[self.permutation])
+            self.fx = self.get_fx()[self.permutation] # not use, set_fx can be overloaded
             # self.permutation = map_invertion(np.array(self.permutation))
             # self.set_x(self.get_x()[self.permutation])
         else:
