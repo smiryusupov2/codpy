@@ -320,7 +320,7 @@ class KerOp:
         if kernel_ptr is not None:
             KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
 
-        if distance is not None:
+        if distance is not None and distance != []:
             return cd.op.Dnm(get_matrix(x), get_matrix(y), {"distance": distance})
         return cd.op.Dnm(get_matrix(x), get_matrix(y))
 
@@ -1275,7 +1275,7 @@ class KernelSetters:
     @staticmethod
     def set_kernel(
         kernel_string,
-        polynomial_order: int = 2,
+        polynomial_order: int = 0,
         regularization: float = 1e-8,
         map_string=None,
         kernel_args={},
@@ -1512,7 +1512,7 @@ class KernelSetters:
 
     @staticmethod
     def set_matern_norm_kernel(
-        polynomial_order: int = 2,
+        polynomial_order: int = 0,
         regularization: float = 1e-8,
         set_map=MapSetters.set_mean_distance_map,
     ):
@@ -1637,7 +1637,7 @@ def _requires_bandwidth(map_name: str) -> bool:
 
 def set_kernel(        
         kernel_string,
-        polynomial_order: int = 2,
+        polynomial_order: int = 0,
         regularization: float = 1e-8,
         map_string=None,
         kernel_args={},
@@ -1675,7 +1675,7 @@ class kernel_setter:
     def __init__(self,
         kernel_string,
         map_string=None,
-        polynomial_order: int = 2,
+        polynomial_order: int = 0,
         regularization: float = 1e-8,
         kernel_args={},
         map_args={}

@@ -136,7 +136,7 @@ class AAD:
         def hessian_helper(y):
             # Wrapper function to ensure tensor output and pass kwargs
             def tensor_fx_hessian(t):
-                result = fx(x=t, **kwargs)
+                result = fx(t, **kwargs)
                 if isinstance(result, np.ndarray):
                     # For hessian, we need a scalar output, so take the first element if it's an array
                     scalar_result = result.item() if result.size == 1 else result[0]
