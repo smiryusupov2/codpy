@@ -110,7 +110,7 @@ class KerOp:
 
 
     @staticmethod
-    def extrapolation(x, z, fx=None, reg=None, **kwargs):
+    def extrapolation(x, z, fx=None, reg_matrix=None, **kwargs):
         """
         Performs extrapolation in the context of kernel regression.
 
@@ -121,10 +121,10 @@ class KerOp:
             * ``kernel`` function
             * ``map``
         """
-        reg = reg if reg is not None else []
+        reg_matrix = reg_matrix if reg_matrix is not None else []
         fx = fx if fx is not None else []
 
-        return KerOp.projection(x=x, y=x, z=z, reg=reg, fx=fx)
+        return KerOp.projection(x=x, y=x, z=z, reg_matrix=reg_matrix, fx=fx, **kwargs)
 
     @staticmethod
     def interpolation(x, y, z, fx=None, **kwargs):
@@ -142,7 +142,7 @@ class KerOp:
         return KerOp.projection(x=x, y=y, z=z, fx=fx, **kwargs)
 
     @staticmethod
-    def gradient_denoiser(x, z, fx=None, epsilon=1e-9, **kwargs):
+    def gradient_denoiser(x, z, fx=None, epsilon=1e-4, **kwargs):
         """
         A function for performing least squares regression penalized by the norm of the gradient,
         induced by a positive definite (PD) kernel.
@@ -166,8 +166,8 @@ class KerOp:
         KerOp.denoiser(xtrain, xtest, fx_train, kernel_fun = "maternnorm", map = "standardmean")
         """
         fx = fx if fx is not None else []
-        reg = epsilon * DiffOps.nabla_t_nabla(x=x, y=x, fx=[])
-        out = KerOp.extrapolation(x, z=z, fx=fx, reg=reg)
+        reg_matrix = epsilon * DiffOps.nabla_t_nabla(x=x, y=x, fx=[], **kwargs)
+        out = KerOp.extrapolation(x, z=z, fx=fx, reg_matrix=reg_matrix, **kwargs)
         return out
 
     @staticmethod
