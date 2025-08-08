@@ -67,11 +67,10 @@ class Kernel:
         :param kwargs: Additional keyword arguments for further customization.
         :type kwargs: :class:`dict`
         """
-        if order is None:
+        self.order = order
+        if self.order is None:
             if set_kernel is not None and hasattr(set_kernel, "polynomial_order"):
                 self.order = set_kernel.polynomial_order
-            else:
-                self.order = order
         self.reg = reg
         self.dim_ = None
         self.max_nystrom = int(max_nystrom)
