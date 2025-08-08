@@ -564,7 +564,7 @@ class DiffOps:
         fx=None,
         reg=None,
         kernel_ptr=None,
-        order=2,
+        order=0,
         regularization=1e-9,
         **kwargs,
     ):
@@ -625,7 +625,7 @@ class DiffOps:
         return cd.op.nabla_inv(get_matrix(x), get_matrix(y), get_matrix(z), fz)
 
     @staticmethod
-    def nabla_t(x, y, z, fz, kernel_ptr, order=2, regularization=1e-8, **kwargs):
+    def nabla_t(x, y, z, fz, kernel_ptr, order=0, regularization=1e-8, **kwargs):
         """
         Compute the divergence of a vector field using a kernel-induced method.
 
@@ -657,7 +657,7 @@ class DiffOps:
 
     @staticmethod
     def nabla_t_inv(
-        x, z, y=None, fx=None, kernel_ptr=None, order=2, regularization=1e-8, **kwargs
+        x, z, y=None, fx=None, kernel_ptr=None, order=0, regularization=1e-8, **kwargs
     ):
         """
         Compute the inverse of the transposed gradient operation.
@@ -689,7 +689,7 @@ class DiffOps:
 
     @staticmethod
     def nabla_t_nabla(
-        x, y, fx=None, kernel_ptr=None, order=2, regularization=1e-8, **kwargs
+        x, y, fx=None, kernel_ptr=None, order=0, regularization=1e-8, **kwargs
     ):
         """
         Compute the kernel-induced discrete Laplace operator.
@@ -723,7 +723,7 @@ class DiffOps:
 
     @staticmethod
     def nabla_t_nabla_inv(
-        x, y, fx=None, kernel_ptr=None, order=2, regularization=1e-8, **kwargs
+        x, y, fx=None, kernel_ptr=None, order=0, regularization=1e-8, **kwargs
     ):
         """
         Args:
@@ -734,13 +734,13 @@ class DiffOps:
         return cd.op.nablaT_nabla_inv(get_matrix(x), get_matrix(y), get_matrix(fx))
 
     @staticmethod
-    def leray_t(x, y, fx=None, kernel_ptr=None, order=2, regularization=1e-8, **kwargs):
+    def leray_t(x, y, fx=None, kernel_ptr=None, order=0, regularization=1e-8, **kwargs):
         fx = fx if fx is not None else []
         KerInterface.set_kernel_ptr(kernel_ptr, order, regularization)
         return cd.op.Leray_T(get_matrix(x), get_matrix(y), fx)
 
     @staticmethod
-    def leray(x, y, fx=None, kernel_ptr=None, order=2, regularization=1e-8, **kwargs):
+    def leray(x, y, fx=None, kernel_ptr=None, order=0, regularization=1e-8, **kwargs):
         """
         Compute the Leray operator for a given set of input matrices.
 
@@ -1688,9 +1688,6 @@ class kernel_setter:
         self.map_args = map_args
 
     def __call__(self, *args, **kwargs):
-        order = kwargs.get("order", self.polynomial_order)
-        if order is None:
-            order = self.polynomial_order
         return set_kernel(self.kernel_string, self.polynomial_order, self.regularization, self.map_string, self.kernel_args,self.map_args)
     
 if __name__ == "__main__":

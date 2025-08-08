@@ -32,42 +32,45 @@ def cast(data,type_out, type_in = None):
     if type_in == type_out : return data
     if type_in not in cast_dict.keys(): return dic_int_set_int_to_list_int(data)
     test = cast_dict[type_in]
+    # return test(data)
     return test[type_out](data)
 
-def ndarray_to_dic_int_set_int(data : np.ndarray) -> Dict[int, Set[int]]:
+def ndarray_to_dic_int_set_int(data : np.ndarray) -> dict[int, set[int]]:
     out = {}
-    def helper(k,v):out.update({int(k):cast(int(v),Set[int])})
+    def helper(k,v):out.update({int(k):cast(int(v),set[int])})
     [helper(k,v) for k,v in zip(range(0,len(data)),data)]
     return out
-declare_cast(np.ndarray,Dict[int, Set[int]],ndarray_to_dic_int_set_int)
+declare_cast(np.ndarray,dict[int, set[int]],ndarray_to_dic_int_set_int)
 
-def dic_to_dic_int_set_int(data : dict) -> Dict[int, Set[int]]:
+def dic_to_dic_int_set_int(data : dict) -> dict[int, set[int]]:
     out = {}
-    def helper(k,v):out.update({int(k):cast(int(v),Set[int])})
+    def helper(k,v):out.update({int(k):cast(int(v),set[int])})
     [helper(k,v) for k,v in data.items()]
     return out
-declare_cast(dict,Dict[int, Set[int]],dic_to_dic_int_set_int)
+declare_cast(dict,dict[int, set[int]],dic_to_dic_int_set_int)
 
 
-def list_int_to_dic_int_set_int(data : List[int]) -> Dict[int, Set[int]]:
+def list_int_to_dic_int_set_int(data : list[int]) -> dict[int, set[int]]:
     out = {}
-    def helper(k,v):out.update({k:cast(v,Set[int])})
+    def helper(k,v):out.update({k:cast(v,set[int])})
     [helper(k,v) for k,v in zip(range(0,len(data)),data)]
     return out
-declare_cast(List[int],Dict[int, Set[int]],list_int_to_dic_int_set_int)
+declare_cast(list[int],dict[int, set[int]],list_int_to_dic_int_set_int)
+declare_cast(list,dict[int, set[int]],list_int_to_dic_int_set_int)
 
 def int_to_set(data : int) -> set:return set([data])
 declare_cast(int,set,int_to_set)
-def int_to_Set_int(data : int) -> Set:return set([data])
-declare_cast(int,Set[int],int_to_Set_int)
+def int_to_Set_int(data : int) -> set:return set([data])
+declare_cast(int,set[int],int_to_Set_int)
 
-def dic_int_set_int_to_list_int(data : dict) -> List[int]:
+def dic_int_set_int_to_list_int(data : dict) -> list[int]:
     keys = list(data.keys())
     keys.sort()
     out = []
     for i in keys : out += [data[i]]
     return out
-declare_cast(Dict[int, Set[int]],List[int],dic_int_set_int_to_list_int)
+declare_cast(dict[int, set[int]],list[int],dic_int_set_int_to_list_int)
+declare_cast(dict[int, set[int]],list,dic_int_set_int_to_list_int)
 
 def dic_int_set_int_to_ndarray(data : dict) -> np.ndarray:
     keys = list(data.keys())
@@ -75,7 +78,7 @@ def dic_int_set_int_to_ndarray(data : dict) -> np.ndarray:
     out = []
     for i in keys : out += list(data[i])
     return np.asarray(out)
-declare_cast(Dict[int, Set[int]],np.ndarray,dic_int_set_int_to_ndarray)
+declare_cast(dict[int, set[int]],np.ndarray,dic_int_set_int_to_ndarray)
 
 def get_closest_key(dic,mykey):
     return min(dic.keys(), key = lambda x: abs(x-mykey))

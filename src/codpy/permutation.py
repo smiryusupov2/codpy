@@ -40,10 +40,10 @@ def map_invertion(map, type_in=None):
     """
     if type_in is None:
         type_in = type(map)
-    out = cast(data=map, type_in=type_in, type_out=Dict[int, Set[int]])
+    out = cast(data=map, type_in=type_in, type_out=dict[int, set[int]])
     out = cd.alg.map_invertion(out)
     # return out
-    return cast(out, type_out=type_in, type_in=Dict[int, Set[int]])
+    return cast(out, type_out=type_in, type_in=dict[int, set[int]])
 
 
 def scipy_lsap(C: np.ndarray) -> np.ndarray:

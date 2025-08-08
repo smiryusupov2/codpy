@@ -67,7 +67,11 @@ class Kernel:
         :param kwargs: Additional keyword arguments for further customization.
         :type kwargs: :class:`dict`
         """
-        self.order = order
+        if order is None:
+            if set_kernel is not None and hasattr(set_kernel, "polynomial_order"):
+                self.order = set_kernel.polynomial_order
+            else:
+                self.order = order
         self.reg = reg
         self.dim_ = None
         self.max_nystrom = int(max_nystrom)
@@ -704,7 +708,7 @@ class Kernel:
             self.set_kernel_ptr()
             Dx = self.dnm(distance=distance)
             Dy = Kernel(x=self.get_fx()).dnm(distance=distance)
-            self.permutation = Gromov_Monge(Dx,Dy,**kwargs)
+            self.permutation = np.array(Gromov_Monge(Dx,Dy,**kwargs))
 
             # Update `fx` based on the computed permutation
             # Kernel.set_fx(self,fx=y[self.permutation])
