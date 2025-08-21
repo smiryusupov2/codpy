@@ -8,6 +8,7 @@ src/codpy/KQLearning.py
 src/codpy/__init__.py
 src/codpy/algs.py
 src/codpy/clustering.py
+src/codpy/conditioning.py
 src/codpy/config.py
 src/codpy/core.py
 src/codpy/data_conversion.py
@@ -15,10 +16,11 @@ src/codpy/data_processing.py
 src/codpy/dictionary.py
 src/codpy/file.py
 src/codpy/include_all.py
+src/codpy/kengineering.py
 src/codpy/kernel.py
 src/codpy/lalg.py
 src/codpy/metrics.py
-src/codpy/multiscale_kernel.py
+src/codpy/optimization.py
 src/codpy/parallel.py
 src/codpy/pde.py
 src/codpy/permutation.py
