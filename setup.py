@@ -5,7 +5,7 @@ from distutils.core import setup
 
 from setuptools import find_packages, setup
 
-__version__ = "0.1.15"
+__version__ = "0.2.0"
 
 DISTNAME = "codpy"
 DESCRIPTION = "An RKHS based module for numerics, statistic and machine learning"
@@ -60,7 +60,7 @@ setup(
         "Operating System :: Microsoft :: Windows :: Windows 11",
     ],
     install_requires=[
-        "codpydll==0.1.10",
+        "codpydll==0.2",
         "numpy==1.24.4",
         "xarray==2022.9.0",
         "mkl==2022.2.1",
