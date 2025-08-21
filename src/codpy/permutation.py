@@ -3,7 +3,7 @@ import pandas as pd
 import xarray
 from codpydll import *
 from scipy.optimize import linear_sum_assignment
-import ot
+import ott
 
 from codpy.core import KerOp
 from codpy.data_conversion import get_matrix

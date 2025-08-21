@@ -68,7 +68,8 @@ setup(
         "torch == 1.13",
         "pandas == 1.5.0",
         "matplotlib == 3.6.2",
-        "statsmodels"
+        "statsmodels",
+        "ott==0.1.15"
     ],
     long_description=long_description,
     long_description_content_type="text/markdown",
