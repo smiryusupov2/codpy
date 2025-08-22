@@ -5,24 +5,23 @@ from distutils.core import setup
 
 from setuptools import find_packages, setup
 
-__version__ = "0.2.0"
+__version__ = "0.2"
 
 DISTNAME = "codpy"
 DESCRIPTION = "An RKHS based module for numerics, statistic and machine learning"
 MAINTAINER = "jean-marc mercier"
-MAINTAINER_EMAIL = "jeanmarc.mercier@gmail.com"
-URL = "https://github.com/johnlem/codpy_alpha"
+MAINTAINER_EMAIL = "jeanmarc.mercier@gmail.com, shohruh.miryusupov@gmail.com, max.aguirre2424b@gmail.com"
+URL = "https://github.com/smiryusupov2/codpy/tree/main"
 # DOWNLOAD_URL = 'https://github.com/johnlem/codpy_alpha'
 LICENSE = "new BSD"
 PROJECT_URLS = {
-    "Bug Tracker": "https://github.com/johnlem/codpy_alpha/issues",
+    "Bug Tracker": "https://github.com/smiryusupov2/codpy/issues",
     "Documentation": "https://",
-    "Source Code": "https://github.com/johnlem/codpy_alpha",
+    "Source Code": "https://github.com/smiryusupov2/codpy/",
 }
 
 codpy_path = os.path.dirname(__file__)
 codpy_path = os.path.join(codpy_path, "codpy")
-
 
 def package_files(directory):
     paths = []
