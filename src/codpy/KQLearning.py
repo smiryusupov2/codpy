@@ -295,10 +295,10 @@ class GamesKernelClassifier(GamesKernel):
 def rl_hot_encoder(actions, actions_dim):
     """Hot encodes actions over actions_dim.
 
-    :param actions: :class:`np.ndarray`.
+    :param actions: :class:`numpy.ndarray`.
     :param actions_dim: :class:`int` The dimension of the actions.
 
-    :return: :class:`pd.DataFrame`
+    :return: :class:`pandas.DataFrame`
     """
     out = hot_encoder(pd.DataFrame(np.float64(actions)), cat_cols_include=[0])
     if out.shape[1] != actions_dim:
@@ -786,6 +786,7 @@ class KAgent:
         :param kernel: :class:`codpy.kernel.Kernel` Kernel to be used. If None, a kernel fit on the returns is used. 
 
         :return: :class:`codpy.kernel.Kernel` The kernel with the optimal Q-values.
+        
         """
 
         states, actions, next_states, rewards, returns, dones = games
@@ -1058,6 +1059,7 @@ class KController(KAgent):
         :param z: :class:`np.ndarray the state 
 
         :return: :class:`int`
+        
         """
         return self.controller(z, **kwargs)
 

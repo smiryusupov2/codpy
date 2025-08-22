@@ -68,7 +68,7 @@ setup(
         "pandas == 1.5.0",
         "matplotlib == 3.6.2",
         "statsmodels",
-        "ott==0.1.15"
+        "POT==0.9.5"
     ],
     long_description=long_description,
     long_description_content_type="text/markdown",
