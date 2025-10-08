@@ -3,8 +3,8 @@ numpy==1.24.4
 xarray==2022.9.0
 mkl==2022.2.1
 scikit-learn
-torch==1.13
+torch==2.8.0
 pandas==1.5.0
 matplotlib==3.6.2
 statsmodels
-ott==0.1.15
+POT==0.9.5

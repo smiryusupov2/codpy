@@ -1,10 +1,10 @@
 Metadata-Version: 2.1
 Name: codpy
-Version: 0.2.0
+Version: 0.2.2
 Summary: An RKHS based module for numerics, statistic and machine learning
-Home-page: https://github.com/johnlem/codpy_alpha
+Home-page: https://github.com/smiryusupov2/codpy/tree/main
 Author: jean-marc mercier
-Author-email: jeanmarc.mercier@gmail.com
+Author-email: jeanmarc.mercier@gmail.com, shohruh.miryusupov@gmail.com, max.aguirre2424b@gmail.com
 Maintainer: jean-marc mercier
 License: new BSD
 Platform: UNKNOWN
