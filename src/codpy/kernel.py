@@ -8,6 +8,7 @@ from codpy.core import DiffOps
 from codpy.lalg import LAlg
 from codpy.permutation import lsap, map_invertion,Gromov_Monge
 from codpy.sampling import get_uniforms,get_normals,get_qmc_uniforms,get_qmc_normals
+from codpy.dictionary import cast
 
 
 class Kernel:
@@ -634,10 +635,13 @@ class Kernel:
             x=self.get_x(), N=self.N, fx=self.get_fx(), **kwargs
         )
 
-        y, labels = self.clustering.cluster_centers_, self.clustering.labels_
-        labels = {range(len(labels)): labels}
+        y, temp_labels = self.clustering.cluster_centers_, self.clustering.labels_
+        labels= {}
+        def helper(k,v) : 
+            labels[k]= set([v]) 
+        [helper(k,v) for k, v in enumerate(temp_labels)]
         self.set_y(y)
-        self.labels = map_invertion(labels,type_in=dict)
+        self.labels = map_invertion(labels,type_in=dict[int, set[int]])
         fx_proj = self.get_fx() - self(z=x)
         for key in self.labels.keys():
             indices = list(self.labels[key])
@@ -1029,7 +1033,8 @@ class Kernel:
         if len(self.kernels) == 0:
             return knm
         mapped_indices = self.clustering(z)
-        mapped_indices = map_invertion(mapped_indices)
+        mapped_indices = cast(mapped_indices,type_in=np.ndarray,type_out=dict[int, set[int]])
+        mapped_indices = map_invertion(mapped_indices,type_in=dict[int, set[int]])
         for key in mapped_indices.keys():
             indices = list(mapped_indices[key])
             knm[indices] += self.kernels[key](z[indices])
@@ -1117,13 +1122,14 @@ class KernelClassifier(Kernel):
     def set_fx(
         self,
         fx: np.ndarray,
-        clip=Alg.proportional_fitting,
+        # clip=Alg.proportional_fitting,
+        clip=None,
         **kwargs,
     ) -> None:
         if fx is None:
             fx = np.identity(self.get_x().shape[0])
         else:
-            fx = core.get_matrix(fx)
+            fx = core.get_matrix(fx,dtype=fx.dtype)
         if clip is not None and fx is not None:
             fx = clip(fx)
         fx = np.where(fx < 1e-9, 1e-9, fx) 
