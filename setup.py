@@ -64,10 +64,11 @@ setup(
         "xarray==2022.9.0",
         "mkl==2022.2.1",
         "scikit-learn",
-        "torch == 1.13",
+        "torch == 2.7.0",
         "pandas == 1.5.0",
         "matplotlib == 3.6.2",
         "statsmodels",
+        "faiss-cpu == 1.7.4",
         "POT==0.9.5"
     ],
     long_description=long_description,
