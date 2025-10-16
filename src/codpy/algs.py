@@ -184,10 +184,11 @@ class Alg:
                         threshold=1e-6,
                         tol_der_error=1.,
                         verbose=True,
+                        eps = 1e-8,
                         **kwargs
                         ):
         timer = time.perf_counter()
-        grad = grad_fun(x0)
+        grad = grad_fun(x0,**kwargs)
         grad_start = (grad*grad).sum()
         x = x0.copy()
         count = 0
@@ -196,11 +197,17 @@ class Alg:
             next -= grad*t
             out = fun(next)
             return out
-        eps = 1e-8
         fstart,fval,xmin = None,None,0.
         while count < max_count:
             left,middle,right = 0.0,eps,2*eps
             fleft,fmiddle,fright = f(left), f(middle), f(right)
+            while fmiddle >= fleft:
+                eps *=2.
+                left,middle,right = 0.0,eps,2*eps
+                fleft,fmiddle,fright = f(left), f(middle), f(right)
+            if fstart is not None and fleft > fval:
+                pass
+                # break
             if fstart is None: fstart,fval = fleft,fleft
             fprime = (fmiddle - fleft) / eps
             fsec = (fleft + fright - 2 * fmiddle) / (eps*eps)
@@ -210,7 +217,8 @@ class Alg:
                     assert(False)
             if check_sign:
                 #check derivative sign
-                assert fprime / (np.fabs(left)+np.fabs(middle)+np.fabs(right)) <= 1e-4
+                if fprime / (np.fabs(fleft)) >= 1e-4:
+                    assert(False)
             if fprime > - 1e-9: 
                 break
             if fsec >0 :
@@ -222,11 +230,11 @@ class Alg:
                 right,fright=middle,fmiddle
                 middle = middle*.5
                 fmiddle = f(middle*.5)
-            while fleft < fmiddle-eps or fright < fmiddle-eps:
-                if fleft < fmiddle-eps:
+            while fleft < fmiddle-1e-9 or fright < fmiddle-1e-9:
+                if fleft < fmiddle-1e-9:
                     middle = (left + middle)*.5
                     fmiddle = f(middle)
-                elif fright < fmiddle-eps:
+                elif fright < fmiddle-1e-9:
                     left, fleft = middle, fmiddle
                     middle, fmiddle = right,fright
                     right,fright=2.*right,f(2.*right)
@@ -246,7 +254,7 @@ class Alg:
         return x
     
     def faiss_knn(
-        X: np.ndarray, Z: np.ndarray=None, k: int = 20,metric="cosine",fun=None,**kwargs
+        X: np.ndarray, Z: np.ndarray=None, k: int = 20,metric="cosine",faiss_fun=None,**kwargs
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         Nx, d = X.shape
         assert 1 <= k < Nx, "k must be in [1, N-1]"
@@ -254,28 +262,57 @@ class Alg:
         Z = X if Z is None else Z
         Nz = Z.shape[0]
         if metric == "cosine":
-            X /= np.linalg.norm(X,axis=1)[:,None]  
-            Z /= np.linalg.norm(Z,axis=1)[:,None]
+            x = X/(np.linalg.norm(X,axis=1)[:,None]+1e-9)  
+            z = Z/(np.linalg.norm(Z,axis=1)[:,None]+1e-9)
             index = faiss.IndexFlatIP(d)
         elif metric == "euclidean":
             index = faiss.IndexFlatL2(d)
         elif metric == "METRIC_L1":
-            X /= np.fabs(X).sum(1)[:,None]  
-            Z /= np.fabs(Z).sum(1)[:,None]
+            x = X/(np.fabs(X).sum(1)[:,None]+1e-9 ) 
+            z = Z/(np.fabs(Z).sum(1)[:,None]+1e-9)
             index = faiss.index_factory(d, f"PQ{d//28}",faiss.METRIC_L1)
             index.train(X)
 
-        index.add(X)
-        D, Id = index.search(Z, min(k, Nx))  # shapes (Nz, k+1)
+        index.add(x)
+        D, Id = index.search(z, min(k, Nx))  # shapes (Nz, k+1)
         row = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
         col = Id.reshape(-1)
-        if fun is None: 
+        if faiss_fun is None: 
             values = D.ravel()
         else: 
-            values = fun(D.ravel())
+            values = faiss_fun(D.ravel())
         out = sp.coo_matrix((values, (row, col)), shape=(Nz, Nx), dtype=Z.dtype).tocsr()
         return out.T # Nx, Nz
 
+    def grad_faiss_knn(
+        X: np.ndarray, Z: np.ndarray=None, k: int = 20,metric="cosine",**kwargs
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        Nx, d = X.shape
+        assert 1 <= k < Nx, "k must be in [1, N-1]"
+    
+        Z = X if Z is None else Z
+        Nz = Z.shape[0]
+        if metric == "cosine":
+            x = X/(np.linalg.norm(X,axis=1)[:,None]+1e-9)  
+            z = Z/(np.linalg.norm(Z,axis=1)[:,None]+1e-9)
+            index = faiss.IndexFlatIP(d)
+        elif metric == "euclidean":
+            index = faiss.IndexFlatL2(d)
+        elif metric == "METRIC_L1":
+            x = X/(np.fabs(X).sum(1)[:,None]+1e-9 ) 
+            z = Z/(np.fabs(Z).sum(1)[:,None]+1e-9)
+
+        index.add(x)
+        values, Id = index.search(z, min(k, Nx))  # shapes (Nz, k+1)
+        row = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
+        col = Id.reshape(-1)
+        vals= np.zeros(x.shape,D,T)
+        for r,c in zip(row,col):
+            pass
+        np.zeros([values.shape[0]*d,values.shape[1]])
+
+        out = sp.coo_matrix((values, (row, col)), shape=(Nz, Nx), dtype=Z.dtype).tocsr()
+        return out.T # Nx, Nz
 
 if __name__ == "__main__":
     from include_all import *

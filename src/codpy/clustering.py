@@ -1,4 +1,7 @@
 import numpy as np
+import os
+os.environ["OPENBLAS_NUM_THREADS"] = "32"
+os.environ["OMP_NUM_THREADS"] = "4"
 import sklearn.cluster
 from codpydll import *
 import random 
@@ -45,10 +48,10 @@ class MiniBatchkmeans(sklearn.cluster.MiniBatchKMeans):
 
 
 class GreedySearch:
-    def __init__(self, x, N, **kwargs):
+    def __init__(self, x, N, n_batch=1,**kwargs):
         # super().__init__(x=x,max_nystrom=N,**kwargs) #seemed to be a better idea, but no evidence in results !
         self.k = Kernel(x=x, **kwargs)
-        self.k.greedy_select(N=N, x=x, **kwargs)
+        self.k.greedy_select(N=N, x=x,n_batch=n_batch, **kwargs)
         self.cluster_centers_ = x[self.k.indices]
         self.x = x
 

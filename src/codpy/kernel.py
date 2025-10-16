@@ -1,4 +1,7 @@
 import numpy as np
+import os
+os.environ["OPENBLAS_NUM_THREADS"] = "32"
+os.environ["OMP_NUM_THREADS"] = "4"
 from codpydll import *
 from scipy.special import softmax
 
