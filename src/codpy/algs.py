@@ -10,6 +10,13 @@ from typing import Tuple
 import codpy.core
 import time
 from scipy import optimize
+import scipy.fft
+import scipy.linalg
+from scipy import optimize
+from scipy import signal
+from scipy.sparse import lil_array,csr_matrix
+
+
 from codpy.core import KerInterface, KerOp, _requires_rescale
 from codpy.data_conversion import get_matrix
 from codpy.data_processing import lexicographical_permutation
@@ -202,14 +209,18 @@ class Alg:
             left,middle,right = 0.0,eps,2*eps
             fleft,fmiddle,fright = f(left), f(middle), f(right)
             while fmiddle >= fleft:
+                if fleft > fmiddle:
+                    left,fleft = eps,fmiddle
                 eps *=2.
-                left,middle,right = 0.0,eps,2*eps
-                fleft,fmiddle,fright = f(left), f(middle), f(right)
+                if eps >= 1.:
+                    break
+                middle,right = eps,2*eps
+                fmiddle,fright = fright, f(right)
             if fstart is not None and fleft > fval:
                 pass
                 # break
             if fstart is None: fstart,fval = fleft,fleft
-            fprime = (fmiddle - fleft) / eps
+            fprime = (fmiddle - fleft) / (middle-left)
             fsec = (fleft + fright - 2 * fmiddle) / (eps*eps)
             if check_der:
                 consistency = np.fabs((grad*grad).sum()/fprime+1.)
@@ -218,6 +229,7 @@ class Alg:
             if check_sign:
                 #check derivative sign
                 if fprime / (np.fabs(fleft)) >= 1e-4:
+                    break
                     assert(False)
             if fprime > - 1e-9: 
                 break
@@ -229,7 +241,7 @@ class Alg:
             else: 
                 right,fright=middle,fmiddle
                 middle = middle*.5
-                fmiddle = f(middle*.5)
+                fmiddle = f(middle)
             while fleft < fmiddle-1e-9 or fright < fmiddle-1e-9:
                 if fleft < fmiddle-1e-9:
                     middle = (left + middle)*.5
@@ -247,34 +259,34 @@ class Alg:
             if constraints is not None:
                 x = constraints(x)
             count = count + 1
-            grad = grad_fun(x)
+            grad = grad_fun(x,**kwargs)
             if (grad*grad).sum()/grad_start <= threshold:
                 break
-        if verbose:print(f"Iteration {count} | fun(t0): {fstart:.6e} | fun(terminal): {fval:.6e} | step: {xmin:.2e} | der: {fprime:.2e}, | time: {time.perf_counter()-timer:.2e}")
+        if verbose:print(f"Iteration {count} | fun(t0): {fstart:.6e} | eps : | {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | der: {fprime:.2e}, | time: {time.perf_counter()-timer:.2e}")
         return x
     
     def faiss_knn(
-        X: np.ndarray, Z: np.ndarray=None, k: int = 20,metric="cosine",faiss_fun=None,**kwargs
+        x: np.ndarray, z: np.ndarray=None, k: int = 20,metric="cosine",faiss_fun=None,**kwargs
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        Nx, d = X.shape
+        Nx, d = x.shape
         assert 1 <= k < Nx, "k must be in [1, N-1]"
     
-        Z = X if Z is None else Z
-        Nz = Z.shape[0]
+        Z = x if z is None else z
+        Nz = z.shape[0]
         if metric == "cosine":
-            x = X/(np.linalg.norm(X,axis=1)[:,None]+1e-9)  
-            z = Z/(np.linalg.norm(Z,axis=1)[:,None]+1e-9)
+            X = x/(np.linalg.norm(x,axis=1)[:,None]+1e-9)  
+            Z = Z/(np.linalg.norm(Z,axis=1)[:,None]+1e-9)
             index = faiss.IndexFlatIP(d)
         elif metric == "euclidean":
             index = faiss.IndexFlatL2(d)
         elif metric == "METRIC_L1":
-            x = X/(np.fabs(X).sum(1)[:,None]+1e-9 ) 
+            X = x/(np.fabs(x).sum(1)[:,None]+1e-9 ) 
             z = Z/(np.fabs(Z).sum(1)[:,None]+1e-9)
             index = faiss.index_factory(d, f"PQ{d//28}",faiss.METRIC_L1)
             index.train(X)
 
-        index.add(x)
-        D, Id = index.search(z, min(k, Nx))  # shapes (Nz, k+1)
+        index.add(X)
+        D, Id = index.search(Z, min(k, Nx))  # shapes (Nz, k+1)
         row = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
         col = Id.reshape(-1)
         if faiss_fun is None: 
@@ -284,35 +296,31 @@ class Alg:
         out = sp.coo_matrix((values, (row, col)), shape=(Nz, Nx), dtype=Z.dtype).tocsr()
         return out.T # Nx, Nz
 
-    def grad_faiss_knn(
-        X: np.ndarray, Z: np.ndarray=None, k: int = 20,metric="cosine",**kwargs
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        Nx, d = X.shape
-        assert 1 <= k < Nx, "k must be in [1, N-1]"
-    
-        Z = X if Z is None else Z
-        Nz = Z.shape[0]
+    def grad_faiss_knn(x: np.ndarray, z: np.ndarray=None, k: int = 20, knm=None,metric="cosine",grad_faiss_fun=None,threshold=1e-9,**kwargs):
+        D = x.shape[1]
+        if knm is None:
+            knm = Alg.faiss_knn(x,z,k=k,**kwargs)
+        class Acc:
+            indices,datas,indptr=[],[],[]
         if metric == "cosine":
-            x = X/(np.linalg.norm(X,axis=1)[:,None]+1e-9)  
-            z = Z/(np.linalg.norm(Z,axis=1)[:,None]+1e-9)
-            index = faiss.IndexFlatIP(d)
-        elif metric == "euclidean":
-            index = faiss.IndexFlatL2(d)
-        elif metric == "METRIC_L1":
-            x = X/(np.fabs(X).sum(1)[:,None]+1e-9 ) 
-            z = Z/(np.fabs(Z).sum(1)[:,None]+1e-9)
-
-        index.add(x)
-        values, Id = index.search(z, min(k, Nx))  # shapes (Nz, k+1)
-        row = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
-        col = Id.reshape(-1)
-        vals= np.zeros(x.shape,D,T)
-        for r,c in zip(row,col):
+            x = x/(np.linalg.norm(x,axis=1)[:,None]+1e-9)  
+            z = z/(np.linalg.norm(z,axis=1)[:,None]+1e-9)
+            indptr,indices,data = cd.alg.grad_faiss(knm.indptr,knm.indices,knm.data,x,z,threshold)
+            out = csr_matrix((data,indices,indptr), shape=(x.shape[0]*D,z.shape[0]),dtype=knm.dtype)
             pass
-        np.zeros([values.shape[0]*d,values.shape[1]])
+        elif metric == "euclidean":
+            def helper(col,rows,cols,datas):
+                rows_knm = knm.indices[knm.indices[col]:knm.indices[col+1]]
+                for row in rows_knm:
+                    datas += list(x[row] - z[col])
+                    rows += list(np.repeat(row*D,D)+range(D))
+                    cols += list(np.repeat(col,D))
+            acc = Acc()
+            [helper(col,acc) for col in range(z.shape[0])]
+            rows,cols,datas = np.array(rows),np.array(cols),np.array(datas)
+            out = bsr_array((datas, (rows, cols)), shape=[x.shape[0]*D,z.shape[0]])
+        return out
 
-        out = sp.coo_matrix((values, (row, col)), shape=(Nz, Nx), dtype=Z.dtype).tocsr()
-        return out.T # Nx, Nz
 
 if __name__ == "__main__":
     from include_all import *

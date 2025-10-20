@@ -67,7 +67,7 @@ class LAlg:
         Returns:
             The product of the two matrices.
         """
-        return cd.lalg.prod(get_matrix(x), get_matrix(y))
+        return cd.lalg.prod(get_matrix(x), get_matrix(y)).astype(x.dtype)
 
     def prod_vector_matrix(x, y):
         """
