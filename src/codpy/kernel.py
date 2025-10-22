@@ -603,7 +603,7 @@ class Kernel:
             self.x, self.fx = None, None
             return
         if x is not None and fx is None:
-            self.set_x(core.get_matrix(x.copy()), **kwargs)
+            self.set_x(core.get_matrix(x.copy(),dtype=x.dtype), **kwargs)
             self.set_y(y=y)
             self.set_fx(None)
             # self.rescale() # rescaling already done in set_x()

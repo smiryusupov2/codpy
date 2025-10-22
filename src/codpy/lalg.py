@@ -67,6 +67,7 @@ class LAlg:
         Returns:
             The product of the two matrices.
         """
+        assert(x.shape[1]==y.shape[0]), "Incompatible matrix shapes for multiplication: {} and {}".format(x.shape, y.shape)
         return cd.lalg.prod(get_matrix(x), get_matrix(y)).astype(x.dtype)
 
     def prod_vector_matrix(x, y):
