@@ -45,6 +45,7 @@ class Kernel:
         x=None,
         y=None,
         fx=None,
+        theta=None,
         max_nystrom: int = 1000,
         reg: float = 1e-9,
         order: int = None,
@@ -80,6 +81,9 @@ class Kernel:
         self.max_nystrom = int(max_nystrom)
         self.n_batch = n_batch
 
+        if theta is not None:
+            self.theta = theta
+
         if set_clustering is not None:
             self.set_clustering = set_clustering
         else:
@@ -92,7 +96,7 @@ class Kernel:
         self.valid = False
         self.kernels = {}
         if x is not None or fx is not None:
-            self.set(x=x, y=y, fx=fx, **kwargs)
+            self.set(x=x, y=y, fx=fx, theta=theta,**kwargs)
         else:
             self.x, self.y, self.fx = None, None, None
 
@@ -233,7 +237,7 @@ class Kernel:
         if self.get_map() is not None:
             x, y = self.get_map()(x), self.get_map()(y)
 
-        return core.KerOp.knm(x=x, y=y, fy=fy, kernel_ptr=self.get_kernel())
+        return core.KerOp.knm(x=x, y=y, fy=fy, kernel_ptr=self.get_kernel()).astype(x.dtype)
 
     def dnm(
         self, x: np.ndarray = None, y: np.ndarray = None, fy: np.ndarray = [], distance = [], **kwargs
@@ -587,6 +591,7 @@ class Kernel:
         x: np.ndarray = None,
         fx: np.ndarray = None,
         y: np.ndarray = None,
+        theta: np.ndarray = None,
         **kwargs,
     ) -> None:
         """
@@ -628,7 +633,8 @@ class Kernel:
             )
             # self.rescale(**kwargs) # done is set_x(..)
             pass
-
+        if theta is not None:
+            self.set_theta(theta, **kwargs)
         if not hasattr(self, "x"):
             return self
         if self.n_batch is None or self.n_batch >= self.get_x().shape[0]:
@@ -990,7 +996,7 @@ class Kernel:
             self.knm_inv, self.knm_ = None, None
             self.valid = True
 
-    def __call__(self, z: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, z: np.ndarray=None,theta=None,second_member=None, **kwargs) -> np.ndarray:
         """
         Predict the output using the kernel for input data ``z``.
 
@@ -1013,35 +1019,41 @@ class Kernel:
             $$P_{k,\\theta}(z) = K(Z, K) K(X, X)^{-1}$$
         """
         if z is None:
-            return None
-        z = core.get_matrix(z)
+            if hasattr(self,"knm_z_"): 
+                if theta is None: return self.knm_z_
+                return LAlg.prod(self.knm_z_,theta)
+            z = self.get_x()
+        else : z = core.get_matrix(z)
 
         # Don't forget to set the kernel
-        fy = self.get_theta(**kwargs)
+        if theta is None:
+            theta = self.get_theta(**kwargs)
 
-        if fy is None:
-            fy = self.get_knm_inv()
+        if theta is None:
+            theta = self.get_knm_inv()
 
-        knm = core.KerOp.knm(
+        self.knm_z_ = core.KerOp.knm(
             x=z,
             y=self.get_y(),
-            fy=fy,
+            fy=None,
             kernel_ptr=self.get_kernel(),
             order=self.order,
             reg=self.reg,
         )
 
         if not hasattr(self, "set_clustering"):
-            return knm
+            if theta is not None: return LAlg.prod(self.knm_z_,theta)
+            return self.knm_z_
         if len(self.kernels) == 0:
-            return knm
+            if theta is not None: return LAlg.prod(self.knm_z_,theta)
+            return self.knm_z_
         mapped_indices = self.clustering(z)
         mapped_indices = cast(mapped_indices,type_in=np.ndarray,type_out=dict[int, set[int]])
         mapped_indices = map_invertion(mapped_indices,type_in=dict[int, set[int]])
         for key in mapped_indices.keys():
             indices = list(mapped_indices[key])
-            knm[indices] += self.kernels[key](z[indices])
-        return knm
+            self.knm_z_[indices] += self.kernels[key](z[indices])
+        return self.knm_z_
 
     def grad(self, z: np.ndarray, **kwargs) -> np.ndarray:
         if z is None:
@@ -1141,11 +1153,9 @@ class KernelClassifier(Kernel):
             fx = np.log(fx)
         super().set_fx(fx, **kwargs)
 
-    def __call__(self, z, **kwargs):
-        z = core.get_matrix(z)
+    def __call__(self, z = None, **kwargs):
         if self.x is None:
             return None
-            # return softmax(np.full((z.shape[0],self.actions_dim),np.log(.5)),axis=1)
         knm = super().__call__(z, **kwargs)
         return softmax(knm, axis=1)
 

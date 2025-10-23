@@ -83,7 +83,7 @@ class LAlg:
         Returns:
             The product of the two matrices.
         """
-        return cd.lalg.prod_vector_matrix(np.array(x), np.array(y))
+        return cd.lalg.prod_vector_matrix(np.array(x,dtype=np.float64), np.array(y,dtype=np.float64))
     def transpose(x):
         """
         Transpose a matrix.
