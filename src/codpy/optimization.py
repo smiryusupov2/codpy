@@ -29,16 +29,19 @@ def continuous_optimizer(
     contracting_factor=0.3,
     maximize=True,
     include=None,
+    verbose=False,
     **kwargs
 ):
     if maximize == False:
         return continuous_optimizer(
-            lambda x: -function(x) - function.distance(x),
+            lambda x: -function(x),
             distribution,
             n,
             n_iter,
             contracting_factor,
             True,
+            include=include,
+            verbose=verbose,
             **kwargs
         )
 
@@ -62,7 +65,8 @@ def continuous_optimizer(
     if include is not None:
         values = function(include)
         extremum_y, extremum_x = values.max(), include[values.argmax()]
-
+    if verbose==True:
+        print(f"Initial point value: {extremum_y}")
     for i in range(min(n, n_iter)):
         temp_y, temp_x = screen_optimize(
             function, contract_distrib(cf, mean), n, maximize
@@ -73,6 +77,8 @@ def continuous_optimizer(
         mean = extremum_x
         cf *= contracting_factor
 
+    if verbose==True:
+        print(f"Final point value: {extremum_y}")
     return extremum_y, extremum_x
 
 
