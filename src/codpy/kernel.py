@@ -1116,13 +1116,32 @@ class Sampler(Kernel):
 
 
 def get_tensor_probas(policy):
-    @np.vectorize
-    def fun(i, j, k):
-        return policy[i, j] * (float(j == k) - policy[i, k])
+    """
+        params:
+            policy: array of shape (n,m) representing n probability distributions over m classes
+        returns:
+            tensor of shape (n,m,m) representing the gradient of the jacobian of the softmax function for each n
+    """
+    # @np.vectorize
+    # def fun(i, j, k):
+    #     return policy[i, j] * (float(j == k) - policy[i, k])
 
-    return np.fromfunction(
-        fun, shape=[policy.shape[0], policy.shape[1], policy.shape[1]], dtype=int
-    )
+    # return np.fromfunction(
+    #     fun, shape=[policy.shape[0], policy.shape[1], policy.shape[1]], dtype=int
+    # )
+
+    # Faster version
+    # policy: shape (n, m)
+    # Output: shape (n, m, m)
+    n, m = policy.shape
+
+    # Create diagonal matrices with p_ij on the diagonal for each i
+    diag_p = np.einsum('ij,jk->ijk', policy, np.eye(m))
+
+    # Outer product of each row with itself
+    outer_p = np.einsum('ij,ik->ijk', policy, policy)
+
+    return diag_p - outer_p
 
 
 class KernelClassifier(Kernel):
