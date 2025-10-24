@@ -197,6 +197,9 @@ class Alg:
         timer = time.perf_counter()
         grad = grad_fun(x0,**kwargs)
         grad_start = (grad*grad).sum()
+        if grad_start <= threshold:
+            if verbose:print(f"gradient_descent : No grad")
+            return x0
         x = x0.copy()
         count = 0
         def f(t):
@@ -262,7 +265,7 @@ class Alg:
             grad = grad_fun(x,**kwargs)
             if (grad*grad).sum()/grad_start <= threshold:
                 break
-        if verbose:print(f"Iteration {count} | fun(t0): {fstart:.6e} | eps : | {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | der: {fprime:.2e}, | time: {time.perf_counter()-timer:.2e}")
+        if verbose:print(f"gradient_descent : Iteration {count} | fun(t0): {fstart:.6e} | eps : | {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | der: {fprime:.2e}, | time: {time.perf_counter()-timer:.2e}")
         return x
     
     def faiss_knn(
@@ -296,29 +299,18 @@ class Alg:
         out = sp.coo_matrix((values, (row, col)), shape=(Nz, Nx), dtype=Z.dtype).tocsr()
         return out.T # Nx, Nz
 
-    def grad_faiss_knn(x: np.ndarray, z: np.ndarray=None, k: int = 20, knm=None,metric="cosine",grad_faiss_fun=None,threshold=1e-9,**kwargs):
+    def grad_faiss_knn(x: np.ndarray, z: np.ndarray=None, k: int = 20, knm=None,metric="cosine",grad_faiss_fun=None,grad_threshold=1e-9,**kwargs):
         D = x.shape[1]
         if knm is None:
             knm = Alg.faiss_knn(x,z,k=k,**kwargs)
-        class Acc:
-            indices,datas,indptr=[],[],[]
         if metric == "cosine":
             x = x/(np.linalg.norm(x,axis=1)[:,None]+1e-9)  
             z = z/(np.linalg.norm(z,axis=1)[:,None]+1e-9)
-            indptr,indices,data = cd.alg.grad_faiss(knm.indptr,knm.indices,knm.data,x,z,threshold)
+            indptr,indices,data = cd.alg.grad_faiss(knm.indptr,knm.indices,knm.data,x,z,grad_threshold)
             out = csr_matrix((data,indices,indptr), shape=(x.shape[0]*D,z.shape[0]),dtype=knm.dtype)
             pass
         elif metric == "euclidean":
-            def helper(col,rows,cols,datas):
-                rows_knm = knm.indices[knm.indices[col]:knm.indices[col+1]]
-                for row in rows_knm:
-                    datas += list(x[row] - z[col])
-                    rows += list(np.repeat(row*D,D)+range(D))
-                    cols += list(np.repeat(col,D))
-            acc = Acc()
-            [helper(col,acc) for col in range(z.shape[0])]
-            rows,cols,datas = np.array(rows),np.array(cols),np.array(datas)
-            out = bsr_array((datas, (rows, cols)), shape=[x.shape[0]*D,z.shape[0]])
+            assert(False,"Not implemented yet")
         return out
 
 
