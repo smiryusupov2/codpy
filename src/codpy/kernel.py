@@ -6,12 +6,14 @@ from codpydll import *
 from scipy.special import softmax
 
 import codpy.core as core
+import codpy.algs as algs
 from codpy.algs import Alg
 from codpy.core import DiffOps
 from codpy.lalg import LAlg
 from codpy.permutation import lsap, map_invertion,Gromov_Monge
 from codpy.sampling import get_uniforms,get_normals,get_qmc_uniforms,get_qmc_normals
 from codpy.dictionary import cast
+import sparse_dot_mkl
 
 
 class Kernel:
@@ -1197,6 +1199,127 @@ class KernelClassifier(Kernel):
     ) -> None:
         return super().update(z=z, fz=np.log(fz), eps=eps, **kwargs)
 
+
+class se_error_theta:
+    def __init__(self,fun,x,y,theta=None,**kwargs):
+        self.fun = fun
+        self.x= x
+        self.y= y
+        if theta is not None:
+            self.theta = theta
+    def error_field(self,theta=None,z=None,**kwargs):
+        if theta is None:
+            theta = self.fun.get_theta(**kwargs)
+        debug = self.fun(z=z,theta=theta,**kwargs)
+        return debug-self.y
+    def error(self,theta,**kwargs):
+        error = self.error_field(theta,**kwargs)
+        return (error*error).sum()*.5
+    def grad_error(self,theta,**kwargs):
+        return self.fun.grad_theta(second_member=self.error_field(theta,**kwargs),theta=theta,**kwargs)
+    def __call__(self,theta,**kwargs):
+        return  algs.Alg.gradient_descent(theta,fun=self.error,constraints=None,grad_fun=self.grad_error,**kwargs)
+
+
+class SparseKernel(Kernel):
+    def __init__(self,x,k=10,**kwargs):
+        self.k= k
+        super().__init__(x=x,**kwargs)
+        pass
+    def grad(self,z=None,k=None,theta=None,second_member=None,**kwargs):
+        if k is None: k=self.k
+        if z is None: z= self.get_x()
+        knm = self.grad_knm(z, self.get_y(),k=k,**kwargs)
+        if theta is not None:
+            result  = sparse_dot_mkl.dot_product_mkl(knm,theta)
+        else:
+            result  = sparse_dot_mkl.dot_product_mkl(knm,self.get_theta())
+        if second_member is not None:
+            result  = lalg.LAlg.prod(result,second_member)
+        return result.reshape(z.shape[0],z.shape[1],-1) 
+    
+    def grad_theta(self,z=None,theta=None,second_member=None,**kwargs):
+        if theta is None:
+            theta = self.get_theta(**kwargs)
+        if z is None:
+            knm_theta = self.get_knm(**kwargs)
+        else:
+            knm_theta = self.knm(x=z,z=self.get_x(),**kwargs)
+        if second_member is not None:
+            second_member = sparse_dot_mkl.dot_product_mkl(knm_theta,second_member)
+            return sparse_dot_mkl.dot_product_mkl(knm_theta.T,second_member)
+        return knm_theta 
+    def get_theta(self, **kwargs) -> np.ndarray:
+        if not hasattr(self, "theta") or self.theta is None:
+            se_error_instance = se_error_theta(self, self.get_x(), self.get_fx())
+            self.theta =  se_error_instance(self.fx,**kwargs)
+        return self.theta
+    def __call__(self,z=None,theta=None,second_member=None,**kwargs):
+        if z is None: knm = self.get_knm(**kwargs)
+        else: knm = self.knm(z.astype(self.get_y().dtype), self.get_y(),**kwargs)
+        if theta is None:
+            theta = self.get_theta(**kwargs)
+        result  = sparse_dot_mkl.dot_product_mkl(knm,theta)
+        if second_member is not None:
+            return lalg.LAlg.prod(result,second_member)
+        return result
+    def knm(self, x, z, k=None,**kwargs) -> np.ndarray:
+        if k is None: k=self.k
+        Sx = algs.Alg.faiss_knn(x, z,k=k,fun=None, metric="cosine",**kwargs).tocsr()
+        Sx = (Sx+ algs.Alg.faiss_knn(z, x,k=self.k,fun=None, metric="cosine",**kwargs).tocsr().T)*.5
+        return Sx
+    def grad_knm(self, x=None, z=None, k=None,**kwargs) :
+        if k is None: k = self.k
+        if x is None: x = self.get_x()
+        if z is None: z = self.get_y()
+        out = algs.Alg.grad_faiss_knn(x, z,k=k,fun=None, metric="cosine",**kwargs)
+        # out = (out + algs.grad_faiss_knn(z, x,k=k,fun=None, metric="cosine",**kwargs))*.5
+        return out
+    def get_knm(self, **kwargs) -> np.ndarray:
+        if not hasattr(self, "knm_") or self.knm_ is None:
+            self.knm_ = self.knm(self.get_x(),self.get_y(),**kwargs)
+        return self.knm_     
+
+class SparseKernelClassifier(SparseKernel):
+ 
+    def __call__(self,z=None,theta=None,second_member=None,**kwargs):
+        if theta is None: theta = self.get_theta(**kwargs)
+        if z is None: knm = self.get_knm(**kwargs)
+        else: knm = self.knm(z.astype(self.get_y().dtype), self.get_y(),**kwargs)
+        result  = softmax(sparse_dot_mkl.dot_product_mkl(knm,theta),axis=1)
+        if second_member is not None:
+            return lalg.LAlg.prod(result,second_member)
+        return result
+    
+    def grad_theta(self,z=None,theta=None,second_member=None,**kwargs):
+        if theta is None:
+            theta = self.get_theta(**kwargs)
+        if z is None:
+            knm = self.get_knm(**kwargs)
+        else:
+            knm = self.knm(x=z, z=self.get_x(), **kwargs)
+    
+        policy = softmax(sparse_dot_mkl.dot_product_mkl(knm, theta), axis=1)  # (n, m)
+        # Jacobian of softmax: diag(pi) - pi*pi^T for each sample
+        policy_grad = get_tensor_probas(policy).astype(knm.dtype)  # (n, m, m)
+        
+        if second_member is not None:
+            # Compute J_pi^T @ e_theta for each sample
+            # policy_grad is (256, 10, 10), second_member is (256, 10)
+            # We need: for each i (sample), policy_grad[i].T @ second_member[i] 
+            # == (10,10) @ (10,) -> (10,)
+            
+            # Transpose the Jacobians: (256, 10, 10) -> (256, 10, 10) : NEEDED????
+            # policy_grad_T = np.transpose(policy_grad, (0, 2, 1))
+            
+            # Apply J^T to e_theta: (256, 10, 10) @ (256, 10, 1) -> (256, 10)
+            j_times_e = np.einsum('nij,nj->ni', policy_grad, second_member)  # (256, 10)
+            # Multiply by k^T: (256, 256)^T @ (256, 10) -> (256, 10)
+            grad = sparse_dot_mkl.dot_product_mkl(knm.T, j_times_e)
+            
+            return grad
+        
+        return policy_grad
 
 from codpy.kengineering import *
 
