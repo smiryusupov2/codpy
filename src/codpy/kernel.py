@@ -400,7 +400,8 @@ class Kernel:
         self.set_theta(None)
         if rescale:
             self.rescale()
-
+    def set_random_theta(self, **kwargs) -> None:
+        self.set_theta(np.random.uniform(size=[self.x.shape[0],self.fx.shape[1]]))
     def set_y(self, y: np.ndarray = None, **kwargs) -> None:
         """
         Set the target data ``y`` for the kernel. If no target data is provided, ``y`` is set equal to ``x``.

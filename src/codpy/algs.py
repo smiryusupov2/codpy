@@ -225,8 +225,8 @@ class Alg:
             if fstart is None: fstart,fval = fleft,fleft
             fprime = (fmiddle - fleft) / (middle-left)
             fsec = (fleft + fright - 2 * fmiddle) / (eps*eps)
+            consistency = np.fabs((grad*grad).sum()/fprime+1.)
             if check_der:
-                consistency = np.fabs((grad*grad).sum()/fprime+1.)
                 if consistency >= tol_der_error:
                     assert(False)
             if check_sign:
@@ -236,15 +236,15 @@ class Alg:
                     assert(False)
             if fprime > - 1e-9: 
                 break
-            if fsec >0 :
+            if fsec >0 and consistency < 1.:
                 middle = -fleft / fprime
                 right = -fprime / fsec
                 right = np.maximum(right,2.*middle)
                 fmiddle,fright=f(middle),f(right)
-            else: 
-                right,fright=middle,fmiddle
-                middle = middle*.5
-                fmiddle = f(middle)
+            # else: 
+            #     right,fright=middle,fmiddle
+            #     middle = middle*.5
+            #     fmiddle = f(middle)
             while fleft < fmiddle-1e-9 or fright < fmiddle-1e-9:
                 if fleft < fmiddle-1e-9:
                     middle = (left + middle)*.5
@@ -254,10 +254,13 @@ class Alg:
                     middle, fmiddle = right,fright
                     right,fright=2.*right,f(2.*right)
             if fleft <= fmiddle or fright <= fmiddle:
-                break
-            xmin, fval, iter, funcalls = optimize.brent(
-                f, brack=(left, middle,right), maxiter=5, full_output=True
-            )
+                if fleft <= fmiddle and fleft <= fmiddle:
+                    break
+                xmin = right
+            else:
+                xmin, fval, iter, funcalls = optimize.brent(
+                    f, brack=(left, middle,right), maxiter=5, full_output=True
+                )
             x -= grad * xmin
             if constraints is not None:
                 x = constraints(x)
@@ -298,6 +301,23 @@ class Alg:
             values = faiss_fun(D.ravel())
         out = sp.coo_matrix((values, (row, col)), shape=(Nz, Nx), dtype=Z.dtype).tocsr()
         return out.T # Nx, Nz
+
+    def faiss_knn_select(x: np.ndarray, faiss_batch_size=100,faiss_threshold=1e-1,**kwargs):
+        x /= (np.linalg.norm(x, axis=1)[:, None] + 1e-9)
+        Nx, d = x.shape
+        index = faiss.IndexFlatL2(d)
+        index.add(x[[0]])
+        out = x[[0]]
+        def helper(n,out):
+            z = x[n:min(n+faiss_batch_size,Nx)]
+            D, Id = index.search(z, 1)
+            mask = np.where(D[:,0] > faiss_threshold)[0]
+            if mask.size > 0:
+                index.add(z[mask])
+                return z[mask]
+        out = [helper(n,out) for n in range(0, Nx,faiss_batch_size)]
+        out = np.concatenate([o for o in out if o is not None])
+        return out # Nx, Nz
 
     def grad_faiss_knn(x: np.ndarray, z: np.ndarray=None, k: int = 20, knm=None,metric="cosine",grad_faiss_fun=None,grad_threshold=1e-9,**kwargs):
         D = x.shape[1]
