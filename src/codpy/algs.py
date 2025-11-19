@@ -351,10 +351,10 @@ class Alg:
         if index is None:
             index = Alg.faiss_knn_index(x=z,k=k,metric=metric,**kwargs)
         Nx = index.ntotal
-        assert 1 <= k < Nx, "k must be in [1, N-1]"
+        k = min(k, Nx - 1)
         Nz,d = z.shape
 
-        D, Id = index.search(z, min(k, Nx))  # shapes (Nz, k+1)
+        D, Id = index.search(z, k)  # shapes (Nz, k+1)
         col = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
         row = Id.reshape(-1)
         if faiss_fun is None: 

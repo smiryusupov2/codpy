@@ -1243,12 +1243,22 @@ class SparseKernel(Kernel):
         self.k= k
         self.faiss_index_x = None 
         self.faiss_index_z = None
+        self.faiss_index = None
         super().__init__(x=x,**kwargs)
         pass
+    def __call__(self,z=None,theta=None,second_member=None,**kwargs):
+        if z is None: knm = self.get_knm(**kwargs)
+        else: knm = self.knm(z.astype(self.get_y().dtype), **kwargs)
+        if theta is None:
+            theta = self.get_theta(**kwargs)
+        result  = sparse_dot_mkl.dot_product_mkl(knm,theta)
+        if second_member is not None:
+            return LAlg.prod(result,second_member)
+        return result
     def error_field(self,theta,**kwargs):
         if theta.ndim == 1:
             theta= theta.reshape(self.get_fx().shape).astype(self.get_fx().dtype)
-        out = self(theta=theta,**kwargs)-self.get_fx()
+        out = self(z=None, theta=theta,**kwargs)-self.get_fx()
         return out
     def error(self,theta,second_member=None,**kwargs):
         out = self.error_field(theta=theta,**kwargs)
@@ -1287,15 +1297,6 @@ class SparseKernel(Kernel):
                 se_error_instance = se_error_theta(self, self.get_x(), self.get_fx())
                 self.theta =  se_error_instance(self.fx,**kwargs)
         return self.theta
-    def __call__(self,z=None,theta=None,second_member=None,**kwargs):
-        if z is None: knm = self.get_knm(**kwargs)
-        else: knm = self.knm(z.astype(self.get_y().dtype), **kwargs)
-        if theta is None:
-            theta = self.get_theta(**kwargs)
-        result  = sparse_dot_mkl.dot_product_mkl(knm,theta)
-        if second_member is not None:
-            return LAlg.prod(result,second_member)
-        return result
     
     def knm_max(self, x, z, k=None, index_x=None, index_z=None, **kwargs): 
         if k is None: k=self.k
@@ -1317,19 +1318,20 @@ class SparseKernel(Kernel):
 
     def get_index(self,**kwargs):
         if not hasattr(self,"index"):
-            self.index = algs.Alg.faiss_knn_index(x=self.get_x(), **kwargs)
-        return self.index
+            self.faiss_index = algs.Alg.faiss_knn_index(x=self.get_x(), **kwargs)
+        return self.faiss_index
 
     def knm(
         self, z: np.ndarray = None, y: np.ndarray = None, fy: np.ndarray = None, **kwargs
     ) -> np.ndarray:
         assert y is None," Sparse kernel can't estimate the Gram matrix outside of the training set."
         index_x = self.get_index(**kwargs)
+        faiss_fun = lambda x: np.exp(-x**2)
         if z is None: 
             z=self.get_x()
-            Sx,_ = algs.Alg.faiss_knn(z=z,fun=None, metric="cosine",index=index_x,**kwargs)
+            Sx,_ = algs.Alg.faiss_knn(z=z, metric="cosine",index=index_x, faiss_fun=faiss_fun, **kwargs)
         else:
-            Sx,_ = algs.Alg.faiss_knn(z=z,fun=None, metric="cosine",index=index_x,**kwargs)
+            Sx,_ = algs.Alg.faiss_knn(z=z, metric="cosine",index=index_x, faiss_fun=faiss_fun, **kwargs)
             # index_z = algs.Alg.faiss_knn_index(x=z, **kwargs)
             # Sz,_ = algs.Alg.faiss_knn(z=self.get_x(),fun=None, metric="cosine",index=index_z,**kwargs)
             # Sx = (Sx+Sz.T)*.5
