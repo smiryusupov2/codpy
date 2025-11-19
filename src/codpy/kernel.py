@@ -1228,7 +1228,7 @@ class se_error_theta:
     def error_field(self,theta=None,z=None,**kwargs):
         if theta is None:
             theta = self.fun.get_theta(**kwargs)
-        debug = self.fun(z=z,theta=theta,**kwargs)
+        debug = self.fun(z=self.x,theta=theta,**kwargs)
         return debug-self.y
     def error(self,theta,**kwargs):
         error = self.error_field(theta,**kwargs)
@@ -1332,7 +1332,7 @@ class SparseKernel(Kernel):
 class SparseKernelClassifier(SparseKernel):
  
     def __call__(self,z=None,theta=None,second_member=None,**kwargs):
-        out  = softmax(super().__call__(z=z,theta=theta,second_member=None),axis=1)
+        out  = softmax(super().__call__(z=z,theta=theta,second_member=None,**kwargs),axis=1)
         if second_member is not None:
             return LAlg.prod(out,second_member)
         return out
@@ -1345,7 +1345,7 @@ class SparseKernelClassifier(SparseKernel):
         out = self.error_field(theta=theta,**kwargs)
         return (out*out).sum()*.5
         
-    def get_theta(self,method="toto", **kwargs) -> np.ndarray:
+    def get_theta(self,method="bfgs", **kwargs) -> np.ndarray:
         if not hasattr(self, "theta") or self.theta is None:
             if method == "bfgs":
                 theta= self.get_fx().flatten().astype(np.float64)
@@ -1400,7 +1400,7 @@ class SparseKernelClassifier(SparseKernel):
         # Apply J^T to e_theta: (256, 10, 10) @ (256, 10, 1) -> (256, 10)
         j_times_e = np.einsum('nij,nj->ni', policy_grad, second_member)  # (256, 10)
         # Multiply by k^T: (256, 256)^T @ (256, 10) -> (256, 10)
-        grad = sparse_dot_mkl.dot_product_mkl(knm.T, j_times_e)
+        grad = sparse_dot_mkl.dot_product_mkl(knm, j_times_e)
             
         if shape is not None:
             return grad.reshape(shape).astype(dtype)
