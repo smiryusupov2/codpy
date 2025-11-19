@@ -156,7 +156,6 @@ class GamesClustering:
                 labels = np.concatenate([labels, labelsk], axis=1)
         return core.get_matrix(labels.argmin(1), dtype=int)
 
-
 class GamesKernel(Kernel):
     """A specific type of kernel for deterministic policies, handling clustering
     
@@ -291,6 +290,8 @@ class GamesKernelClassifier(GamesKernel):
             fx_ = np.log(debug)
         super().set_fx(fx_, set_polynomial_regressor=set_polynomial_regressor, **kwargs)
 
+class SparseGamesKernel(GamesKernel, codpy.kernel.SparseKernel):
+    pass
 
 def rl_hot_encoder(actions, actions_dim):
     """Hot encodes actions over actions_dim.
@@ -687,6 +688,11 @@ class KAgent:
         return self.all_actions_
 
     def all_states_actions(self, states, all_actions=None):
+        """
+            Expands the states matrix by duplicating each state for each possible action. 
+            Adds the action one hot encoded to each duplicated state.
+            This gives back a matrix of shape (num_states * num_actions, state_dim + action_dim)        
+        """
         if all_actions == None:
             all_actions = self.get_all_actions()
 
