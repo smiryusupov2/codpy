@@ -185,7 +185,7 @@ class Alg:
                         fun,
                         grad_fun,
                         constraints=None,
-                        max_count=100,
+                        max_count=10,
                         check_sign=True,
                         check_der=False,
                         threshold=1e-6,
@@ -225,8 +225,8 @@ class Alg:
             if fstart is None: fstart,fval = fleft,fleft
             fprime = (fmiddle - fleft) / (middle-left)
             fsec = (fleft + fright - 2 * fmiddle) / (eps*eps)
+            consistency = np.fabs((grad*grad).sum()/fprime+1.)
             if check_der:
-                consistency = np.fabs((grad*grad).sum()/fprime+1.)
                 if consistency >= tol_der_error:
                     assert(False)
             if check_sign:
@@ -236,15 +236,15 @@ class Alg:
                     assert(False)
             if fprime > - 1e-9: 
                 break
-            if fsec >0 :
+            if fsec >0 and consistency < 1.:
                 middle = -fleft / fprime
                 right = -fprime / fsec
                 right = np.maximum(right,2.*middle)
                 fmiddle,fright=f(middle),f(right)
-            else: 
-                right,fright=middle,fmiddle
-                middle = middle*.5
-                fmiddle = f(middle)
+            # else: 
+            #     right,fright=middle,fmiddle
+            #     middle = middle*.5
+            #     fmiddle = f(middle)
             while fleft < fmiddle-1e-9 or fright < fmiddle-1e-9:
                 if fleft < fmiddle-1e-9:
                     middle = (left + middle)*.5
@@ -254,10 +254,13 @@ class Alg:
                     middle, fmiddle = right,fright
                     right,fright=2.*right,f(2.*right)
             if fleft <= fmiddle or fright <= fmiddle:
-                break
-            xmin, fval, iter, funcalls = optimize.brent(
-                f, brack=(left, middle,right), maxiter=5, full_output=True
-            )
+                if fleft <= fmiddle and fleft <= fmiddle:
+                    break
+                xmin = right
+            else:
+                xmin, fval, iter, funcalls = optimize.brent(
+                    f, brack=(left, middle,right), maxiter=5, full_output=True
+                )
             x -= grad * xmin
             if constraints is not None:
                 x = constraints(x)
@@ -268,7 +271,7 @@ class Alg:
         if verbose:print(f"gradient_descent : Iteration {count} | fun(t0): {fstart:.6e} | eps : | {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | der: {fprime:.2e}, | time: {time.perf_counter()-timer:.2e}")
         return x
     
-    def faiss_make_index(x, z=None, metric="cosine", **kwargs):
+    def faiss_make_index_max(x, z=None, metric="cosine", **kwargs):
         """
             Faiss index creation. 
             Args:
@@ -297,7 +300,7 @@ class Alg:
         index.add(X)
         return index 
     
-    def faiss_knn_search(x, index, z=None, k = 20, faiss_fun=None, **kwargs):
+    def faiss_knn_search_max(x, index, z=None, k = 20, faiss_fun=None, **kwargs):
         """
             Faiss k-nearest neighbors search using a pre-built index.
             Args:
@@ -321,49 +324,62 @@ class Alg:
         out = sp.coo_matrix((values, (row, col)), shape=(Nz, Nx), dtype=Z.dtype).tocsr()
         return out.T # Nx, Nz
 
-    def faiss_knn(
-        x: np.ndarray, z: np.ndarray=None, k: int = 20,metric="cosine",faiss_fun=None, **kwargs
+    def faiss_knn_index(
+        x: np.ndarray, k: int = 20,metric="cosine",faiss_fun=None,**kwargs
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """
-            Faiss k-nearest neighbors search. 
-            Args:
-                x (np.ndarray): Data points of shape (Nx, d).
-                z (np.ndarray, optional): Query points of shape (Nz, d). If None, uses x.
-                k (int): Number of nearest neighbors to find.
-            Returns:
-                sp.csr_matrix: Sparse matrix of shape (Nx, Nz) with k*Nz non-zero data points of distances or similarities
-
-        """
         Nx, d = x.shape
-        k = min(k, Nx - 1)
-        # assert 1 <= k < Nx, "k must be in [1, N-1]"
-    
-        Z = x if z is None else z
-        Nz = z.shape[0]
         if metric == "cosine":
-            X = x/(np.linalg.norm(x,axis=1)[:,None]+1e-9)  
-            Z = Z/(np.linalg.norm(Z,axis=1)[:,None]+1e-9)
+            x = x/(np.linalg.norm(x,axis=1)[:,None]+1e-9)
             index = faiss.IndexFlatIP(d)
         elif metric == "euclidean":
             X = x 
             index = faiss.IndexFlatL2(d)
         elif metric == "METRIC_L1":
-            X = x/(np.fabs(x).sum(1)[:,None]+1e-9 ) 
-            Z = Z/(np.fabs(Z).sum(1)[:,None]+1e-9)
+            x = x/(np.fabs(Z).sum(1)[:,None]+1e-9)
             index = faiss.index_factory(d, f"PQ{d//28}",faiss.METRIC_L1)
-            index.train(X)
+            index.train(x)
 
-        index.add(X)
+        index.add(x)
+        return index # Nx, Nz
+    def faiss_knn(
+        z: np.ndarray, k: int = 20,metric="cosine",faiss_fun=None,index=None,**kwargs
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        if metric == "cosine":
+            z = z/(np.linalg.norm(z,axis=1)[:,None]+1e-9)
+        elif metric == "METRIC_L1":
+            z = z/(np.fabs(Z).sum(1)[:,None]+1e-9)
+        if index is None:
+            index = Alg.faiss_knn_index(x=z,k=k,metric=metric,**kwargs)
+        Nx = index.ntotal
+        assert 1 <= k < Nx, "k must be in [1, N-1]"
+        Nz,d = z.shape
 
-        D, Id = index.search(Z, min(k, Nx))  # shapes (Nz, k+1)
-        row = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
-        col = Id.reshape(-1)
+        D, Id = index.search(z, min(k, Nx))  # shapes (Nz, k+1)
+        col = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
+        row = Id.reshape(-1)
         if faiss_fun is None: 
             values = D.ravel()
         else: 
             values = faiss_fun(D.ravel())
-        out = sp.coo_matrix((values, (row, col)), shape=(Nz, Nx), dtype=Z.dtype).tocsr()
-        return out.T # Nx, Nz
+        out = sp.coo_matrix((values, (col,row)), shape=(Nz, Nx), dtype=z.dtype).tocsr()
+        return out,index # Nx, Nz
+
+    def faiss_knn_select(x: np.ndarray, faiss_batch_size=100,faiss_threshold=1e-1,**kwargs):
+        x /= (np.linalg.norm(x, axis=1)[:, None] + 1e-9)
+        Nx, d = x.shape
+        index = faiss.IndexFlatL2(d)
+        index.add(x[[0]])
+        out = x[[0]]
+        def helper(n,out):
+            z = x[n:min(n+faiss_batch_size,Nx)]
+            D, Id = index.search(z, 1)
+            mask = np.where(D[:,0] > faiss_threshold)[0]
+            if mask.size > 0:
+                index.add(z[mask])
+                return z[mask]
+        out = [helper(n,out) for n in range(0, Nx,faiss_batch_size)]
+        out = np.concatenate([o for o in out if o is not None])
+        return out # Nx, Nz
 
     def grad_faiss_knn(x: np.ndarray, z: np.ndarray=None, k: int = 20, knm=None,metric="cosine",grad_faiss_fun=None,grad_threshold=1e-9,**kwargs):
         D = x.shape[1]
