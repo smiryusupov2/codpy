@@ -1222,8 +1222,10 @@ class se_error_theta:
 
 
 class SparseKernel(Kernel):
-    def __init__(self,x,k=10,**kwargs):
+    def __init__(self,x=None,k=5,**kwargs):
         self.k= k
+        self.faiss_index_x = None 
+        self.faiss_index_z = None
         super().__init__(x=x,**kwargs)
         pass
     def grad(self,z=None,k=None,theta=None,second_member=None,**kwargs):
@@ -1263,11 +1265,34 @@ class SparseKernel(Kernel):
         if second_member is not None:
             return lalg.LAlg.prod(result,second_member)
         return result
-    def knm(self, x, z, k=None,**kwargs) -> np.ndarray:
+    
+    def knm_max(self, x, z, k=None, index_x=None, index_z=None, **kwargs): 
         if k is None: k=self.k
-        Sx = algs.Alg.faiss_knn(x, z,k=k,fun=None, metric="cosine",**kwargs).tocsr()
-        Sx = (Sx+ algs.Alg.faiss_knn(z, x,k=self.k,fun=None, metric="cosine",**kwargs).tocsr().T)*.5
+        # index as args have priority
+        index_x = self.faiss_index_x if index_x is None else index_x
+        index_z = self.faiss_index_z if index_z is None else index_z
+
+        # If still no index, create it
+        if index_x is None:
+            index_x = self.faiss_index_x = algs.Alg.faiss_make_index(x, metric="euclidean", **kwargs)
+        if index_z is None:
+            index_z = self.faiss_index_z = algs.Alg.faiss_make_index(z, metric="euclidean", **kwargs)
+            
+        # TODO normalize X and Z depending on metrics...
+        faiss_fun = lambda x: np.exp(-x**2)
+        Sx = algs.Alg.faiss_knn_search(x, index=index_x, z=z, k=self.k, faiss_fun=faiss_fun,**kwargs).tocsr()
+        Sx = (Sx + algs.Alg.faiss_knn_search(z, index=index_z, z=x, k=self.k, faiss_fun=faiss_fun,**kwargs).tocsr().T) * .5
         return Sx
+
+    def knm(self, x, z, k=None, index_x=None, index_z=None, **kwargs) -> np.ndarray:
+        return self.knm_max(x, z, k=k, index_x=index_x, index_z=index_z, **kwargs)
+        if k is None: k=self.k
+        # Sx = algs.Alg.faiss_knn(x, z,k=k,fun=None, metric="cosine",**kwargs).tocsr()
+        Sx = algs.Alg.faiss_knn(x, z,k=k,fun=lambda x: np.exp(-x**2), metric="euclidean", index=self.faiss_index_x, **kwargs).tocsr()
+        Sx = (Sx+ algs.Alg.faiss_knn(z, x,k=self.k,fun=lambda x: np.exp(-x**2), metric="euclidean", index=self.faiss_index_z, **kwargs).tocsr().T)*.5
+        # Sx = (Sx+ algs.Alg.faiss_knn(z, x,k=self.k,fun=None, metric="cosine",**kwargs).tocsr().T)*.5
+        return Sx
+    
     def grad_knm(self, x=None, z=None, k=None,**kwargs) :
         if k is None: k = self.k
         if x is None: x = self.get_x()

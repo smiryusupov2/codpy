@@ -268,11 +268,75 @@ class Alg:
         if verbose:print(f"gradient_descent : Iteration {count} | fun(t0): {fstart:.6e} | eps : | {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | der: {fprime:.2e}, | time: {time.perf_counter()-timer:.2e}")
         return x
     
-    def faiss_knn(
-        x: np.ndarray, z: np.ndarray=None, k: int = 20,metric="cosine",faiss_fun=None,**kwargs
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def faiss_make_index(x, z=None, metric="cosine", **kwargs):
+        """
+            Faiss index creation. 
+            Args:
+                x (np.ndarray): Data points of shape (Nx, d).
+                z (np.ndarray, optional): Query points of shape (Nz, d). If None, uses x.
+            Returns:
+                faiss.Index: Faiss index object.
+
+        """
         Nx, d = x.shape
-        assert 1 <= k < Nx, "k must be in [1, N-1]"
+        Z = x if z is None else z
+        Nz = Z.shape[0]
+        if metric == "cosine":
+            X = x/(np.linalg.norm(x,axis=1)[:,None]+1e-9)  
+            Z = Z/(np.linalg.norm(Z,axis=1)[:,None]+1e-9)
+            index = faiss.IndexFlatIP(d)
+        elif metric == "euclidean":
+            X = x 
+            index = faiss.IndexFlatL2(d)
+        elif metric == "METRIC_L1":
+            X = x/(np.fabs(x).sum(1)[:,None]+1e-9 ) 
+            Z = Z/(np.fabs(Z).sum(1)[:,None]+1e-9)
+            index = faiss.index_factory(d, f"PQ{d//28}",faiss.METRIC_L1)
+            index.train(X)
+
+        index.add(X)
+        return index 
+    
+    def faiss_knn_search(x, index, z=None, k = 20, faiss_fun=None, **kwargs):
+        """
+            Faiss k-nearest neighbors search using a pre-built index.
+            Args:
+                x: Data points of shape (Nx, d).
+                index: Pre-built Faiss index.
+                z: Query points of shape (Nz, d). If None, uses x.
+                k: Number of nearest neighbors to find.
+        """
+        Nx, d = x.shape
+        k = min(k, Nx - 1)
+        Z = x if z is None else z
+        Nz = Z.shape[0]
+
+        D, Id = index.search(Z, min(k, Nx))  # shapes (Nz, k+1)
+        row = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
+        col = Id.reshape(-1)
+        if faiss_fun is None: 
+            values = D.ravel()
+        else: 
+            values = faiss_fun(D.ravel())
+        out = sp.coo_matrix((values, (row, col)), shape=(Nz, Nx), dtype=Z.dtype).tocsr()
+        return out.T # Nx, Nz
+
+    def faiss_knn(
+        x: np.ndarray, z: np.ndarray=None, k: int = 20,metric="cosine",faiss_fun=None, **kwargs
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+            Faiss k-nearest neighbors search. 
+            Args:
+                x (np.ndarray): Data points of shape (Nx, d).
+                z (np.ndarray, optional): Query points of shape (Nz, d). If None, uses x.
+                k (int): Number of nearest neighbors to find.
+            Returns:
+                sp.csr_matrix: Sparse matrix of shape (Nx, Nz) with k*Nz non-zero data points of distances or similarities
+
+        """
+        Nx, d = x.shape
+        k = min(k, Nx - 1)
+        # assert 1 <= k < Nx, "k must be in [1, N-1]"
     
         Z = x if z is None else z
         Nz = z.shape[0]
@@ -281,14 +345,16 @@ class Alg:
             Z = Z/(np.linalg.norm(Z,axis=1)[:,None]+1e-9)
             index = faiss.IndexFlatIP(d)
         elif metric == "euclidean":
+            X = x 
             index = faiss.IndexFlatL2(d)
         elif metric == "METRIC_L1":
             X = x/(np.fabs(x).sum(1)[:,None]+1e-9 ) 
-            z = Z/(np.fabs(Z).sum(1)[:,None]+1e-9)
+            Z = Z/(np.fabs(Z).sum(1)[:,None]+1e-9)
             index = faiss.index_factory(d, f"PQ{d//28}",faiss.METRIC_L1)
             index.train(X)
 
         index.add(X)
+
         D, Id = index.search(Z, min(k, Nx))  # shapes (Nz, k+1)
         row = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
         col = Id.reshape(-1)
