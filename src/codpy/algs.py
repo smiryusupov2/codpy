@@ -268,7 +268,7 @@ class Alg:
             grad = grad_fun(x,**kwargs)
             if (grad*grad).sum()/grad_start <= threshold:
                 break
-        if verbose:print(f"gradient_descent : Iteration {count} | fun(t0): {fstart:.6e} | eps : | {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | der: {fprime:.2e}, | time: {time.perf_counter()-timer:.2e}")
+        if verbose:print(f"gradient_descent : Iteration {count} | fun(t0): {fstart:.6e} | eps : {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | time: {time.perf_counter()-timer:.2e}  | der: {fprime:.2e}, consistency: {consistency:.2e}")
         return x
     
     def faiss_make_index_max(x, z=None, metric="cosine", **kwargs):
@@ -364,7 +364,7 @@ class Alg:
         out = sp.coo_matrix((values, (col,row)), shape=(Nz, Nx), dtype=z.dtype).tocsr()
         return out,index # Nx, Nz
 
-    def faiss_knn_select(x: np.ndarray, faiss_batch_size=100,faiss_threshold=1e-1,**kwargs):
+    def faiss_knn_select(x: np.ndarray, faiss_batch_size=1,faiss_threshold=1e-1,**kwargs):
         x /= (np.linalg.norm(x, axis=1)[:, None] + 1e-9)
         Nx, d = x.shape
         index = faiss.IndexFlatL2(d)
