@@ -341,8 +341,8 @@ class Alg:
 
         index.add(x)
         return index # Nx, Nz
-    def faiss_knn(
-        z: np.ndarray, k: int = 20,metric="cosine",faiss_fun=None,index=None,**kwargs
+    def faiss_knn_search(
+        z: np.ndarray, k: int = 20,metric="cosine",index=None,**kwargs
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         if metric == "cosine":
             z = z/(np.linalg.norm(z,axis=1)[:,None]+1e-9)
@@ -352,9 +352,17 @@ class Alg:
             index = Alg.faiss_knn_index(x=z,k=k,metric=metric,**kwargs)
         Nx = index.ntotal
         k = min(k, Nx - 1)
-        Nz,d = z.shape
 
-        D, Id = index.search(z, k)  # shapes (Nz, k+1)
+        D, Id = index.search(z, k)
+        return D,Id,index  # shapes (Nz, k+1)
+    
+    def faiss_knn(
+        z: np.ndarray, k: int = 20,metric="cosine",faiss_fun=None,index=None,**kwargs
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        Nx = index.ntotal
+        Nz = z.shape[0]
+
+        D, Id, index = Alg.faiss_knn_search(z=z,k=k,metric=metric,index=index,**kwargs)
         col = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
         row = Id.reshape(-1)
         if faiss_fun is None: 
@@ -364,22 +372,44 @@ class Alg:
         out = sp.coo_matrix((values, (col,row)), shape=(Nz, Nx), dtype=z.dtype).tocsr()
         return out,index # Nx, Nz
 
-    def faiss_knn_select(x: np.ndarray, faiss_batch_size=1,faiss_threshold=1e-1,**kwargs):
-        x /= (np.linalg.norm(x, axis=1)[:, None] + 1e-9)
+    def faiss_knn_select(x: np.ndarray, faiss_batch_size=1,metric = "cosine",faiss_threshold=1e-1,faiss_nb_select=None,faiss_fun=None,**kwargs):
         Nx, d = x.shape
-        index = faiss.IndexFlatL2(d)
-        index.add(x[[0]])
-        out = x[[0]]
-        def helper(n,out):
+        if metric == "cosine":
+            x = x/(np.linalg.norm(x,axis=1)[:,None]+1e-9)
+            index = faiss.IndexFlatIP(d)
+        elif metric == "euclidean":
+            index = faiss.IndexFlatL2(d)
+        elif metric == "METRIC_L1":
+            x = x/(np.fabs(x).sum(1)[:,None]+1e-9)
+            index = faiss.index_factory(d, f"PQ{d//28}",faiss.METRIC_L1)
+            index.train(x)
+        def helper(n):
             z = x[n:min(n+faiss_batch_size,Nx)]
-            D, Id = index.search(z, 1)
-            mask = np.where(D[:,0] > faiss_threshold)[0]
-            if mask.size > 0:
-                index.add(z[mask])
-                return z[mask]
-        out = [helper(n,out) for n in range(0, Nx,faiss_batch_size)]
+            if metric == "cosine":
+                mask = np.where((z*z).sum(1) > 1e-9)[0]
+                z = z[mask]
+                if z.shape[0] == 0:
+                    return None
+                if index.ntotal == 0:
+                    index.add(z)
+                    return z
+                D, Id = index.search(z, 1)
+                if faiss_fun is not None:
+                    D = faiss_fun(D)
+                mask = np.where(D[:,0] > faiss_threshold)[0]
+                if mask.size > 0:
+                    index.add(z[mask])
+                    return z[mask]
+        out = [helper(n) for n in range(0, Nx,faiss_batch_size)]
         out = np.concatenate([o for o in out if o is not None])
-        return out # Nx, Nz
+        if faiss_nb_select is not None and out.shape[0] > faiss_nb_select:
+            D, Id = index.search(out, 2)
+            if faiss_fun is not None:
+                D = faiss_fun(D)
+            indices = np.argsort(-D[:,1])
+            out = out[indices[:faiss_nb_select]]    
+            index.remove_ids(indices[faiss_nb_select:])
+        return out,index # Nx, Nz
 
     def grad_faiss_knn(x: np.ndarray, z: np.ndarray=None, k: int = 20, knm=None,metric="cosine",grad_faiss_fun=None,grad_threshold=1e-9,**kwargs):
         D = x.shape[1]

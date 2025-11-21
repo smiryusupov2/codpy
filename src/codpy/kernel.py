@@ -1239,22 +1239,21 @@ class se_error_theta:
         return  algs.Alg.gradient_descent(theta,fun=self.error,constraints=None,grad_fun=self.grad_error,**kwargs)
 
 class SparseKernel(Kernel):
-    def __init__(self,x=None,k=5,**kwargs):
+    def __init__(self,x=None,k=5,faiss_fun=None,**kwargs):
         self.k= k
-        self.faiss_index_x = None 
-        self.faiss_index_z = None
-        self.faiss_index = None
+        self.faiss_fun= faiss_fun
         super().__init__(x=x,**kwargs)
         pass
     def __call__(self,z=None,theta=None,second_member=None,**kwargs):
-        if z is None: knm = self.get_knm(**kwargs)
-        else: knm = self.knm(z.astype(self.get_y().dtype), **kwargs)
         if theta is None:
             theta = self.get_theta(**kwargs)
+        if z is None: knm = self.get_knm(**kwargs)
+        else: knm = self.knm(z.astype(self.get_y().dtype), **kwargs)
         result  = sparse_dot_mkl.dot_product_mkl(knm,theta)
         if second_member is not None:
             return LAlg.prod(result,second_member)
         return result
+           
     def error_field(self,theta,**kwargs):
         if theta.ndim == 1:
             theta= theta.reshape(self.get_fx().shape).astype(self.get_fx().dtype)
@@ -1285,39 +1284,24 @@ class SparseKernel(Kernel):
             return out.reshape(theta.shape).astype(dtype)
         else:
             return out
-    def get_theta(self,method="bfgs", **kwargs) -> np.ndarray:
+    def callback(self,theta,verbose = False):
+        if verbose:
+            print("callback error: ",self.error(theta))
+    def get_theta(self,method="bfgs", maxiter=20, maxls=5,**kwargs) -> np.ndarray:
         if not hasattr(self, "theta") or self.theta is None:
             if method == "bfgs":
                 theta= self.get_fx().flatten().astype(np.float64)
                 print("error beg: ",self.error(theta,**kwargs))
-                out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta)
-                print("error end: ",fmin, "infos",infos)
+                out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta,maxiter=maxiter,maxls=maxls,callback=self.callback)
+                print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"])
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
             else:
                 se_error_instance = se_error_theta(self, self.get_x(), self.get_fx())
                 self.theta =  se_error_instance(self.fx,**kwargs)
         return self.theta
     
-    def knm_max(self, x, z, k=None, index_x=None, index_z=None, **kwargs): 
-        if k is None: k=self.k
-        # index as args have priority
-        index_x = self.faiss_index_x if index_x is None else index_x
-        index_z = self.faiss_index_z if index_z is None else index_z
-
-        # If still no index, create it
-        if index_x is None:
-            index_x = self.faiss_index_x = algs.Alg.faiss_make_index(x, metric="euclidean", **kwargs)
-        if index_z is None:
-            index_z = self.faiss_index_z = algs.Alg.faiss_make_index(z, metric="euclidean", **kwargs)
-            
-        # TODO normalize X and Z depending on metrics...
-        faiss_fun = lambda x: np.exp(-x**2)
-        Sx = algs.Alg.faiss_knn_search(x, index=index_x, z=z, k=self.k, faiss_fun=faiss_fun,**kwargs).tocsr()
-        Sx = (Sx + algs.Alg.faiss_knn_search(z, index=index_z, z=x, k=self.k, faiss_fun=faiss_fun,**kwargs).tocsr().T) * .5
-        return Sx
-
     def get_index(self,**kwargs):
-        if not hasattr(self,"index"):
+        if not hasattr(self,"faiss_index"):
             self.faiss_index = algs.Alg.faiss_knn_index(x=self.get_x(), **kwargs)
         return self.faiss_index
 
@@ -1326,16 +1310,9 @@ class SparseKernel(Kernel):
     ) -> np.ndarray:
         assert y is None," Sparse kernel can't estimate the Gram matrix outside of the training set."
         index_x = self.get_index(**kwargs)
-        faiss_fun = lambda x: np.exp(-x**2)
         if z is None: 
             z=self.get_x()
-            Sx,_ = algs.Alg.faiss_knn(z=z, metric="cosine",index=index_x, faiss_fun=faiss_fun, **kwargs)
-        else:
-            Sx,_ = algs.Alg.faiss_knn(z=z, metric="cosine",index=index_x, faiss_fun=faiss_fun, **kwargs)
-            # index_z = algs.Alg.faiss_knn_index(x=z, **kwargs)
-            # Sz,_ = algs.Alg.faiss_knn(z=self.get_x(),fun=None, metric="cosine",index=index_z,**kwargs)
-            # Sx = (Sx+Sz.T)*.5
-
+        Sx,_ = algs.Alg.faiss_knn(z=z, metric="cosine",index=index_x, **kwargs)
         if fy is not None:
             return sparse_dot_mkl.dot_product_mkl(Sx,fy) 
         return Sx
@@ -1374,7 +1351,7 @@ class SparseKernelClassifier(SparseKernel):
                 theta= self.get_fx().flatten().astype(np.float64)
                 print("error beg: ",self.error(theta,**kwargs))
                 out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta)
-                print("error end: ",fmin, "infos",infos)
+                print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"])
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
             else:
                 se_error_instance = se_error_theta(self, self.get_x(), softmax(self.get_fx(),axis=1))

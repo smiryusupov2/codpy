@@ -70,6 +70,22 @@ class LAlg:
         assert(x.shape[1]==y.shape[0]), "Incompatible matrix shapes for multiplication: {} and {}".format(x.shape, y.shape)
         return cd.lalg.prod(get_matrix(x), get_matrix(y)).astype(x.dtype)
 
+    def sparse_prod(x, y,rows,cols):
+        """
+        Compute the product of two matrices only on the indices given by (row,col).
+
+        This method computes the matrix product of two input matrices, x and y.
+
+        Args:
+            x: The first matrix.
+            y: The second matrix.
+
+        Returns:
+            The product of the two matrices as a flat vector.
+        """
+        assert(x.shape[1]==y.shape[0]), "Incompatible matrix shapes for multiplication: {} and {}".format(x.shape, y.shape)
+        return np.array(cd.lalg.sparse_prod(get_matrix(x), get_matrix(y),rows,cols)).astype(x.dtype)
+
     def prod_vector_matrix(x, y):
         """
         Compute the inner product of two vector of matrices.
