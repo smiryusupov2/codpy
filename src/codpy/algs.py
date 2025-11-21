@@ -361,6 +361,7 @@ class Alg:
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         Nx = index.ntotal
         Nz = z.shape[0]
+        k = min(k, Nx - 1)
 
         D, Id, index = Alg.faiss_knn_search(z=z,k=k,metric=metric,index=index,**kwargs)
         col = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
