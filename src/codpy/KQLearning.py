@@ -290,9 +290,6 @@ class GamesKernelClassifier(GamesKernel):
             fx_ = np.log(debug)
         super().set_fx(fx_, set_polynomial_regressor=set_polynomial_regressor, **kwargs)
 
-class SparseGamesKernel(GamesKernel, codpy.kernel.SparseKernel):
-    pass
-
 def rl_hot_encoder(actions, actions_dim):
     """Hot encodes actions over actions_dim.
 
