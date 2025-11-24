@@ -76,6 +76,13 @@ class KerOp:
             else project_array(x, y, z, fx, reg)
         )
 
+    @staticmethod
+    def multi_projection(
+        xs, ys, zs, fxs, kernel_ptr=None, reg=1e-9, order=0, reg_matrix=[], **kwargs
+    ):
+        if kernel_ptr is not None:
+            KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
+        return cd.op.multi_projection(xs, ys, zs, fxs, reg_matrix)
     def _weighted_projection(x, y, z, fx, weights,kernel_ptr=None, reg=1e-9, order=0, reg_matrix=[], **kwargs):
         if kernel_ptr is not None:
             KerInterface.set_kernel_ptr(kernel_ptr, order, reg)

@@ -12,6 +12,7 @@ import time
 from scipy import optimize
 import scipy.fft
 import scipy.linalg
+from scipy.special import softmax
 from scipy import optimize
 from scipy import signal
 from scipy.sparse import lil_array,csr_matrix
@@ -120,7 +121,6 @@ class Alg:
             KerInterface.set_kernel_ptr(kernel_ptr, order, reg)
         out = cd.alg.add(knm, knm_inv, x, y)
         return out
-
     def greedy_algorithm(
         x,
         N,
@@ -271,6 +271,14 @@ class Alg:
         if verbose:print(f"gradient_descent : Iteration {count} | fun(t0): {fstart:.6e} | eps : {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | time: {time.perf_counter()-timer:.2e}  | der: {fprime:.2e}, consistency: {consistency:.2e}")
         return x
     
+    def sparse_softmax(mat, axis=1):
+        out = mat.copy()
+        def helper(n):
+            indices = mat.indices[mat.indptr[n]:mat.indptr[n+1]]
+            out.data[indices] = softmax(mat.data[indices])
+        map(helper, list(range(mat.indptr.shape[0]-1)))
+        return out
+    
     def faiss_make_index_max(x, z=None, metric="cosine", **kwargs):
         """
             Faiss index creation. 
@@ -374,7 +382,10 @@ class Alg:
         return out,index # Nx, Nz
 
     def faiss_knn_select(x: np.ndarray, faiss_batch_size=1,metric = "cosine",faiss_threshold=1e-1,faiss_nb_select=None,faiss_fun=None,**kwargs):
+        mask = np.where((x*x).sum(1) > 1e-9)[0]
+        x = x[mask]
         Nx, d = x.shape
+        timer = time.perf_counter()
         if metric == "cosine":
             x = x/(np.linalg.norm(x,axis=1)[:,None]+1e-9)
             index = faiss.IndexFlatIP(d)
@@ -401,7 +412,7 @@ class Alg:
                 if mask.size > 0:
                     index.add(z[mask])
                     return z[mask]
-        out = [helper(n) for n in range(0, Nx,faiss_batch_size)]
+        out = map(helper, list(range(0, Nx,faiss_batch_size)))
         out = np.concatenate([o for o in out if o is not None])
         if faiss_nb_select is not None and out.shape[0] > faiss_nb_select:
             D, Id = index.search(out, 2)
@@ -410,6 +421,7 @@ class Alg:
             indices = np.argsort(-D[:,1])
             out = out[indices[:faiss_nb_select]]    
             index.remove_ids(indices[faiss_nb_select:])
+            print(f"faiss_knn_select: time {time.perf_counter()-timer} seconds.")
         return out,index # Nx, Nz
 
     def grad_faiss_knn(x: np.ndarray, z: np.ndarray=None, k: int = 20, knm=None,metric="cosine",grad_faiss_fun=None,grad_threshold=1e-9,**kwargs):

@@ -5,6 +5,7 @@ os.environ["OMP_NUM_THREADS"] = "4"
 from codpydll import *
 from scipy.special import softmax
 import scipy
+import time
 
 import codpy.core as core
 import codpy.algs as algs
@@ -1017,6 +1018,43 @@ class Kernel:
             self.knm_inv, self.knm_ = None, None
             self.valid = True
 
+    def multi_prediction(self, xs: np.ndarray,ys=None,zs: np.ndarray=None,fxs: np.ndarray=None, n_batch = 10000) -> np.ndarray:
+        """
+        Predict the output using the kernel for multiple input datasets.
+
+        :param xs: List of input data points for prediction.
+        :type xs: List of :class:`numpy.ndarray`
+        :param ys: List of target data points corresponding to `xs`.
+        :type ys: List of :class:`numpy.ndarray`, optional
+        :param zs: List of new input data points for prediction.
+        :type zs: List of :class:`numpy.ndarray`, optional
+        :param fxs: List of function values corresponding to `xs`.
+        :type fxs: List of :class:`numpy.ndarray`, optional
+
+        :returns: The predicted values based on the kernel and function values for each dataset.
+        :rtype: List of :class:`numpy.ndarray`
+
+        Example:
+            >>> xs_data = [np.array([...]), np.array([...]), ...]
+            >>> predictions = kernel.multi_prediction(xs_data)
+
+        Note:
+            This function iterates over multiple datasets, applying the kernel prediction for each set of input data.
+        """
+        def helper(n):
+            return core.KerOp.multi_projection(
+                        xs=xs[n*n_batch:(n+1)*n_batch],
+                        ys=ys[n*n_batch:(n+1)*n_batch],
+                        zs=zs[n*n_batch:(n+1)*n_batch],
+                        fxs=fxs[n*n_batch:(n+1)*n_batch],
+                        kernel_ptr=self.get_kernel(),
+                        order=self.order,
+                        reg=self.reg
+                )
+        out = np.concatenate(list(map(helper, list(range(xs.shape[0]//n_batch +1)))))
+        return out
+
+
     def __call__(self, z: np.ndarray=None,theta=None,second_member=None, **kwargs) -> np.ndarray:
         """
         Predict the output using the kernel for input data ``z``.
@@ -1245,11 +1283,11 @@ class SparseKernel(Kernel):
         super().__init__(x=x,**kwargs)
         pass
     def __call__(self,z=None,theta=None,second_member=None,**kwargs):
-        if theta is None:
-            theta = self.get_theta(**kwargs)
         if z is None: knm = self.get_knm(**kwargs)
         else: knm = self.knm(z.astype(self.get_y().dtype), **kwargs)
-        result  = sparse_dot_mkl.dot_product_mkl(knm,theta)
+        if theta is None:
+            theta = self.get_theta(**kwargs)
+        result  = sparse_dot_mkl.dot_product_mkl(knm,theta.astype(knm.dtype))
         if second_member is not None:
             return LAlg.prod(result,second_member)
         return result
@@ -1289,11 +1327,14 @@ class SparseKernel(Kernel):
             print("callback error: ",self.error(theta))
     def get_theta(self,method="bfgs", maxiter=20, maxls=5,**kwargs) -> np.ndarray:
         if not hasattr(self, "theta") or self.theta is None:
+            if method == "adams":
+                raise NotImplementedError("adams method not implemented yet for SparseKernel")
             if method == "bfgs":
+                timer = time.perf_counter()
                 theta= self.get_fx().flatten().astype(np.float64)
                 print("error beg: ",self.error(theta,**kwargs))
                 out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta,maxiter=maxiter,maxls=maxls,callback=self.callback)
-                print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"])
+                print("error end: ",self.error(out,**kwargs))
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
             else:
                 se_error_instance = se_error_theta(self, self.get_x(), self.get_fx())
