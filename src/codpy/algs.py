@@ -181,6 +181,12 @@ class Alg:
         if verbose:print(f"Iteration {n} | fun(t0): {fstart:.6e} | fun(terminal): {error:.6e} | step: {n:.0f} | time: {time.perf_counter()-timer:.2e}")
         return yk
 
+    def adams_pytorch(x0,
+                        fun,
+                        **kwargs
+                        ):
+        raise NotImplementedError("adams not implemented yet")
+
     def gradient_descent(x0,
                         fun,
                         grad_fun,

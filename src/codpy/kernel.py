@@ -16,7 +16,8 @@ from codpy.permutation import lsap, map_invertion,Gromov_Monge
 from codpy.sampling import get_uniforms,get_normals,get_qmc_uniforms,get_qmc_normals
 from codpy.dictionary import cast
 import sparse_dot_mkl,pypardiso
-
+import torch
+import torch.nn.functional as F
 
 class Kernel:
     """
@@ -1291,7 +1292,48 @@ class SparseKernel(Kernel):
         if second_member is not None:
             return LAlg.prod(result,second_member)
         return result
+    def get_knm_coo(self, **kwargs):
+        if not hasattr(self, "knm_coo_") or self.knm_coo_ is None:
+            self.knm_coo_ = self.get_knm(**kwargs).tocoo()
+        return self.knm_coo_     
+    
+    def get_pytorch_model(self,theta,**kwargs):
+        """
+        Build a 1-layer torch model: logits = Kxx @ theta, optimize theta with AdamW via fit(...).
+        Returns a nn.Module with parameters and a .predict(Z) method.
+        """
+        class SparseKernel_pytorch(torch.nn.Module):
+            def __init__(self, sparse_kernel, theta, device="cpu"):
+                super().__init__()
+                self.sparse_kernel = sparse_kernel
+                Kxx = self.sparse_kernel.get_knm_coo(**kwargs).astype(np.float32)
+                def coo_to_pytorch(mat):
+                    row = mat.row.astype(np.int64)
+                    col = mat.col.astype(np.int64)
+                    data = mat.data.astype(np.float32)
+                    i = torch.from_numpy(np.stack([row, col], 0))
+                    v = torch.from_numpy(data)
+                    return torch.sparse_coo_tensor(
+                        i, v, (mat.shape[0], mat.shape[1])
+                    )
+                self.register_buffer("Kxx",coo_to_pytorch(Kxx))  # (N,N)
+                Y_t = torch.from_numpy(sparse_kernel.get_fx().astype(np.float32))
+                self.register_buffer("Y", Y_t)  # (N,C)
+                init_theta = torch.from_numpy(theta.reshape(self.Y.shape).astype(np.float32))
+                self.theta = torch.nn.Parameter(init_theta,requires_grad=True)  # (N,C)
+
+            def forward(self):
+                return torch.sparse.mm(self.Kxx, self.theta)
+
+        return SparseKernel_pytorch(self,theta)
            
+    def grad_pytorch(self,theta,device="cpu"):
+        model = self.get_pytorch_model(theta)
+        model.train()
+        loss = F.mse_loss(model(), model.Y, reduction="sum")            
+        loss.backward()
+        grad = model.theta.grad.numpy().astype(theta.dtype)        
+        return grad.flatten()
     def error_field(self,theta,**kwargs):
         if theta.ndim == 1:
             theta= theta.reshape(self.get_fx().shape).astype(self.get_fx().dtype)
@@ -1327,18 +1369,30 @@ class SparseKernel(Kernel):
             print("callback error: ",self.error(theta))
     def get_theta(self,method="bfgs", maxiter=20, maxls=5,**kwargs) -> np.ndarray:
         if not hasattr(self, "theta") or self.theta is None:
+            knm,fx=self.get_knm(**kwargs),self.get_fx()
+            theta= algs.Alg.conjugate_gradient_descent(knm,fx.astype(knm.dtype),steps=1,dot_product=sparse_dot_mkl.dot_product_mkl).astype(np.float64)
+            timer = time.perf_counter()
             if method == "adams":
-                raise NotImplementedError("adams method not implemented yet for SparseKernel")
-            if method == "bfgs":
-                timer = time.perf_counter()
-                theta= self.get_fx().flatten().astype(np.float64)
+                print("error beg: ",self.error(theta,**kwargs))
+                out,fmin,infos = algs.Alg.adams_pytorch(fun=self.py_torch_model,theta,**kwargs)
+                print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
+                self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
+            if method == "pytorch_bfgs":
+                print("error beg: ",self.error(theta,**kwargs))
+                out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_pytorch,maxiter=maxiter,maxls=maxls,callback=self.callback)
+                print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
+                self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
+            elif method == "bfgs":
                 print("error beg: ",self.error(theta,**kwargs))
                 out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta,maxiter=maxiter,maxls=maxls,callback=self.callback)
-                print("error end: ",self.error(out,**kwargs))
+                print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
+            elif method ==  "gd":
+                print("error beg: ",self.error(theta,**kwargs))
+                self.theta =  algs.Alg.gradient_descent(theta,fun=self.error,constraints=None,grad_fun=self.grad_theta,**kwargs)
+                print("error end: ",self.error(self.theta,**kwargs), "time",time.perf_counter()-timer)
             else:
-                se_error_instance = se_error_theta(self, self.get_x(), self.get_fx())
-                self.theta =  se_error_instance(self.fx,**kwargs)
+                raise ValueError("Unknown method "+str(method))
         return self.theta
     
     def get_index(self,**kwargs):
