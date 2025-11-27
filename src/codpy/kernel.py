@@ -1257,35 +1257,19 @@ class KernelClassifier(Kernel):
     ) -> None:
         return super().update(z=z, fz=np.log(fz), eps=eps, **kwargs)
 
-class se_error_theta:
-    def __init__(self,fun,x,y,theta=None,**kwargs):
-        self.fun = fun
-        self.x= x
-        self.y= y
-        if theta is not None:
-            self.theta = theta
-    def error_field(self,theta=None,z=None,**kwargs):
-        if theta is None:
-            theta = self.fun.get_theta(**kwargs)
-        debug = self.fun(z=self.x,theta=theta,**kwargs)
-        return debug-self.y
-    def error(self,theta,**kwargs):
-        error = self.error_field(theta,**kwargs)
-        return (error*error).sum()*.5
-    def grad_error(self,theta,**kwargs):
-        return self.fun.grad_theta(second_member=self.error_field(theta,**kwargs),theta=theta,**kwargs)
-    def __call__(self,theta,**kwargs):
-        return  algs.Alg.gradient_descent(theta,fun=self.error,constraints=None,grad_fun=self.grad_error,**kwargs)
-
 class SparseKernel(Kernel):
-    def __init__(self,x=None,k=5,faiss_fun=None,**kwargs):
-        self.k= k
+    def __init__(self,x=None,bandwidth=5,gram="raw",faiss_fun=None,sto=False,**kwargs):
+        self.k= bandwidth
+        self.gram = gram
         self.faiss_fun= faiss_fun
+        if sto == True: self.sto_flag = True
         super().__init__(x=x,**kwargs)
         pass
-    def __call__(self,z=None,theta=None,second_member=None,**kwargs):
-        if z is None: knm = self.get_knm(**kwargs)
-        else: knm = self.knm(z.astype(self.get_y().dtype), **kwargs)
+    def __call__(self,z=None,theta=None,second_member=None,gram="raw",**kwargs):
+        if z is None: 
+            knm = self.get_knm(**kwargs)
+        else: 
+            knm = self.knm(z.astype(self.get_y().dtype), gram=gram,**kwargs)
         if theta is None:
             theta = self.get_theta(**kwargs)
         result  = sparse_dot_mkl.dot_product_mkl(knm,theta.astype(knm.dtype))
@@ -1339,13 +1323,12 @@ class SparseKernel(Kernel):
             theta= theta.reshape(self.get_fx().shape).astype(self.get_fx().dtype)
         out = self(z=None, theta=theta,**kwargs)-self.get_fx()
         return out
-    def error(self,theta,second_member=None,**kwargs):
+    def error(self,theta,**kwargs):
         out = self.error_field(theta=theta,**kwargs)
         return (out*out).sum()*.5
 
     def grad(self,z=None,k=None,theta=None,second_member=None,**kwargs):
         if k is None: k=self.k
-        if z is None: z= self.get_x()
         knm = self.grad_knm(z, self.get_y(),k=k,**kwargs)
         if theta is not None:
             result  = sparse_dot_mkl.dot_product_mkl(knm,theta)
@@ -1374,7 +1357,7 @@ class SparseKernel(Kernel):
             timer = time.perf_counter()
             if method == "adams":
                 print("error beg: ",self.error(theta,**kwargs))
-                out,fmin,infos = algs.Alg.adams_pytorch(fun=self.py_torch_model,theta,**kwargs)
+                out,fmin,infos = algs.Alg.adams_pytorch(fun=self.py_torch_model,x0=theta,**kwargs)
                 print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
             if method == "pytorch_bfgs":
@@ -1401,7 +1384,7 @@ class SparseKernel(Kernel):
         return self.faiss_index
 
     def knm(
-        self, z: np.ndarray = None, y: np.ndarray = None, fy: np.ndarray = None, **kwargs
+        self, z: np.ndarray = None, y: np.ndarray = None, fy: np.ndarray = None, gram="raw", index_z=None,**kwargs
     ) -> np.ndarray:
         assert y is None," Sparse kernel can't estimate the Gram matrix outside of the training set."
         index_x = self.get_index(**kwargs)
@@ -1409,7 +1392,15 @@ class SparseKernel(Kernel):
             z=self.get_x()
         Sx,_ = algs.Alg.faiss_knn(z=z, metric="cosine",index=index_x, **kwargs)
         if fy is not None:
-            return sparse_dot_mkl.dot_product_mkl(Sx,fy) 
+            return sparse_dot_mkl.dot_product_mkl(Sx,fy)
+        if gram=="symmetric":
+            if index_z is None:
+                index_z = algs.Alg.faiss_knn_index(x=z, **kwargs)
+            Sx_sym,_ = algs.Alg.faiss_knn(z=self.get_x(), metric="cosine",index=index_z, **kwargs)
+            Sx = (Sx + Sx_sym.T)*.5
+        if hasattr(self,"sto_flag"):
+            Sx /= Sx.sum(1)
+       
         return Sx
     
     def grad_knm(self, x=None, z=None, k=None,**kwargs) :
@@ -1421,7 +1412,9 @@ class SparseKernel(Kernel):
         return out
     def get_knm(self, **kwargs) -> np.ndarray:
         if not hasattr(self, "knm_") or self.knm_ is None:
-            self.knm_ = self.knm(z=self.get_x(),**kwargs)
+            self.knm_ = self.knm(z=None,gram="raw",index_z=self.get_index(**kwargs),**kwargs)
+            if self.gram=="symmetric":
+                self.knm_ = (self.knm_ + self.knm_.T)*.5
         return self.knm_     
 
 class SparseKernelClassifier(SparseKernel):
@@ -1439,20 +1432,7 @@ class SparseKernelClassifier(SparseKernel):
     def error(self,theta,second_member=None,**kwargs):
         out = self.error_field(theta=theta,**kwargs)
         return (out*out).sum()*.5
-        
-    def get_theta(self,method="bfgs", **kwargs) -> np.ndarray:
-        if not hasattr(self, "theta") or self.theta is None:
-            if method == "bfgs":
-                theta= self.get_fx().flatten().astype(np.float64)
-                print("error beg: ",self.error(theta,**kwargs))
-                out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta)
-                print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"])
-                self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
-            else:
-                se_error_instance = se_error_theta(self, self.get_x(), softmax(self.get_fx(),axis=1))
-                self.theta =  se_error_instance(self.fx,**kwargs)
-        return self.theta
-      
+     
     def set_fx(
         self,
         fx: np.ndarray,
