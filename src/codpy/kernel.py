@@ -1,23 +1,27 @@
-import numpy as np
 import os
+
+import numpy as np
+
 os.environ["OPENBLAS_NUM_THREADS"] = "32"
 os.environ["OMP_NUM_THREADS"] = "4"
-from codpydll import *
-from scipy.special import softmax
-import scipy
 import time
 
-import codpy.core as core
-import codpy.algs as algs
-from codpy.algs import Alg
-from codpy.core import DiffOps
-from codpy.lalg import LAlg
-from codpy.permutation import lsap, map_invertion,Gromov_Monge
-from codpy.sampling import get_uniforms,get_normals,get_qmc_uniforms,get_qmc_normals
-from codpy.dictionary import cast
-import sparse_dot_mkl,pypardiso
+import scipy
+import sparse_dot_mkl
 import torch
 import torch.nn.functional as F
+from codpydll import *
+from scipy.special import softmax
+
+import codpy.algs as algs
+import codpy.core as core
+from codpy.algs import Alg
+from codpy.core import DiffOps
+from codpy.dictionary import cast
+from codpy.lalg import LAlg
+from codpy.permutation import Gromov_Monge, lsap, map_invertion
+from codpy.sampling import get_qmc_normals
+
 
 class Kernel:
     """
@@ -101,7 +105,7 @@ class Kernel:
         self.valid = False
         self.kernels = {}
         if x is not None or fx is not None:
-            self.set(x=x, y=y, fx=fx, theta=theta,**kwargs)
+            self.set(x=x, y=y, fx=fx, theta=theta, **kwargs)
         else:
             self.x, self.y, self.fx = None, None, None
 
@@ -242,10 +246,17 @@ class Kernel:
         if self.get_map() is not None:
             x, y = self.get_map()(x), self.get_map()(y)
 
-        return core.KerOp.knm(x=x, y=y, fy=fy, kernel_ptr=self.get_kernel()).astype(x.dtype)
+        return core.KerOp.knm(x=x, y=y, fy=fy, kernel_ptr=self.get_kernel()).astype(
+            x.dtype
+        )
 
     def dnm(
-        self, x: np.ndarray = None, y: np.ndarray = None, fy: np.ndarray = [], distance = [], **kwargs
+        self,
+        x: np.ndarray = None,
+        y: np.ndarray = None,
+        fy: np.ndarray = [],
+        distance=[],
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute the kernel matrix $D(X, Y)=k(x^i, y^j)_{i,j}$, where the kernel function $k$ is defined at class initialization, see :attr:`self.set_kernel`.
@@ -403,8 +414,10 @@ class Kernel:
         self.set_theta(None)
         if rescale:
             self.rescale()
+
     def set_random_theta(self, **kwargs) -> None:
-        self.set_theta(np.random.uniform(size=[self.x.shape[0],self.fx.shape[1]]))
+        self.set_theta(np.random.uniform(size=[self.x.shape[0], self.fx.shape[1]]))
+
     def set_y(self, y: np.ndarray = None, **kwargs) -> None:
         """
         Set the target data ``y`` for the kernel. If no target data is provided, ``y`` is set equal to ``x``.
@@ -425,15 +438,18 @@ class Kernel:
         self._set_knm_inv(None)
         self._set_knm(None)
 
-    def get_error_field(self, z=None, theta = None,fx= None, **kwargs):
-        if z is None: z = self.get_x()
-        if theta is None: theta = self.get_theta()
-        if fx is None: fx = self.get_fx()
-        return self(z=z, theta = theta)-fx
-    def get_error(self, z=None, theta = None,fx= None, **kwargs):
-        out = self.get_error_field(z=z,theta=theta,fx= fx, **kwargs)
-        return (out*out).sum()*.5
+    def get_error_field(self, z=None, theta=None, fx=None, **kwargs):
+        if z is None:
+            z = self.get_x()
+        if theta is None:
+            theta = self.get_theta()
+        if fx is None:
+            fx = self.get_fx()
+        return self(z=z, theta=theta) - fx
 
+    def get_error(self, z=None, theta=None, fx=None, **kwargs):
+        out = self.get_error_field(z=z, theta=theta, fx=fx, **kwargs)
+        return (out * out).sum() * 0.5
 
     def get_y(self, **kwargs) -> np.ndarray:
         """
@@ -624,7 +640,7 @@ class Kernel:
             self.x, self.fx = None, None
             return
         if x is not None and fx is None:
-            self.set_x(core.get_matrix(x.copy(),dtype=x.dtype), **kwargs)
+            self.set_x(core.get_matrix(x.copy(), dtype=x.dtype), **kwargs)
             self.set_y(y=y)
             self.set_fx(None)
             # self.rescale() # rescaling already done in set_x()
@@ -661,12 +677,14 @@ class Kernel:
         )
 
         y, temp_labels = self.clustering.cluster_centers_, self.clustering.labels_
-        labels= {}
-        def helper(k,v) : 
-            labels[k]= set([v]) 
-        [helper(k,v) for k, v in enumerate(temp_labels)]
+        labels = {}
+
+        def helper(k, v):
+            labels[k] = set([v])
+
+        [helper(k, v) for k, v in enumerate(temp_labels)]
         self.set_y(y)
-        self.labels = map_invertion(labels,type_in=dict[int, set[int]])
+        self.labels = map_invertion(labels, type_in=dict[int, set[int]])
         fx_proj = self.get_fx() - self(z=x)
         for key in self.labels.keys():
             indices = list(self.labels[key])
@@ -726,7 +744,7 @@ class Kernel:
         else:
             self.set_x(x)
             self.rescale()
-        self.set_fx(y,**kwargs)
+        self.set_fx(y, **kwargs)
         # Rescale the input data `x` using the current kernel configuration
 
         # Check if the dimensionality of `x` and `y` is the same
@@ -736,17 +754,22 @@ class Kernel:
             self.set_kernel_ptr()
             Dx = self.dnm(distance=distance)
             Dy = Kernel(x=self.get_fx()).dnm(distance=distance)
-            self.permutation = np.array(Gromov_Monge(Dx,Dy,**kwargs))
+            self.permutation = np.array(Gromov_Monge(Dx, Dy, **kwargs))
 
             # Update `fx` based on the computed permutation
             # Kernel.set_fx(self,fx=y[self.permutation])
-            self.fx = self.get_fx()[self.permutation] # not use, set_fx can be overloaded
+            self.fx = self.get_fx()[
+                self.permutation
+            ]  # not use, set_fx can be overloaded
             # self.permutation = map_invertion(np.array(self.permutation))
             # self.set_x(self.get_x()[self.permutation])
         else:
             # If the d imensionalities are the same, use the LSAP algorithm to compute the permutation
             D = core.KerOp.dnm(
-                x=self.get_fx(), y=self.get_x(), distance=distance, kernel_ptr=self.get_kernel()
+                x=self.get_fx(),
+                y=self.get_x(),
+                distance=distance,
+                kernel_ptr=self.get_kernel(),
             )
             self.permutation = lsap(D, bool(sub))  # Solve LSAP to find permutation
             # Update `x` based on the computed permutation (lsap uses different conventions than alg.encoder #to fix )
@@ -837,7 +860,12 @@ class Kernel:
         return self
 
     def add(
-        self, y: np.ndarray = None, fy: np.ndarray = None, kernel_ptr=None, min_distance = None, **kwargs
+        self,
+        y: np.ndarray = None,
+        fy: np.ndarray = None,
+        kernel_ptr=None,
+        min_distance=None,
+        **kwargs,
     ) -> None:
         """
         Augments the training set by adding new data points and their corresponding function values.
@@ -870,15 +898,16 @@ class Kernel:
         """
         x, fx = core.get_matrix(y.copy()), core.get_matrix(fy.copy())
         if min_distance is not None:
-            distances = np.sqrt(core.KerOp.dnm(x,self.get_x(), kernel_ptr=self.get_kernel()))
-            mask = np.where(distances.min(1) > min_distance,True,False)
-            x,fx = core.get_matrix(y[mask].copy()), core.get_matrix(fy[mask].copy())
-            if len(x) == 0 : 
+            distances = np.sqrt(
+                core.KerOp.dnm(x, self.get_x(), kernel_ptr=self.get_kernel())
+            )
+            mask = np.where(distances.min(1) > min_distance, True, False)
+            x, fx = core.get_matrix(y[mask].copy()), core.get_matrix(fy[mask].copy())
+            if len(x) == 0:
                 return self
         if not hasattr(self, "x") or self.x is None:
             self.set(x, fx)
             return
-        
 
         # the method add computes an updated Gram matrix using the already
         # pre-computed Gram matrix K(x,x).
@@ -1019,7 +1048,14 @@ class Kernel:
             self.knm_inv, self.knm_ = None, None
             self.valid = True
 
-    def multi_prediction(self, xs: np.ndarray,ys=None,zs: np.ndarray=None,fxs: np.ndarray=None, n_batch = 10000) -> np.ndarray:
+    def multi_prediction(
+        self,
+        xs: np.ndarray,
+        ys=None,
+        zs: np.ndarray = None,
+        fxs: np.ndarray = None,
+        n_batch=10000,
+    ) -> np.ndarray:
         """
         Predict the output using the kernel for multiple input datasets.
 
@@ -1042,21 +1078,24 @@ class Kernel:
         Note:
             This function iterates over multiple datasets, applying the kernel prediction for each set of input data.
         """
+
         def helper(n):
             return core.KerOp.multi_projection(
-                        xs=xs[n*n_batch:(n+1)*n_batch],
-                        ys=ys[n*n_batch:(n+1)*n_batch],
-                        zs=zs[n*n_batch:(n+1)*n_batch],
-                        fxs=fxs[n*n_batch:(n+1)*n_batch],
-                        kernel_ptr=self.get_kernel(),
-                        order=self.order,
-                        reg=self.reg
-                )
-        out = np.concatenate(list(map(helper, list(range(xs.shape[0]//n_batch +1)))))
+                xs=xs[n * n_batch : (n + 1) * n_batch],
+                ys=ys[n * n_batch : (n + 1) * n_batch],
+                zs=zs[n * n_batch : (n + 1) * n_batch],
+                fxs=fxs[n * n_batch : (n + 1) * n_batch],
+                kernel_ptr=self.get_kernel(),
+                order=self.order,
+                reg=self.reg,
+            )
+
+        out = np.concatenate(list(map(helper, list(range(xs.shape[0] // n_batch + 1)))))
         return out
 
-
-    def __call__(self, z: np.ndarray=None,theta=None,second_member=None, **kwargs) -> np.ndarray:
+    def __call__(
+        self, z: np.ndarray = None, theta=None, second_member=None, **kwargs
+    ) -> np.ndarray:
         """
         Predict the output using the kernel for input data ``z``.
 
@@ -1079,11 +1118,13 @@ class Kernel:
             $$P_{k,\\theta}(z) = K(Z, K) K(X, X)^{-1}$$
         """
         if z is None:
-            if hasattr(self,"knm_z_"): 
-                if theta is None: return self.knm_z_
-                return LAlg.prod(self.knm_z_,theta)
+            if hasattr(self, "knm_z_"):
+                if theta is None:
+                    return self.knm_z_
+                return LAlg.prod(self.knm_z_, theta)
             z = self.get_x()
-        else : z = core.get_matrix(z)
+        else:
+            z = core.get_matrix(z)
 
         # Don't forget to set the kernel
         if theta is None:
@@ -1102,14 +1143,18 @@ class Kernel:
         )
 
         if not hasattr(self, "set_clustering"):
-            if theta is not None: return LAlg.prod(self.knm_z_,theta)
+            if theta is not None:
+                return LAlg.prod(self.knm_z_, theta)
             return self.knm_z_
         if len(self.kernels) == 0:
-            if theta is not None: return LAlg.prod(self.knm_z_,theta)
+            if theta is not None:
+                return LAlg.prod(self.knm_z_, theta)
             return self.knm_z_
         mapped_indices = self.clustering(z)
-        mapped_indices = cast(mapped_indices,type_in=np.ndarray,type_out=dict[int, set[int]])
-        mapped_indices = map_invertion(mapped_indices,type_in=dict[int, set[int]])
+        mapped_indices = cast(
+            mapped_indices, type_in=np.ndarray, type_out=dict[int, set[int]]
+        )
+        mapped_indices = map_invertion(mapped_indices, type_in=dict[int, set[int]])
         for key in mapped_indices.keys():
             indices = list(mapped_indices[key])
             self.knm_z_[indices] += self.kernels[key](z[indices])
@@ -1126,13 +1171,19 @@ class Kernel:
         if theta is None:
             theta = self.get_knm_inv(**kwargs)
         knm = core.DiffOps.nabla_knm(
-            x=z, y=self.get_x(), theta=theta, order = self.order, reg = self.reg, kernel=self.get_kernel()
+            x=z,
+            y=self.get_x(),
+            theta=theta,
+            order=self.order,
+            reg=self.reg,
+            kernel=self.get_kernel(),
         )
 
         return knm
 
     def __and__(self, other):
         return BitwiseANDKernel(self, other)
+
 
 class Sampler(Kernel):
     """
@@ -1142,7 +1193,15 @@ class Sampler(Kernel):
 
         :param latent_generator: an optional generator. Defaulted to numpy.random.normal
     """
-    def __init__(self, x, set_kernel=core.kernel_setter("maternnorm", "standardmean",0,1e-9), latent_dim=None,latent_generator=None,**kwargs):
+
+    def __init__(
+        self,
+        x,
+        set_kernel=core.kernel_setter("maternnorm", "standardmean", 0, 1e-9),
+        latent_dim=None,
+        latent_generator=None,
+        **kwargs,
+    ):
         """
         Initializes the sampler with a kernel mapping object.
 
@@ -1153,13 +1212,13 @@ class Sampler(Kernel):
             if latent_dim is None:
                 latent_dim = x.shape[1]
             # self.latent_generator = lambda n: get_uniforms(n, latent_dim,nmax=10) # FIX THIS!!!
-            self.latent_generator = lambda n: get_qmc_normals(n, latent_dim,nmax=10)
+            self.latent_generator = lambda n: get_qmc_normals(n, latent_dim, nmax=10)
         else:
             self.latent_generator = latent_generator
-        y= self.latent_generator(x.shape[0])
-        super().__init__(x=y,fx=None,set_kernel=set_kernel,**kwargs)
+        y = self.latent_generator(x.shape[0])
+        super().__init__(x=y, fx=None, set_kernel=set_kernel, **kwargs)
         # self.map(y=x,distance=None)
-        self.map(y=x,**kwargs)
+        self.map(y=x, **kwargs)
 
     def sample(self, N):
         """
@@ -1174,13 +1233,12 @@ class Sampler(Kernel):
         return self(z=self.latent_generator(N))
 
 
-
 def get_tensor_probas(policy):
     """
-        params:
-            policy: array of shape (n,m) representing n probability distributions over m classes
-        returns:
-            tensor of shape (n,m,m) representing the gradient of the jacobian of the softmax function for each n
+    params:
+        policy: array of shape (n,m) representing n probability distributions over m classes
+    returns:
+        tensor of shape (n,m,m) representing the gradient of the jacobian of the softmax function for each n
     """
     # @np.vectorize
     # def fun(i, j, k):
@@ -1196,10 +1254,10 @@ def get_tensor_probas(policy):
     n, m = policy.shape
 
     # Create diagonal matrices with p_ij on the diagonal for each i
-    diag_p = np.einsum('ij,jk->ijk', policy, np.eye(m))
+    diag_p = np.einsum("ij,jk->ijk", policy, np.eye(m))
 
     # Outer product of each row with itself
-    outer_p = np.einsum('ij,ik->ijk', policy, policy)
+    outer_p = np.einsum("ij,ik->ijk", policy, policy)
 
     return diag_p - outer_p
 
@@ -1223,16 +1281,16 @@ class KernelClassifier(Kernel):
         if fx is None:
             fx = np.identity(self.get_x().shape[0])
         else:
-            fx = core.get_matrix(fx,dtype=fx.dtype)
+            fx = core.get_matrix(fx, dtype=fx.dtype)
         if clip is not None and fx is not None:
             fx = clip(fx)
-        fx = np.where(fx < 1e-9, 1e-9, fx) 
-        fx = fx / fx.sum(axis=1, keepdims=True) 
+        fx = np.where(fx < 1e-9, 1e-9, fx)
+        fx = fx / fx.sum(axis=1, keepdims=True)
         if fx is not None:
             fx = np.log(fx)
         super().set_fx(fx, **kwargs)
 
-    def __call__(self, z = None, **kwargs):
+    def __call__(self, z=None, **kwargs):
         if self.x is None:
             return None
         knm = super().__call__(z, **kwargs)
@@ -1257,182 +1315,323 @@ class KernelClassifier(Kernel):
     ) -> None:
         return super().update(z=z, fz=np.log(fz), eps=eps, **kwargs)
 
+
+class se_error_theta:
+    def __init__(self, fun, x, y, theta=None, **kwargs):
+        self.fun = fun
+        self.x = x
+        self.y = y
+        if theta is not None:
+            self.theta = theta
+
+    def error_field(self, theta=None, z=None, **kwargs):
+        if theta is None:
+            theta = self.fun.get_theta(**kwargs)
+        debug = self.fun(z=self.x, theta=theta, **kwargs)
+        return debug - self.y
+
+    def error(self, theta, **kwargs):
+        error = self.error_field(theta, **kwargs)
+        return (error * error).sum() * 0.5
+
+    def grad_error(self, theta, **kwargs):
+        return self.fun.grad_theta(
+            second_member=self.error_field(theta, **kwargs), theta=theta, **kwargs
+        )
+
+    def __call__(self, theta, **kwargs):
+        return algs.Alg.gradient_descent(
+            theta, fun=self.error, constraints=None, grad_fun=self.grad_error, **kwargs
+        )
+
+
 class SparseKernel(Kernel):
-    def __init__(self,x=None,bandwidth=5,gram="raw",faiss_fun=None,sto=False,**kwargs):
-        self.k= bandwidth
+    def __init__(
+        self, x=None, bandwidth=5, gram="raw", faiss_fun=None, sto=False, **kwargs
+    ):
+        self.k = bandwidth
         self.gram = gram
-        self.faiss_fun= faiss_fun
-        if sto == True: self.sto_flag = True
-        super().__init__(x=x,**kwargs)
+        self.faiss_fun = faiss_fun
+        if sto == True:
+            self.sto_flag = True
+        super().__init__(x=x, **kwargs)
         pass
-    def __call__(self,z=None,theta=None,second_member=None,gram="raw",**kwargs):
-        if z is None: 
+
+    def __call__(self, z=None, theta=None, second_member=None, gram="raw", **kwargs):
+        if z is None:
             knm = self.get_knm(**kwargs)
-        else: 
-            knm = self.knm(z.astype(self.get_y().dtype), gram=gram,**kwargs)
+        else:
+            knm = self.knm(z.astype(self.get_y().dtype), gram=gram, **kwargs)
         if theta is None:
             theta = self.get_theta(**kwargs)
-        result  = sparse_dot_mkl.dot_product_mkl(knm,theta.astype(knm.dtype))
+        result = sparse_dot_mkl.dot_product_mkl(knm, theta.astype(knm.dtype))
         if second_member is not None:
-            return LAlg.prod(result,second_member)
+            return LAlg.prod(result, second_member)
         return result
+
     def get_knm_coo(self, **kwargs):
         if not hasattr(self, "knm_coo_") or self.knm_coo_ is None:
             self.knm_coo_ = self.get_knm(**kwargs).tocoo()
-        return self.knm_coo_     
-    
-    def get_pytorch_model(self,theta,**kwargs):
+        return self.knm_coo_
+
+    def get_pytorch_model(self, theta, **kwargs):
         """
         Build a 1-layer torch model: logits = Kxx @ theta, optimize theta with AdamW via fit(...).
         Returns a nn.Module with parameters and a .predict(Z) method.
         """
+
         class SparseKernel_pytorch(torch.nn.Module):
             def __init__(self, sparse_kernel, theta, device="cpu"):
                 super().__init__()
                 self.sparse_kernel = sparse_kernel
                 Kxx = self.sparse_kernel.get_knm_coo(**kwargs).astype(np.float32)
+
                 def coo_to_pytorch(mat):
                     row = mat.row.astype(np.int64)
                     col = mat.col.astype(np.int64)
                     data = mat.data.astype(np.float32)
                     i = torch.from_numpy(np.stack([row, col], 0))
                     v = torch.from_numpy(data)
-                    return torch.sparse_coo_tensor(
-                        i, v, (mat.shape[0], mat.shape[1])
-                    )
-                self.register_buffer("Kxx",coo_to_pytorch(Kxx))  # (N,N)
+                    return torch.sparse_coo_tensor(i, v, (mat.shape[0], mat.shape[1]))
+
+                self.register_buffer("Kxx", coo_to_pytorch(Kxx))  # (N,N)
                 Y_t = torch.from_numpy(sparse_kernel.get_fx().astype(np.float32))
                 self.register_buffer("Y", Y_t)  # (N,C)
-                init_theta = torch.from_numpy(theta.reshape(self.Y.shape).astype(np.float32))
-                self.theta = torch.nn.Parameter(init_theta,requires_grad=True)  # (N,C)
+                init_theta = torch.from_numpy(
+                    theta.reshape(self.Y.shape).astype(np.float32)
+                )
+                self.theta = torch.nn.Parameter(init_theta, requires_grad=True)  # (N,C)
 
             def forward(self):
                 return torch.sparse.mm(self.Kxx, self.theta)
 
-        return SparseKernel_pytorch(self,theta)
-           
-    def grad_pytorch(self,theta,device="cpu"):
+        return SparseKernel_pytorch(self, theta)
+
+    def grad_pytorch(self, theta, device="cpu"):
         model = self.get_pytorch_model(theta)
         model.train()
-        loss = F.mse_loss(model(), model.Y, reduction="sum")            
+        loss = F.mse_loss(model(), model.Y, reduction="sum")
         loss.backward()
-        grad = model.theta.grad.numpy().astype(theta.dtype)        
+        grad = model.theta.grad.numpy().astype(theta.dtype)
         return grad.flatten()
-    def error_field(self,theta,**kwargs):
-        if theta.ndim == 1:
-            theta= theta.reshape(self.get_fx().shape).astype(self.get_fx().dtype)
-        out = self(z=None, theta=theta,**kwargs)-self.get_fx()
-        return out
-    def error(self,theta,**kwargs):
-        out = self.error_field(theta=theta,**kwargs)
-        return (out*out).sum()*.5
 
-    def grad(self,z=None,k=None,theta=None,second_member=None,**kwargs):
-        if k is None: k=self.k
-        knm = self.grad_knm(z, self.get_y(),k=k,**kwargs)
+    def error_field(self, theta, **kwargs):
+        if theta.ndim == 1:
+            theta = theta.reshape(self.get_fx().shape).astype(self.get_fx().dtype)
+        out = self(z=None, theta=theta, **kwargs) - self.get_fx()
+        return out
+
+    def error(self, theta, **kwargs):
+        out = self.error_field(theta=theta, **kwargs)
+        return (out * out).sum() * 0.5
+
+    def grad(self, z=None, k=None, theta=None, second_member=None, **kwargs):
+        if k is None:
+            k = self.k
+        knm = self.grad_knm(z, self.get_y(), k=k, **kwargs)
         if theta is not None:
-            result  = sparse_dot_mkl.dot_product_mkl(knm,theta)
+            result = sparse_dot_mkl.dot_product_mkl(knm, theta)
         else:
-            result  = sparse_dot_mkl.dot_product_mkl(knm,self.get_theta())
+            result = sparse_dot_mkl.dot_product_mkl(knm, self.get_theta())
         if second_member is not None:
-            result  = LAlg.prod(result,second_member)
-        return result.reshape(z.shape[0],z.shape[1],-1) 
-    
-    def grad_theta(self,theta,dtype=np.float64,second_member=None,**kwargs):
+            result = LAlg.prod(result, second_member)
+        return result.reshape(z.shape[0], z.shape[1], -1)
+
+    def grad_theta(self, theta, dtype=np.float64, second_member=None, **kwargs):
         knm = self.get_knm(**kwargs)
         if second_member is None:
-            second_member = self.error_field(theta=theta,**kwargs)
-        out = sparse_dot_mkl.dot_product_mkl(knm,second_member)
+            second_member = self.error_field(theta=theta, **kwargs)
+        out = sparse_dot_mkl.dot_product_mkl(knm, second_member)
         if theta.ndim == 1:
             return out.reshape(theta.shape).astype(dtype)
         else:
             return out
-    def callback(self,theta,verbose = False):
+
+    def callback(self, theta, verbose=False):
         if verbose:
-            print("callback error: ",self.error(theta))
-    def get_theta(self,method="bfgs", maxiter=20, maxls=5,**kwargs) -> np.ndarray:
+            print("callback error: ", self.error(theta))
+
+    def get_theta(self, method="bfgs", maxiter=20, maxls=5, **kwargs) -> np.ndarray:
         if not hasattr(self, "theta") or self.theta is None:
-            knm,fx=self.get_knm(**kwargs),self.get_fx()
-            theta= algs.Alg.conjugate_gradient_descent(knm,fx.astype(knm.dtype),steps=1,dot_product=sparse_dot_mkl.dot_product_mkl).astype(np.float64)
+            knm, fx = self.get_knm(**kwargs), self.get_fx()
+            theta = algs.Alg.conjugate_gradient_descent(
+                knm,
+                fx.astype(knm.dtype),
+                steps=1,
+                dot_product=sparse_dot_mkl.dot_product_mkl,
+            ).astype(np.float64)
             timer = time.perf_counter()
-            if method == "adams":
-                print("error beg: ",self.error(theta,**kwargs))
-                out,fmin,infos = algs.Alg.adams_pytorch(fun=self.py_torch_model,x0=theta,**kwargs)
-                print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
-                self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
-            if method == "pytorch_bfgs":
-                print("error beg: ",self.error(theta,**kwargs))
-                out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_pytorch,maxiter=maxiter,maxls=maxls,callback=self.callback)
-                print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
+            if method in ("adam", "adams"):
+                print("error beg: ", self.error(theta, **kwargs))
+
+                # build 1-layer torch model: logits = Kxx @ theta
+                model = self.get_pytorch_model(theta, **kwargs)
+
+                # loss closure: MSE(Kxx @ theta, Y), ~ grad_pytorch
+                # def loss_closure():
+                #     preds = model()  # forward __call__
+                #     loss = F.mse_loss(preds, model.Y, reduction="sum")
+                #     return loss
+
+                # # Adam hyperparams
+                # lr = kwargs.pop("adam_lr", 1e-3)
+                # weight_decay = kwargs.pop("adam_weight_decay", 0.0)
+                # grad_clip_norm = kwargs.pop("adam_grad_clip_norm", None)
+                # verbose = kwargs.pop("adam_verbose", False)
+
+                algs.Alg.adams_pytorch(model, epochs=maxiter, **kwargs)
+
+                # theta to_numpy
+                with torch.no_grad():
+                    theta_opt = model.theta.detach().cpu().numpy().astype(self.x.dtype)
+                self.theta = theta_opt.reshape(self.get_fx().shape)
+
+                print(
+                    "error end: ",
+                    self.error(self.theta, **kwargs),
+                    "time",
+                    time.perf_counter() - timer,
+                )
+            elif method == "pytorch_bfgs":
+                print("error beg: ", self.error(theta, **kwargs))
+                out, fmin, infos = scipy.optimize.fmin_l_bfgs_b(
+                    func=self.error,
+                    x0=theta,
+                    fprime=self.grad_pytorch,
+                    maxiter=maxiter,
+                    maxls=maxls,
+                    callback=self.callback,
+                )
+                print(
+                    "error end: ",
+                    fmin,
+                    "funcalls",
+                    infos["funcalls"],
+                    "nit",
+                    infos["nit"],
+                    "warnflag",
+                    infos["warnflag"],
+                    "time",
+                    time.perf_counter() - timer,
+                )
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
             elif method == "bfgs":
-                print("error beg: ",self.error(theta,**kwargs))
-                out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta,maxiter=maxiter,maxls=maxls,callback=self.callback)
-                print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
+                print("error beg: ", self.error(theta, **kwargs))
+                out, fmin, infos = scipy.optimize.fmin_l_bfgs_b(
+                    func=self.error,
+                    x0=theta,
+                    fprime=self.grad_theta,
+                    maxiter=maxiter,
+                    maxls=maxls,
+                    callback=self.callback,
+                )
+                print(
+                    "error end: ",
+                    fmin,
+                    "funcalls",
+                    infos["funcalls"],
+                    "nit",
+                    infos["nit"],
+                    "warnflag",
+                    infos["warnflag"],
+                    "time",
+                    time.perf_counter() - timer,
+                )
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
-            elif method ==  "gd":
-                print("error beg: ",self.error(theta,**kwargs))
-                self.theta =  algs.Alg.gradient_descent(theta,fun=self.error,constraints=None,grad_fun=self.grad_theta,**kwargs)
-                print("error end: ",self.error(self.theta,**kwargs), "time",time.perf_counter()-timer)
+            elif method == "gd":
+                print("error beg: ", self.error(theta, **kwargs))
+                self.theta = algs.Alg.gradient_descent(
+                    theta,
+                    fun=self.error,
+                    constraints=None,
+                    grad_fun=self.grad_theta,
+                    **kwargs,
+                )
+                print(
+                    "error end: ",
+                    self.error(self.theta, **kwargs),
+                    "time",
+                    time.perf_counter() - timer,
+                )
             else:
-                raise ValueError("Unknown method "+str(method))
+                raise ValueError("Unknown method " + str(method))
         return self.theta
-    
-    def get_index(self,**kwargs):
-        if not hasattr(self,"faiss_index"):
+
+    def get_index(self, **kwargs):
+        if not hasattr(self, "faiss_index"):
             self.faiss_index = algs.Alg.faiss_knn_index(x=self.get_x(), **kwargs)
         return self.faiss_index
 
     def knm(
-        self, z: np.ndarray = None, y: np.ndarray = None, fy: np.ndarray = None, gram="raw", index_z=None,**kwargs
+        self,
+        z: np.ndarray = None,
+        y: np.ndarray = None,
+        fy: np.ndarray = None,
+        **kwargs,
     ) -> np.ndarray:
-        assert y is None," Sparse kernel can't estimate the Gram matrix outside of the training set."
+        assert (
+            y is None
+        ), " Sparse kernel can't estimate the Gram matrix outside of the training set."
+
         index_x = self.get_index(**kwargs)
-        if z is None: 
-            z=self.get_x()
-        Sx,_ = algs.Alg.faiss_knn(z=z, metric="cosine",index=index_x, **kwargs)
+        if z is None:
+            z = self.get_x()
+        Sx, _ = algs.Alg.faiss_knn(z=z, metric="cosine", index=index_x, **kwargs)
         if fy is not None:
-            return sparse_dot_mkl.dot_product_mkl(Sx,fy)
-        if gram=="symmetric":
+            return sparse_dot_mkl.dot_product_mkl(Sx, fy)
+        if self.gram == "symmetric":
+            index_z = None
             if index_z is None:
                 index_z = algs.Alg.faiss_knn_index(x=z, **kwargs)
-            Sx_sym,_ = algs.Alg.faiss_knn(z=self.get_x(), metric="cosine",index=index_z, **kwargs)
-            Sx = (Sx + Sx_sym.T)*.5
-        if hasattr(self,"sto_flag"):
+            Sx_sym, _ = algs.Alg.faiss_knn(
+                z=self.get_x(), metric="cosine", index=index_z, **kwargs
+            )
+            Sx = (Sx + Sx_sym.T) * 0.5
+        if hasattr(self, "sto_flag"):
             Sx /= Sx.sum(1)
-       
+
         return Sx
-    
-    def grad_knm(self, x=None, z=None, k=None,**kwargs) :
-        if k is None: k = self.k
-        if x is None: x = self.get_x()
-        if z is None: z = self.get_y()
-        out = algs.Alg.grad_faiss_knn(x, z,k=k,fun=None, metric="cosine",**kwargs)
+
+    def grad_knm(self, x=None, z=None, k=None, **kwargs):
+        if k is None:
+            k = self.k
+        if x is None:
+            x = self.get_x()
+        if z is None:
+            z = self.get_y()
+        out = algs.Alg.grad_faiss_knn(x, z, k=k, fun=None, metric="cosine", **kwargs)
         # out = (out + algs.grad_faiss_knn(z, x,k=k,fun=None, metric="cosine",**kwargs))*.5
         return out
+
     def get_knm(self, **kwargs) -> np.ndarray:
         if not hasattr(self, "knm_") or self.knm_ is None:
-            self.knm_ = self.knm(z=None,gram="raw",index_z=self.get_index(**kwargs),**kwargs)
-            if self.gram=="symmetric":
-                self.knm_ = (self.knm_ + self.knm_.T)*.5
-        return self.knm_     
+            self.knm_ = self.knm(
+                z=None, gram="raw", index_z=self.get_index(**kwargs), **kwargs
+            )
+            if self.gram == "symmetric":
+                self.knm_ = (self.knm_ + self.knm_.T) * 0.5
+        return self.knm_
+
 
 class SparseKernelClassifier(SparseKernel):
- 
-    def __call__(self,z=None,theta=None,second_member=None,**kwargs):
-        out  = softmax(super().__call__(z=z,theta=theta,second_member=None,**kwargs),axis=1)
+    def __call__(self, z=None, theta=None, second_member=None, **kwargs):
+        out = softmax(
+            super().__call__(z=z, theta=theta, second_member=None, **kwargs), axis=1
+        )
         if second_member is not None:
-            return LAlg.prod(out,second_member)
+            return LAlg.prod(out, second_member)
         return out
-    def error_field(self,theta,**kwargs):
+
+    def error_field(self, theta, **kwargs):
         if theta.ndim == 1:
-            theta= theta.reshape(self.get_fx().shape).astype(self.get_fx().dtype)
-        out = self(theta=theta,**kwargs)-softmax(self.get_fx(),axis=1)
+            theta = theta.reshape(self.get_fx().shape).astype(self.get_fx().dtype)
+        out = self(theta=theta, **kwargs) - softmax(self.get_fx(), axis=1)
         return out
-    def error(self,theta,second_member=None,**kwargs):
-        out = self.error_field(theta=theta,**kwargs)
-        return (out*out).sum()*.5
-     
+
+    def error(self, theta, second_member=None, **kwargs):
+        out = self.error_field(theta=theta, **kwargs)
+        return (out * out).sum() * 0.5
+
     def set_fx(
         self,
         fx: np.ndarray,
@@ -1443,45 +1642,46 @@ class SparseKernelClassifier(SparseKernel):
             self.fx = None
             return
         else:
-            fx = core.get_matrix(fx,dtype=fx.dtype)
+            fx = core.get_matrix(fx, dtype=fx.dtype)
         if clip is not None and fx is not None:
             fx = clip(fx)
-        fx = np.where(fx < 1e-9, 1e-9, fx) 
-        fx = fx / fx.sum(axis=1, keepdims=True) 
+        fx = np.where(fx < 1e-9, 1e-9, fx)
+        fx = fx / fx.sum(axis=1, keepdims=True)
         if fx is not None:
             fx = np.log(fx)
         super().set_fx(fx, **kwargs)
-    
-    def grad_theta(self,theta,dtype=np.float64,second_member=None,**kwargs):
+
+    def grad_theta(self, theta, dtype=np.float64, second_member=None, **kwargs):
         knm = self.get_knm(**kwargs)
         shape = None
         if theta.ndim == 1:
-            shape=theta.shape
-            theta= theta.reshape(self.get_fx().shape).astype(self.get_fx().dtype)
+            shape = theta.shape
+            theta = theta.reshape(self.get_fx().shape).astype(self.get_fx().dtype)
         if second_member is None:
-            second_member = self.error_field(theta=theta,**kwargs)
+            second_member = self.error_field(theta=theta, **kwargs)
         policy = softmax(sparse_dot_mkl.dot_product_mkl(knm, theta), axis=1)  # (n, m)
         # Jacobian of softmax: diag(pi) - pi*pi^T for each sample
         policy_grad = get_tensor_probas(policy).astype(knm.dtype)  # (n, m, m)
-        
+
         # Compute J_pi^T @ e_theta for each sample
         # policy_grad is (256, 10, 10), second_member is (256, 10)
-        # We need: for each i (sample), policy_grad[i].T @ second_member[i] 
+        # We need: for each i (sample), policy_grad[i].T @ second_member[i]
         # == (10,10) @ (10,) -> (10,)
-        
+
         # Transpose the Jacobians: (256, 10, 10) -> (256, 10, 10) : NEEDED????
         # policy_grad_T = np.transpose(policy_grad, (0, 2, 1))
-        
+
         # Apply J^T to e_theta: (256, 10, 10) @ (256, 10, 1) -> (256, 10)
-        j_times_e = np.einsum('nij,nj->ni', policy_grad, second_member)  # (256, 10)
+        j_times_e = np.einsum("nij,nj->ni", policy_grad, second_member)  # (256, 10)
         # Multiply by k^T: (256, 256)^T @ (256, 10) -> (256, 10)
         grad = sparse_dot_mkl.dot_product_mkl(knm, j_times_e)
-            
+
         if shape is not None:
             return grad.reshape(shape).astype(dtype)
         else:
             return grad
-        
+
+
 from codpy.kengineering import *
 
 if __name__ == "__main__":
