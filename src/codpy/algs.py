@@ -148,195 +148,198 @@ class Alg:
         else:
             out = cd.alg.proportional_fitting(probs, iter)
         return out
-
-    def conjugate_gradient_descent(
-        A,
-        b,
-        steps=100,
-        alpha=0.99,
-        verbose=False,
-        constraints=None,
-        dot_product=lambda A, x: A @ x,
-        threshold=1e-4,
-        **kwargs,
-    ):
+    def conjugate_gradient_descent(A,
+                        b,
+                        steps=100,
+                        alpha=.99,
+                        verbose=False,
+                        constraints=None,
+                        dot_product=lambda A,x: A@x,
+                        threshold = 1e-4,
+                        **kwargs
+                        ):
         timer = time.perf_counter()
         yk = b.copy()
-        rk = alpha * yk - dot_product(A, yk)
+        rk = alpha*yk - dot_product(A,yk)
         pk = rk
-        fstart = None
+        fstart=None
 
         for n in range(steps):
-            alpha_k = (rk * rk).sum()
-            alpha_k /= (pk * (dot_product(A, pk))).sum()
-            rk1 = rk - alpha_k * dot_product(A, pk)
-            yk1 = yk + alpha_k * pk
+            alpha_k = (rk*rk).sum() 
+            alpha_k /= (pk * (dot_product(A,pk))).sum()
+            rk1 = rk - alpha_k * dot_product(A,pk)
+            yk1 = yk+alpha_k*pk
             if constraints:
                 yk1 = constraints(yk1)
-            error = yk1 - yk
-            error = (error * error).sum() / ((yk1 * yk1).sum() + (yk * yk).sum())
-            if fstart is None:
-                fstart = error
+            error = yk1-yk
+            error = (error*error).sum() / ((yk1*yk1).sum()+(yk*yk).sum())
+            if fstart is None: fstart=error
             if error < threshold:
                 break
-            beta_k = (rk * rk1).sum() / (rk * rk).sum()
-            pk = rk1 + beta_k * pk
-            yk = yk1
+            beta_k = (rk*rk1).sum() / (rk*rk).sum()
+            pk = rk1+beta_k*pk
+            yk=yk1
             rk = rk1
-        if verbose:
-            print(
-                f"Iteration {n} | fun(t0): {fstart:.6e} | fun(terminal): {error:.6e} | step: {n:.0f} | time: {time.perf_counter()-timer:.2e}"
-            )
+        if verbose:print(f"Iteration {n} | fun(t0): {fstart:.6e} | fun(terminal): {error:.6e} | step: {n:.0f} | time: {time.perf_counter()-timer:.2e}")
         return yk
 
-    def adams_pytorch(x0, fun, **kwargs):
-        raise NotImplementedError("adams not implemented yet")
-
-    def gradient_descent(
-        x0,
-        fun,
-        grad_fun,
-        constraints=None,
-        max_count=10,
-        check_sign=True,
-        check_der=False,
-        threshold=1e-6,
-        tol_der_error=1.0,
-        verbose=True,
-        eps=1e-8,
-        **kwargs,
-    ):
+    def gradient_descent(x0,
+                        fun,
+                        grad_fun,
+                        constraints=None,
+                        max_count=10,
+                        check_sign=True,
+                        check_der=False,
+                        threshold=1e-6,
+                        tol_der_error=1.,
+                        verbose=True,
+                        eps = 1e-8,
+                        **kwargs
+                        ):
         timer = time.perf_counter()
-        grad = grad_fun(x0, **kwargs)
-        grad_start = (grad * grad).sum()
+        grad = grad_fun(x0,**kwargs)
+        grad_start = (grad*grad).sum()
         if grad_start <= threshold:
-            if verbose:
-                print("gradient_descent : No grad")
+            if verbose:print(f"gradient_descent : No grad")
             return x0
         x = x0.copy()
         count = 0
-
         def f(t):
             next = x.copy()
-            next -= grad * t
+            next -= grad*t
             out = fun(next)
             return out
-
-        fstart, fval, xmin = None, None, 0.0
+        fstart,fval,xmin = None,None,0.
         while count < max_count:
-            left, middle, right = 0.0, eps, 2 * eps
-            fleft, fmiddle, fright = f(left), f(middle), f(right)
+            left,middle,right = 0.0,eps,2*eps
+            fleft,fmiddle,fright = f(left), f(middle), f(right)
+            fprime = (fmiddle - fleft) / (middle-left)
+            consistency = (grad*grad).sum()/(np.fabs(fprime)+1e-9) #should be one
             while fmiddle >= fleft:
                 if fleft > fmiddle:
-                    left, fleft = eps, fmiddle
-                eps *= 2.0
-                if eps >= 1.0:
+                    left,fleft = eps,fmiddle
+                eps *=2.
+                if eps >= 1.:
                     break
-                middle, right = eps, 2 * eps
-                fmiddle, fright = fright, f(right)
+                middle,right = eps,2*eps
+                fmiddle,fright = fright, f(right)
             if fstart is not None and fleft > fval:
                 pass
                 # break
-            if fstart is None:
-                fstart, fval = fleft, fleft
-            fprime = (fmiddle - fleft) / (middle - left)
-            fsec = (fleft + fright - 2 * fmiddle) / (eps * eps)
-            consistency = np.fabs((grad * grad).sum() / fprime + 1.0)
+            if fstart is None: fstart,fval = fleft,fleft
+            fsec = (fleft + fright - 2 * fmiddle) / (eps*eps)
             if check_der:
                 if consistency >= tol_der_error:
-                    assert False
+                    assert(False)
             if check_sign:
-                # check derivative sign
+                #check derivative sign
                 if fprime / (np.fabs(fleft)) >= 1e-4:
                     break
-                    assert False
-            if fprime > -1e-9:
+                    assert(False)
+            if fprime > - 1e-9: 
                 break
-            if fsec > 0 and consistency < 1.0:
-                middle = -fleft / fprime
-                right = -fprime / fsec
-                right = np.maximum(right, 2.0 * middle)
-                fmiddle, fright = f(middle), f(right)
-            # else:
+            if fsec*np.sign(fmiddle) >0 and consistency < 1.:
+                middle = np.abs(fleft / fprime)
+                right = np.abs(fprime / fsec)
+                right = np.maximum(right,2.*middle)
+                fmiddle,fright=f(middle),f(right)
+            # else: 
             #     right,fright=middle,fmiddle
             #     middle = middle*.5
             #     fmiddle = f(middle)
-            while fleft < fmiddle - 1e-9 or fright < fmiddle - 1e-9:
-                if fleft < fmiddle - 1e-9:
-                    middle = (left + middle) * 0.5
+            while fleft < fmiddle-1e-9 or fright < fmiddle-1e-9:
+                if fleft < fmiddle-1e-9:
+                    middle = (left + middle)*.5
                     fmiddle = f(middle)
-                elif fright < fmiddle - 1e-9:
+                elif fright < fmiddle-1e-9:
                     left, fleft = middle, fmiddle
-                    middle, fmiddle = right, fright
-                    right, fright = 2.0 * right, f(2.0 * right)
+                    middle, fmiddle = right,fright
+                    right,fright=2.*right,f(2.*right)
             if fleft <= fmiddle or fright <= fmiddle:
                 if fleft <= fmiddle and fleft <= fmiddle:
                     break
                 xmin = right
             else:
                 xmin, fval, iter, funcalls = optimize.brent(
-                    f, brack=(left, middle, right), maxiter=5, full_output=True
+                    f, brack=(left, middle,right), maxiter=5, full_output=True
                 )
             x -= grad * xmin
             if constraints is not None:
                 x = constraints(x)
             count = count + 1
-            grad = grad_fun(x, **kwargs)
-            if (grad * grad).sum() / grad_start <= threshold:
+            grad = grad_fun(x,**kwargs)
+            if (grad*grad).sum()/grad_start <= threshold:
                 break
-        if verbose:
-            print(
-                f"gradient_descent : Iteration {count} | fun(t0): {fstart:.6e} | eps : {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | time: {time.perf_counter()-timer:.2e}  | der: {fprime:.2e}, consistency: {consistency:.2e}"
-            )
+        if verbose:print(f"gradient_descent : Iteration {count} | fun(t0): {fstart:.6e} | eps : {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | time: {time.perf_counter()-timer:.2e}  | der: {fprime:.2e}, consistency: {consistency:.2e}")
         return x
-
+    
+    def bfgs_batch(x_fx,theta0,
+                        fun,
+                        grad_fun,
+                        maxiter=10,
+                        bfgs_batch=128,
+                        verbose=False,
+                        maxls=5,
+                        **kwargs
+                        ):
+        x,fx = x_fx
+        if verbose : print("error bfgs batch beg: ",fun(x_fx)(theta0))
+        timer = time.perf_counter()
+        theta= theta0
+        if bfgs_batch >= x.shape[0]:
+            theta,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=fun(x_fx),x0=theta,fprime=grad_fun(x_fx),maxiter=maxiter,maxls=maxls)
+        else:
+            for n in range(maxiter):
+                indices = np.random.choice(range(x.shape[0]),bfgs_batch)
+                x_fx = x[indices],fx[indices]
+                theta,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=fun(x_fx),x0=theta,fprime=grad_fun(x_fx),maxiter=1,maxls=maxls)
+        if verbose : print("error bfgs batch end: ",fun(x0)(theta), "time : ", time.perf_counter()-timer)
+        return theta
     def sparse_softmax(mat, axis=1):
         out = mat.copy()
-
         def helper(n):
-            indices = mat.indices[mat.indptr[n] : mat.indptr[n + 1]]
+            indices = mat.indices[mat.indptr[n]:mat.indptr[n+1]]
             out.data[indices] = softmax(mat.data[indices])
-
-        map(helper, list(range(mat.indptr.shape[0] - 1)))
+        map(helper, list(range(mat.indptr.shape[0]-1)))
         return out
-
+    
     def faiss_make_index_max(x, z=None, metric="cosine", **kwargs):
         """
-        Faiss index creation.
-        Args:
-            x (np.ndarray): Data points of shape (Nx, d).
-            z (np.ndarray, optional): Query points of shape (Nz, d). If None, uses x.
-        Returns:
-            faiss.Index: Faiss index object.
+            Faiss index creation. 
+            Args:
+                x (np.ndarray): Data points of shape (Nx, d).
+                z (np.ndarray, optional): Query points of shape (Nz, d). If None, uses x.
+            Returns:
+                faiss.Index: Faiss index object.
 
         """
         Nx, d = x.shape
         Z = x if z is None else z
         Nz = Z.shape[0]
         if metric == "cosine":
-            X = x / (np.linalg.norm(x, axis=1)[:, None] + 1e-9)
-            Z = Z / (np.linalg.norm(Z, axis=1)[:, None] + 1e-9)
+            X = x/(np.linalg.norm(x,axis=1)[:,None]+1e-9)  
+            Z = Z/(np.linalg.norm(Z,axis=1)[:,None]+1e-9)
             index = faiss.IndexFlatIP(d)
         elif metric == "euclidean":
-            X = x
+            X = x 
             index = faiss.IndexFlatL2(d)
         elif metric == "METRIC_L1":
-            X = x / (np.fabs(x).sum(1)[:, None] + 1e-9)
-            Z = Z / (np.fabs(Z).sum(1)[:, None] + 1e-9)
-            index = faiss.index_factory(d, f"PQ{d//28}", faiss.METRIC_L1)
+            X = x/(np.fabs(x).sum(1)[:,None]+1e-9 ) 
+            Z = Z/(np.fabs(Z).sum(1)[:,None]+1e-9)
+            index = faiss.index_factory(d, f"PQ{d//28}",faiss.METRIC_L1)
             index.train(X)
 
         index.add(X)
-        return index
-
-    def faiss_knn_search_max(x, index, z=None, k=20, faiss_fun=None, **kwargs):
+        return index 
+    
+    def faiss_knn_search_max(x, index, z=None, k = 20, faiss_fun=None, **kwargs):
         """
-        Faiss k-nearest neighbors search using a pre-built index.
-        Args:
-            x: Data points of shape (Nx, d).
-            index: Pre-built Faiss index.
-            z: Query points of shape (Nz, d). If None, uses x.
-            k: Number of nearest neighbors to find.
+            Faiss k-nearest neighbors search using a pre-built index.
+            Args:
+                x: Data points of shape (Nx, d).
+                index: Pre-built Faiss index.
+                z: Query points of shape (Nz, d). If None, uses x.
+                k: Number of nearest neighbors to find.
         """
         Nx, d = x.shape
         k = min(k, Nx - 1)
@@ -346,46 +349,45 @@ class Alg:
         D, Id = index.search(Z, min(k, Nx))  # shapes (Nz, k+1)
         row = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
         col = Id.reshape(-1)
-        if faiss_fun is None:
+        if faiss_fun is None: 
             values = D.ravel()
-        else:
+        else: 
             values = faiss_fun(D.ravel())
         out = sp.coo_matrix((values, (row, col)), shape=(Nz, Nx), dtype=Z.dtype).tocsr()
-        return out.T  # Nx, Nz
+        return out.T # Nx, Nz
 
     def faiss_knn_index(
-        x: np.ndarray, k: int = 20, metric="cosine", faiss_fun=None, **kwargs
+        x: np.ndarray, k: int = 20,metric="cosine",faiss_fun=None,**kwargs
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         Nx, d = x.shape
         if metric == "cosine":
-            x = x / (np.linalg.norm(x, axis=1)[:, None] + 1e-9)
+            x = x/(np.linalg.norm(x,axis=1)[:,None]+1e-9)
             index = faiss.IndexFlatIP(d)
         elif metric == "euclidean":
-            X = x
+            X = x 
             index = faiss.IndexFlatL2(d)
         elif metric == "METRIC_L1":
-            x = x / (np.fabs(Z).sum(1)[:, None] + 1e-9)
-            index = faiss.index_factory(d, f"PQ{d//28}", faiss.METRIC_L1)
+            x = x/(np.fabs(Z).sum(1)[:,None]+1e-9)
+            index = faiss.index_factory(d, f"PQ{d//28}",faiss.METRIC_L1)
             index.train(x)
 
         index.add(x)
-        return index  # Nx, Nz
-
+        return index # Nx, Nz
     def faiss_knn_search(
-        z: np.ndarray, k: int = 20, metric="cosine", index=None, **kwargs
+        z: np.ndarray, k: int = 20,metric="cosine",index=None,**kwargs
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         if metric == "cosine":
-            z = z / (np.linalg.norm(z, axis=1)[:, None] + 1e-9)
+            z = z/(np.linalg.norm(z,axis=1)[:,None]+1e-9)
         elif metric == "METRIC_L1":
-            z = z / (np.fabs(Z).sum(1)[:, None] + 1e-9)
+            z = z/(np.fabs(Z).sum(1)[:,None]+1e-9)
         if index is None:
-            index = Alg.faiss_knn_index(x=z, k=k, metric=metric, **kwargs)
+            index = Alg.faiss_knn_index(x=z,k=k,metric=metric,**kwargs)
         Nx = index.ntotal
         k = min(k, Nx - 1)
 
         D, Id = index.search(z, k)
-        return D, Id, index  # shapes (Nz, k+1)
-
+        return D,Id,index  # shapes (Nz, k+1)
+    
     def faiss_knn(
         z: np.ndarray,
         k: int = 20,
@@ -394,6 +396,8 @@ class Alg:
         index=None,
         **kwargs,
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        if index is None:
+            index = Alg.faiss_knn_index(x=z,k=k,metric=metric,**kwargs)
         Nx = index.ntotal
         Nz = z.shape[0]
         k = min(k, Nx - 1)
@@ -403,12 +407,12 @@ class Alg:
         )
         col = np.repeat(np.arange(Nz, dtype=np.int64), k)  # (N*k,)
         row = Id.reshape(-1)
-        if faiss_fun is None:
+        if faiss_fun is None: 
             values = D.ravel()
-        else:
+        else: 
             values = faiss_fun(D.ravel())
-        out = sp.coo_matrix((values, (col, row)), shape=(Nz, Nx), dtype=z.dtype).tocsr()
-        return out, index  # Nx, Nz
+        out = sp.coo_matrix((values, (col,row)), shape=(Nz, Nx), dtype=z.dtype).tocsr()
+        return out,index # Nx, Nz
 
     def faiss_knn_select(
         x: np.ndarray,
@@ -424,15 +428,14 @@ class Alg:
         Nx, d = x.shape
         timer = time.perf_counter()
         if metric == "cosine":
-            x = x / (np.linalg.norm(x, axis=1)[:, None] + 1e-9)
+            x = x/(np.linalg.norm(x,axis=1)[:,None]+1e-9)
             index = faiss.IndexFlatIP(d)
         elif metric == "euclidean":
             index = faiss.IndexFlatL2(d)
         elif metric == "METRIC_L1":
-            x = x / (np.fabs(x).sum(1)[:, None] + 1e-9)
-            index = faiss.index_factory(d, f"PQ{d//28}", faiss.METRIC_L1)
+            x = x/(np.fabs(x).sum(1)[:,None]+1e-9)
+            index = faiss.index_factory(d, f"PQ{d//28}",faiss.METRIC_L1)
             index.train(x)
-
         def helper(n):
             z = x[n : min(n + faiss_batch_size, Nx)]
             if metric == "cosine":
@@ -457,11 +460,11 @@ class Alg:
             D, Id = index.search(out, 2)
             if faiss_fun is not None:
                 D = faiss_fun(D)
-            indices = np.argsort(-D[:, 1])
-            out = out[indices[:faiss_nb_select]]
+            indices = np.argsort(-D[:,1])
+            out = out[indices[:faiss_nb_select]]    
             index.remove_ids(indices[faiss_nb_select:])
             print(f"faiss_knn_select: time {time.perf_counter()-timer} seconds.")
-        return out, index  # Nx, Nz
+        return out,index # Nx, Nz
 
     def grad_faiss_knn(
         x: np.ndarray,

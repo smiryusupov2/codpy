@@ -146,3 +146,13 @@ def array_helper(x):
     if np.ndim(x) == 1:
         return np.reshape(len(x),1)
     return x
+
+def sparse_coo_to_pytorch_coo(mat):
+    row = mat.row.astype(np.int64)
+    col = mat.col.astype(np.int64)
+    data = mat.data.astype(np.float32)
+    i = torch.from_numpy(np.stack([row, col], 0))
+    v = torch.from_numpy(data)
+    return torch.sparse_coo_tensor(
+        i, v, (mat.shape[0], mat.shape[1])
+    )
