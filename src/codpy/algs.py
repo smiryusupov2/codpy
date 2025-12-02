@@ -233,7 +233,7 @@ class Alg:
         count = 0
 
         if trace is not None:
-            trace.record(theta=x.copy(), t=time.perf_counter() - t0, k=count)
+            trace.record(theta=x.copy(), t=time.perf_counter() - t0, k=count, loss=0.)
 
         def f(t):
             next = x.copy()
