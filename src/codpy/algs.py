@@ -220,16 +220,20 @@ class Alg:
         trace=None,
         **kwargs,
     ):
-        timer = time.perf_counter()
+        t0 = time.perf_counter()
         grad = grad_fun(x0, **kwargs)
         grad_start = (grad * grad).sum()
-        t0 = time.perf_counter()
         if grad_start <= threshold:
             if verbose:
                 print("gradient_descent : No grad")
+                if trace is not None:
+                    trace.record(theta=np.asarray(x0).copy(), t=time.perf_counter() - t0,k=0)
             return x0
         x = x0.copy()
         count = 0
+
+        if trace is not None:
+            trace.record(theta=x.copy(), t=time.perf_counter() - t0, k=count)
 
         def f(t):
             next = x.copy()
@@ -312,7 +316,7 @@ class Alg:
                 break
         if verbose:
             print(
-                f"gradient_descent : Iteration {count} | fun(t0): {fstart:.6e} | eps : {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | time: {time.perf_counter()-timer:.2e}  | der: {fprime:.2e}, consistency: {consistency:.2e}"
+                f"gradient_descent : Iteration {count} | fun(t0): {fstart:.6e} | eps : {eps:.6e} fun(terminal): {fval:.6e} | step: {xmin:.2e} | time: {time.perf_counter()-t0:.2e}  | der: {fprime:.2e}, consistency: {consistency:.2e}"
             )
         return x
 
@@ -604,6 +608,7 @@ class Alg:
         model: nn.Module,
         epochs: int = 100,
         x0=None,
+        constraints = None,
         trace = None,
         verbose = None,
         learning_rate= 1e-3,
@@ -634,7 +639,6 @@ class Alg:
             loss = F.mse_loss(preds, model.Y, reduction="sum")
             return loss
 
-        constraints = kwargs.pop("constraints", None)
 
         model.train()
 

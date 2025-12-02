@@ -1455,21 +1455,34 @@ class SparseKernel(Kernel):
                 if verbose: 
                     print("error adams end: ",self.error(self.theta,**kwargs), "time",time.perf_counter()-timer)
                 self.theta = Alg.get_torch_parameters(sk_torch_model).reshape(self.get_fx().shape)
+			# <--- PYTORCH_BFGS (SciPy L-BFGS-B + PyTorch grad) -------------------->
             elif method == "pytorch_bfgs":
                 if verbose: 
                     print("error pytorch_bfgs beg: ",self.error(theta,**kwargs))
-                out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_pytorch,maxiter=maxiter,maxls=maxls,callback=self.callback)
-                if verbose: 
-                    print("error pytorch_bfgs end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
+                t0 = time.perf_counter()
+                def callback_xk(xk):
+                    if trace is not None:
+                        t_now = time.perf_counter() - t0
+                        # xk is theta as a flat vector
+                        trace.record(theta=xk, t=t_now, k=len(trace.iters))
+                # out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_pytorch,maxiter=maxiter,maxls=maxls,callback=self.callback)
+                out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_pytorch,maxiter=maxiter,maxls=maxls,callback= callback_xk)
+                if verbose: print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
             elif method == "bfgs":
-                if verbose: 
-                    print("error bfgs beg: ",self.error(theta,**kwargs))
-                out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta,maxiter=maxiter,maxls=maxls,callback=self.callback)
-                if verbose: 
-                    print("error bfgs end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
+                # <--- BFGS (SciPy L-BFGS-B + analytic grad) ------------------------------->
+                t0 = time.perf_counter()
+                def callback_xk(xk):
+                    if trace is not None:
+                        t_now = time.perf_counter() - t0
+                        trace.record(theta=xk, t=t_now, k=len(trace.iters))
+                if verbose: print("error beg: ",self.error(theta,**kwargs))
+                # out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta,maxiter=maxiter,maxls=maxls,callback=self.callback)
+                out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta,maxiter=maxiter,maxls=maxls,callback=callback_xk)
+                if verbose: print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
             elif method ==  "gd":
+            # <--- Gradient descent (codpy.Alg.gradient_descent) ------------------------------->
                 if verbose: 
                     print("error gd beg: ",self.error(theta,**kwargs))
                 self.theta =  algs.Alg.gradient_descent(theta,fun=self.error,constraints=None,grad_fun=self.grad_theta,**kwargs)
