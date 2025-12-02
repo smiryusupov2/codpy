@@ -1078,6 +1078,8 @@ class Kernel:
         Note:
             This function iterates over multiple datasets, applying the kernel prediction for each set of input data.
         """
+        if xs.shape[0] <= n_batch:
+            return core.KerOp.multi_projection(xs=xs,ys=ys,zs=zs,fxs=fxs,kernel_ptr=self.get_kernel(),order=self.order,reg=self.reg)
 
         def helper(n):
             return core.KerOp.multi_projection(
@@ -1436,45 +1438,43 @@ class SparseKernel(Kernel):
         if model is None : 
             model = self.model
 
-        trace = kwargs.pop("trace", None)
-
         if not hasattr(self, "theta") or self.theta is None:
             knm,fx=self.get_knm(**kwargs),self.get_fx()
             theta= algs.Alg.conjugate_gradient_descent(knm,fx.astype(knm.dtype),steps=1,dot_product=sparse_dot_mkl.dot_product_mkl).astype(np.float64)
             timer = time.perf_counter()
             if method == "adams":
-                if verbose: print("error beg: ",self.error(theta,**kwargs))
-                def theta_getter(m): return (m.theta.detach().cpu().numpy().astype(np.float64).ravel())
-
+                if verbose: 
+                    print("error adams beg: ",self.error(theta,**kwargs))
                 sk_torch_model = self.get_pytorch_model(theta, **kwargs)
-                # out,fmin,infos = algs.Alg.adams_pytorch(fun=self.py_torch_model,x0=theta,**kwargs)
-                _history = algs.Alg.adams_pytorch(
-                model=sk_torch_model,
-                epochs=maxiter,
-                trace=trace,
-                theta_getter=theta_getter,
-                **kwargs,
-            )
-                if trace is not None and trace.thetas:
-                    out = trace.thetas[-1]
-                else:
-                    out = theta_getter(sk_torch_model)
-                if verbose: print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
-                self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
+                self.theta = algs.Alg.adams_pytorch(
+                    x0=theta,
+                    model=sk_torch_model,
+                    epochs=maxiter,
+                    **kwargs,
+                )
+                if verbose: 
+                    print("error adams end: ",self.error(self.theta,**kwargs), "time",time.perf_counter()-timer)
+                self.theta = Alg.get_torch_parameters(sk_torch_model).reshape(self.get_fx().shape)
             elif method == "pytorch_bfgs":
-                if verbose: print("error beg: ",self.error(theta,**kwargs))
+                if verbose: 
+                    print("error pytorch_bfgs beg: ",self.error(theta,**kwargs))
                 out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_pytorch,maxiter=maxiter,maxls=maxls,callback=self.callback)
-                if verbose: print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
+                if verbose: 
+                    print("error pytorch_bfgs end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
             elif method == "bfgs":
-                if verbose: print("error beg: ",self.error(theta,**kwargs))
+                if verbose: 
+                    print("error bfgs beg: ",self.error(theta,**kwargs))
                 out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta,maxiter=maxiter,maxls=maxls,callback=self.callback)
-                if verbose: print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
+                if verbose: 
+                    print("error bfgs end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
             elif method ==  "gd":
-                if verbose: print("error beg: ",self.error(theta,**kwargs))
+                if verbose: 
+                    print("error gd beg: ",self.error(theta,**kwargs))
                 self.theta =  algs.Alg.gradient_descent(theta,fun=self.error,constraints=None,grad_fun=self.grad_theta,**kwargs)
-                if verbose: print("error end: ",self.error(self.theta,**kwargs), "time",time.perf_counter()-timer)
+                if verbose: 
+                    print("error gd end: ",self.error(self.theta,**kwargs), "time",time.perf_counter()-timer)
             else:
                 raise ValueError("Unknown method "+str(method))
         return self.theta

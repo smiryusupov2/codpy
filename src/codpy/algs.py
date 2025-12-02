@@ -31,13 +31,13 @@ class TrainingTrace:
     times: list = field(default_factory=list)  # temps cumulatif
     thetas: list = field(default_factory=list)  # les copies des parametres
     iters: list = field(default_factory=list)  # idx des iterations
+    losses: list = field(default_factory=list)  # loss
 
-    def record(self, theta, t, k):
-        if theta is not None:
-            theta = np.asarray(theta).copy()
+    def record(self, theta, t, k, loss):
         self.thetas.append(theta)
         self.times.append(float(t))
         self.iters.append(int(k))
+        self.losses.append(loss)
 
 
 class Alg:
@@ -217,11 +217,13 @@ class Alg:
         tol_der_error=1.0,
         verbose=True,
         eps=1e-8,
+        trace=None,
         **kwargs,
     ):
         timer = time.perf_counter()
         grad = grad_fun(x0, **kwargs)
         grad_start = (grad * grad).sum()
+        t0 = time.perf_counter()
         if grad_start <= threshold:
             if verbose:
                 print("gradient_descent : No grad")
@@ -237,8 +239,17 @@ class Alg:
 
         fstart, fval, xmin = None, None, 0.0
         while count < max_count:
+#### starting gradient descent
             left, middle, right = 0.0, eps, 2 * eps
             fleft, fmiddle, fright = f(left), f(middle), f(right)
+
+####for trace and analysis            
+            if trace is not None:
+                t_now = time.perf_counter() - t0
+                k = count  # epoch index
+                trace.record(theta=x.copy(), t=t_now, k=k, loss = fval)
+
+
             fprime = (fmiddle - fleft) / (middle - left)
             consistency = (grad * grad).sum() / (
                 np.fabs(fprime) + 1e-9
@@ -314,8 +325,10 @@ class Alg:
         bfgs_batch=128,
         verbose=False,
         maxls=5,
+        trace=None,
         **kwargs,
     ):
+        t0 = time.perf_counter()
         x, fx = x_fx
         if verbose:
             print("error bfgs batch beg: ", fun(x_fx)(theta0))
@@ -329,6 +342,10 @@ class Alg:
                 maxiter=maxiter,
                 maxls=maxls,
             )
+            if trace is not None:
+                t_now = time.perf_counter() - t0
+                k = ep  # epoch index
+                trace.record(theta=theta, t=t_now, k=k, loss = fmin)
         else:
             for n in range(maxiter):
                 indices = np.random.choice(range(x.shape[0]), bfgs_batch)
@@ -340,6 +357,14 @@ class Alg:
                     maxiter=1,
                     maxls=maxls,
                 )
+                if trace is not None:
+                    t_now = time.perf_counter() - t0
+                    if theta_getter is not None:
+                        theta_k = theta_getter(model)
+                    else:
+                        theta_k = None  # si just le temps est requis
+                    k = ep  # epoch index
+                    trace.record(theta=theta_k, t=t_now, k=k,loss = fmin)
         if verbose:
             print(
                 "error bfgs batch end: ",
@@ -552,10 +577,42 @@ class Alg:
         elif metric == "euclidean":
             assert (False, "Not implemented yet")
         return out
+    def multiply_sequence(sequence):
+        from functools import reduce
+        return reduce(lambda x, y: x * y, sequence)
+    def get_torch_grad_parameters(torch_model):
+        return np.concatenate([p.grad.detach().numpy().flatten() for p in torch_model.parameters()])
+    def get_torch_parameters(torch_model): #retrieve the pytorch parameters with numpy, flattened and concatenated
+        out = []
+        with torch.no_grad():
+            for param in torch_model.parameters():
+                out.append(param.detach().cpu().numpy().copy())
+            return np.concatenate([p.flatten() for p in out])
+    def set_torch_parameters(torch_model,theta = None): #given a numpy flatten vector, set the model pytorch parameters with it
+        if theta is not None: 
+            count = 0
+            for param in torch_model.parameters():
+                t_size = Alg.multiply_sequence(param.shape)
+                transformed_param = torch.tensor(theta[count:count+t_size].reshape(param.shape),requires_grad=True)
+                with torch.no_grad() : 
+                    param.copy_(transformed_param)       
+                count += t_size
 
+        return torch_model
+    
     def adams_pytorch(
         model: nn.Module,
         epochs: int = 100,
+        x0=None,
+        trace = None,
+        verbose = None,
+        learning_rate= 1e-3,
+        # Adam hyperparams
+        betas = (0.9, 0.999),
+        eps = 1e-8,
+        weight_decay = 0.0,
+        grad_clip_norm = None,
+        device="cpu",
         **kwargs,
     ):
         """
@@ -566,35 +623,36 @@ class Alg:
         - Optional grad clipping and constraints hook.
         - Returns list of per-epoch loss values.
         """
-
+        theta = x0
+        if theta is None:
+            theta = Alg.get_torch_parameters(model)
+        else:
+            Alg.set_torch_parameters(model,x0)
+        t0 = time.perf_counter()
         def loss_closure():
             preds = model()  # forward __call__
             loss = F.mse_loss(preds, model.Y, reduction="sum")
             return loss
 
-        # Adam hyperparams
-        lr = kwargs.pop("adam_lr", 1e-3)
-        betas = kwargs.pop("betas", (0.9, 0.999))
-        eps = kwargs.pop("eps", 1e-8)
-        weight_decay = kwargs.pop("adam_weight_decay", 0.0)
-        grad_clip_norm = kwargs.pop("adam_grad_clip_norm", None)
         constraints = kwargs.pop("constraints", None)
-        verbose = kwargs.pop("adam_verbose", False)
-        trace = kwargs.pop("trace", None)
-        theta_getter = kwargs.pop("theta_getter", None)
 
         model.train()
-        params = [p for p in model.parameters() if p.requires_grad]
+
+        # theta = [p for p in model.parameters() if p.requires_grad]
+        theta = model.theta
         opt = torch.optim.AdamW(
-            params, lr=lr, weight_decay=weight_decay, betas=betas, eps=eps
+            [theta], lr=learning_rate, weight_decay=weight_decay, betas=betas, eps=eps
         )
 
-        history: list[float] = []
-        t0 = time.perf_counter()
         for ep in range(epochs):
             opt.zero_grad(set_to_none=True)
             loss = loss_closure()  # must return a scalar tensor
+            # loss_val = float(loss)
             loss.backward()
+
+            if trace is not None:
+                t_now = time.perf_counter() - t0
+                trace.record(Alg.get_torch_parameters(model), t=t_now, k=ep, loss = float(loss))
 
             if grad_clip_norm is not None and grad_clip_norm > 0:
                 nn_utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
@@ -604,21 +662,12 @@ class Alg:
             if constraints is not None:
                 constraints(model)
 
-            loss_val = float(loss.detach().cpu())
-            history.append(loss_val)
-            if verbose:
+            if verbose is not None:
                 print(f"[{ep+1:04d}/{epochs}] loss={loss_val:.6f}")
-
-            if trace is not None:
-                t_now = time.perf_counter() - t0
-                if theta_getter is not None:
-                    theta_k = theta_getter(model)
-                else:
-                    theta_k = None  # si just le temps est requis
-                k = ep  # epoch index
-                trace.record(theta=theta_k, t=t_now, k=k)
-
-        return history
+        if x0 is not None:
+            return Alg.get_torch_parameters(model).reshape(x0.shape)
+        else:
+            return Alg.get_torch_parameters(model)
 
 
 if __name__ == "__main__":
