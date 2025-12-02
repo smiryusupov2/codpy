@@ -232,9 +232,6 @@ class Alg:
         x = x0.copy()
         count = 0
 
-        if trace is not None:
-            trace.record(theta=x.copy(), t=time.perf_counter() - t0, k=count, loss=0.)
-
         def f(t):
             next = x.copy()
             next -= grad * t
@@ -251,7 +248,7 @@ class Alg:
             if trace is not None:
                 t_now = time.perf_counter() - t0
                 k = count  # epoch index
-                trace.record(theta=x.copy(), t=t_now, k=k, loss = fval)
+                trace.record(theta=x.copy(), t=t_now, k=k, loss = fleft)
 
 
             fprime = (fmiddle - fleft) / (middle - left)
@@ -599,7 +596,7 @@ class Alg:
                 t_size = Alg.multiply_sequence(param.shape)
                 transformed_param = torch.tensor(theta[count:count+t_size].reshape(param.shape),requires_grad=True)
                 with torch.no_grad() : 
-                    param.copy_(transformed_param)       
+                    transformed_param.copy_(param.data)       
                 count += t_size
 
         return torch_model
@@ -636,7 +633,7 @@ class Alg:
         t0 = time.perf_counter()
         def loss_closure():
             preds = model()  # forward __call__
-            loss = F.mse_loss(preds, model.Y, reduction="sum")
+            loss = F.mse_loss(preds, model.Y, reduction="sum")*.5
             return loss
 
 
@@ -656,7 +653,7 @@ class Alg:
 
             if trace is not None:
                 t_now = time.perf_counter() - t0
-                trace.record(Alg.get_torch_parameters(model), t=t_now, k=ep, loss = float(loss))
+                trace.record(Alg.get_torch_parameters(model), t=t_now, k=ep, loss = float(loss.data))
 
             if grad_clip_norm is not None and grad_clip_norm > 0:
                 nn_utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
