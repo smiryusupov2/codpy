@@ -333,39 +333,35 @@ class Alg:
         x, fx = x_fx
         if verbose:
             print("error bfgs batch beg: ", fun(x_fx)(theta0))
-        timer = time.perf_counter()
         theta = theta0
-        if bfgs_batch >= x.shape[0]:
+        if trace is not None:
+            t_now = time.perf_counter() - t0
+            k = ep  # epoch index
+            trace.record(theta=theta, t=t_now, k=k, loss = fmin)
+        theta, fmin, infos = scipy.optimize.fmin_l_bfgs_b(
+            func=fun(x_fx),
+            x0=theta,
+            fprime=grad_fun(x_fx),
+            maxiter=maxiter,
+            maxls=maxls,
+        )
+        bfgs_batch >= x.shape[0]        
+        for n in range(maxiter):
+            if trace is not None:
+                t_now = time.perf_counter() - t0
+                k = count  # epoch index
+                trace.record(theta=x.copy(), t=t_now, k=k, loss = fleft)
+
+            indices = np.random.choice(range(x.shape[0]), bfgs_batch)
+            x_fx = x[indices], fx[indices]
             theta, fmin, infos = scipy.optimize.fmin_l_bfgs_b(
                 func=fun(x_fx),
                 x0=theta,
                 fprime=grad_fun(x_fx),
-                maxiter=maxiter,
+                maxiter=1,
                 maxls=maxls,
             )
-            if trace is not None:
-                t_now = time.perf_counter() - t0
-                k = ep  # epoch index
-                trace.record(theta=theta, t=t_now, k=k, loss = fmin)
-        else:
-            for n in range(maxiter):
-                indices = np.random.choice(range(x.shape[0]), bfgs_batch)
-                x_fx = x[indices], fx[indices]
-                theta, fmin, infos = scipy.optimize.fmin_l_bfgs_b(
-                    func=fun(x_fx),
-                    x0=theta,
-                    fprime=grad_fun(x_fx),
-                    maxiter=1,
-                    maxls=maxls,
-                )
-                if trace is not None:
-                    t_now = time.perf_counter() - t0
-                    if theta_getter is not None:
-                        theta_k = theta_getter(model)
-                    else:
-                        theta_k = None  # si just le temps est requis
-                    k = ep  # epoch index
-                    trace.record(theta=theta_k, t=t_now, k=k,loss = fmin)
+
         if verbose:
             print(
                 "error bfgs batch end: ",

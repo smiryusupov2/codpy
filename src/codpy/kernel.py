@@ -1054,7 +1054,7 @@ class Kernel:
         ys=None,
         zs: np.ndarray = None,
         fxs: np.ndarray = None,
-        n_batch=10000,
+        n_batch=1000,
     ) -> np.ndarray:
         """
         Predict the output using the kernel for multiple input datasets.
@@ -1092,7 +1092,7 @@ class Kernel:
                 reg=self.reg,
             )
 
-        out = np.concatenate(list(map(helper, list(range(xs.shape[0] // n_batch + 1)))))
+        out = np.concatenate(list(map(helper, list(range(xs.shape[0] // n_batch+bool(xs.shape[0] % n_batch))))))
         return out
 
     def __call__(
@@ -1364,10 +1364,8 @@ class SparseKernel(Kernel):
         D, Id, _ = Alg.faiss_knn_search(z=z,metric="cosine",index=index_x,**kwargs)
         x_=self.get_x()
         fx_=self.get_fx()
-        zs = z.reshape([Nz,1,z.shape[1]])
         xs = x_[Id]
-        fxs = fx_[Id]
-        return super().multi_prediction(xs,xs,zs,fxs).squeeze()
+        return super().multi_prediction(xs,xs,z.reshape([Nz,1,z.shape[1]]),fx_[Id]).squeeze()
     def get_knm_coo(self, **kwargs):
         if not hasattr(self, "knm_coo_") or self.knm_coo_ is None:
             self.knm_coo_ = self.get_knm(**kwargs).tocoo()
