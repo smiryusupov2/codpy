@@ -660,7 +660,7 @@ class Alg:
                 constraints(model)
 
             if verbose is not None:
-                print(f"[{ep+1:04d}/{epochs}] loss={loss_val:.6f}")
+                print(f"[{ep+1:04d}/{epochs}] loss={loss.data:.6f}")
         if x0 is not None:
             return Alg.get_torch_parameters(model).reshape(x0.shape)
         else:

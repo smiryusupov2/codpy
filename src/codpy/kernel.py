@@ -1458,22 +1458,26 @@ class SparseKernel(Kernel):
                 if verbose: 
                     print("error pytorch_bfgs beg: ",self.error(theta,**kwargs))
                 t0 = time.perf_counter()
-                def callback_xk(xk):
+                trace = kwargs.get("trace", None)
+                def callback_xk(xk, **kwargs):
                     if trace is not None:
                         t_now = time.perf_counter() - t0
                         # xk is theta as a flat vector
-                        trace.record(theta=xk, t=t_now, k=len(trace.iters))
+                        loss_val = self.error(xk, **kwargs)
+                        trace.record(theta=xk, t=t_now, k=len(trace.iters), loss = loss_val)
                 # out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_pytorch,maxiter=maxiter,maxls=maxls,callback=self.callback)
                 out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_pytorch,maxiter=maxiter,maxls=maxls,callback= callback_xk)
                 if verbose: print("error end: ",fmin, "funcalls",infos["funcalls"],"nit",infos["nit"],"warnflag",infos["warnflag"], "time",time.perf_counter()-timer)
                 self.theta = out.astype(self.x.dtype).reshape(self.get_fx().shape)
             elif method == "bfgs":
                 # <--- BFGS (SciPy L-BFGS-B + analytic grad) ------------------------------->
+                trace = kwargs.get("trace", None)
                 t0 = time.perf_counter()
-                def callback_xk(xk):
+                def callback_xk(xk, **kwargs):
                     if trace is not None:
                         t_now = time.perf_counter() - t0
-                        trace.record(theta=xk, t=t_now, k=len(trace.iters))
+                        loss_val = self.error(xk, **kwargs)
+                        trace.record(theta=xk, t=t_now, k=len(trace.iters), loss = loss_val)
                 if verbose: print("error beg: ",self.error(theta,**kwargs))
                 # out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta,maxiter=maxiter,maxls=maxls,callback=self.callback)
                 out,fmin,infos = scipy.optimize.fmin_l_bfgs_b(func=self.error,x0=theta,fprime=self.grad_theta,maxiter=maxiter,maxls=maxls,callback=callback_xk)
